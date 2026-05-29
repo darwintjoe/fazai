@@ -4,7 +4,7 @@ import React from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useAppStore } from '@/lib/app-store';
 import { t } from '@/lib/i18n';
-import { FileText, PieChart, TrendingUp, DollarSign, BookOpen } from 'lucide-react';
+import { FileText, PieChart, TrendingUp, DollarSign, BookOpen, Lock } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 
@@ -25,8 +25,20 @@ const REPORT_KEY_MAP: Record<string, string> = {
 };
 
 export function Reports() {
-  const { lang } = useAuthStore();
+  const { lang, userRole } = useAuthStore();
   const { navigate, setReportType } = useAppStore();
+
+  // Restrict reports to Admin only
+  if (userRole !== 'admin') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 pb-20">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
+          <Lock className="w-8 h-8 text-muted-foreground" />
+        </div>
+        <p className="text-sm text-muted-foreground">{t('rep.title', lang)} — Admin only</p>
+      </div>
+    );
+  }
 
   const handleSelect = (id: string) => {
     setReportType(id);

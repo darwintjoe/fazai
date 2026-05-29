@@ -30,6 +30,10 @@ export type TranslationKeys = {
   'form.opponentAccount': string;
   'form.aiSuggestion': string;
   'form.searchAccount': string;
+  'form.createCashBank': string;
+  'form.newCashBank': string;
+  'form.openingBalance': string;
+  'form.setOpeningBalance': string;
 
   // History
   'hist.title': string;
@@ -97,6 +101,12 @@ export type TranslationKeys = {
   'admin.active': string;
   'admin.debitAccount': string;
   'admin.creditAccount': string;
+  'admin.balance': string;
+  'admin.addRow': string;
+  'admin.removeRow': string;
+  'admin.autoBalance': string;
+  'admin.notBalanced': string;
+  'admin.journalEntry': string;
   'admin.changePin': string;
   'admin.oldPin': string;
   'admin.newPin': string;
@@ -152,6 +162,7 @@ export type TranslationKeys = {
   'nav.history': string;
   'nav.admin': string;
   'nav.settings': string;
+  'nav.logout': string;
 
   // Account types
   'type.asset': string;
@@ -219,6 +230,10 @@ const en: TranslationKeys = {
   'form.opponentAccount': 'Cash/Bank Account',
   'form.aiSuggestion': 'AI Suggestion',
   'form.searchAccount': 'Search account...',
+  'form.createCashBank': 'Create Cash/Bank',
+  'form.newCashBank': 'New Cash/Bank Account',
+  'form.openingBalance': 'Opening Balance',
+  'form.setOpeningBalance': 'Set Opening Balance',
   'hist.title': 'Transaction History',
   'hist.search': 'Search...',
   'hist.filter': 'Filter',
@@ -280,6 +295,12 @@ const en: TranslationKeys = {
   'admin.active': 'Active',
   'admin.debitAccount': 'Debit Account',
   'admin.creditAccount': 'Credit Account',
+  'admin.balance': 'Balance',
+  'admin.addRow': 'Add Row',
+  'admin.removeRow': 'Remove',
+  'admin.autoBalance': 'Auto Balance',
+  'admin.notBalanced': 'Debits and Credits must balance',
+  'admin.journalEntry': 'Journal Entry',
   'admin.changePin': 'Change PIN',
   'admin.oldPin': 'Current PIN',
   'admin.newPin': 'New PIN',
@@ -329,6 +350,7 @@ const en: TranslationKeys = {
   'nav.history': 'History',
   'nav.admin': 'Admin',
   'nav.settings': 'Settings',
+  'nav.logout': 'Logout',
   'type.asset': 'Asset',
   'type.cashBank': 'Cash & Bank',
   'type.liability': 'Liability',
@@ -392,6 +414,10 @@ const id: TranslationKeys = {
   'form.opponentAccount': 'Akun Kas/Bank',
   'form.aiSuggestion': 'Saran AI',
   'form.searchAccount': 'Cari akun...',
+  'form.createCashBank': 'Buat Kas/Bank',
+  'form.newCashBank': 'Akun Kas/Bank Baru',
+  'form.openingBalance': 'Saldo Awal',
+  'form.setOpeningBalance': 'Atur Saldo Awal',
   'hist.title': 'Riwayat Transaksi',
   'hist.search': 'Cari...',
   'hist.filter': 'Filter',
@@ -453,6 +479,12 @@ const id: TranslationKeys = {
   'admin.active': 'Aktif',
   'admin.debitAccount': 'Akun Debit',
   'admin.creditAccount': 'Akun Kredit',
+  'admin.balance': 'Saldo',
+  'admin.addRow': 'Tambah Baris',
+  'admin.removeRow': 'Hapus',
+  'admin.autoBalance': 'Otomatis Seimbang',
+  'admin.notBalanced': 'Debit dan Kredit harus seimbang',
+  'admin.journalEntry': 'Entri Jurnal',
   'admin.changePin': 'Ubah PIN',
   'admin.oldPin': 'PIN Saat Ini',
   'admin.newPin': 'PIN Baru',
@@ -502,6 +534,7 @@ const id: TranslationKeys = {
   'nav.history': 'Riwayat',
   'nav.admin': 'Admin',
   'nav.settings': 'Pengaturan',
+  'nav.logout': 'Keluar',
   'type.asset': 'Aset',
   'type.cashBank': 'Kas & Bank',
   'type.liability': 'Kewajiban',
@@ -565,6 +598,10 @@ const zh: TranslationKeys = {
   'form.opponentAccount': '现金/银行账户',
   'form.aiSuggestion': 'AI建议',
   'form.searchAccount': '搜索账户...',
+  'form.createCashBank': '创建现金/银行',
+  'form.newCashBank': '新建现金/银行账户',
+  'form.openingBalance': '期初余额',
+  'form.setOpeningBalance': '设置期初余额',
   'hist.title': '交易历史',
   'hist.search': '搜索...',
   'hist.filter': '筛选',
@@ -626,6 +663,12 @@ const zh: TranslationKeys = {
   'admin.active': '启用',
   'admin.debitAccount': '借方账户',
   'admin.creditAccount': '贷方账户',
+  'admin.balance': '余额',
+  'admin.addRow': '添加行',
+  'admin.removeRow': '删除',
+  'admin.autoBalance': '自动平衡',
+  'admin.notBalanced': '借贷必须平衡',
+  'admin.journalEntry': '日记账分录',
   'admin.changePin': '修改PIN',
   'admin.oldPin': '当前PIN',
   'admin.newPin': '新PIN',
@@ -675,6 +718,7 @@ const zh: TranslationKeys = {
   'nav.history': '历史',
   'nav.admin': '管理',
   'nav.settings': '设置',
+  'nav.logout': '退出',
   'type.asset': '资产',
   'type.cashBank': '现金与银行',
   'type.liability': '负债',

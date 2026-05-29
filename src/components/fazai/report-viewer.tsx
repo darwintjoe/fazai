@@ -151,7 +151,7 @@ export function ReportViewer() {
         autoTable(doc, {
           startY: yOffset,
           head: [[t('rep.account', lang), t('rep.debit', lang), t('rep.credit', lang)]],
-          body: trialBalance.map(r => [`${r.accountCode} - ${r.accountName}`, formatNumber(r.debit), formatNumber(r.credit)]),
+          body: trialBalance.map(r => [r.accountName, formatNumber(r.debit), formatNumber(r.credit)]),
           foot: [[t('rep.total', lang), formatNumber(trialBalance.reduce((s, r) => s + r.debit, 0)), formatNumber(trialBalance.reduce((s, r) => s + r.credit, 0))]],
           styles: { fontSize: 9 },
           headStyles: { fillColor: [16, 185, 129] },
@@ -174,7 +174,7 @@ export function ReportViewer() {
             autoTable(doc, {
               startY: yOffset,
               head: [[t('rep.account', lang), t('rep.balance', lang)]],
-              body: section.items.map(i => [`${i.accountCode ? i.accountCode + ' - ' : ''}${i.accountName}`, formatNumber(i.amount)]),
+              body: section.items.map(i => [i.accountName, formatNumber(i.amount)]),
               foot: [[t('rep.total', lang), formatNumber(section.total)]],
               styles: { fontSize: 9 },
               headStyles: { fillColor: [16, 185, 129] },
@@ -192,7 +192,7 @@ export function ReportViewer() {
           autoTable(doc, {
             startY: yOffset,
             head: [[t('dash.income', lang), '', '']],
-            body: profitLoss.income.items.map(i => [`${i.accountCode} - ${i.accountName}`, '', formatNumber(i.amount)]),
+            body: profitLoss.income.items.map(i => [i.accountName, '', formatNumber(i.amount)]),
             foot: [[t('rep.total', lang) + ' ' + t('dash.income', lang), '', formatNumber(profitLoss.income.total)]],
             styles: { fontSize: 9 },
             headStyles: { fillColor: [34, 197, 94] },
@@ -202,7 +202,7 @@ export function ReportViewer() {
           autoTable(doc, {
             startY: yOffset,
             head: [[t('dash.expense', lang), '', '']],
-            body: profitLoss.expenses.items.map(i => [`${i.accountCode} - ${i.accountName}`, '', formatNumber(i.amount)]),
+            body: profitLoss.expenses.items.map(i => [i.accountName, '', formatNumber(i.amount)]),
             foot: [[t('rep.total', lang) + ' ' + t('dash.expense', lang), '', formatNumber(profitLoss.expenses.total)]],
             styles: { fontSize: 9 },
             headStyles: { fillColor: [239, 68, 68] },
@@ -223,7 +223,7 @@ export function ReportViewer() {
           autoTable(doc, {
             startY: yOffset,
             head: [[t('rep.inflows', lang), '', '']],
-            body: cashFlow.inflows.map(i => [`${i.accountCode} - ${i.accountName}`, '', formatNumber(i.amount)]),
+            body: cashFlow.inflows.map(i => [i.accountName, '', formatNumber(i.amount)]),
             foot: [[t('rep.total', lang), '', formatNumber(cashFlow.totalInflows)]],
             styles: { fontSize: 9 },
             headStyles: { fillColor: [34, 197, 94] },
@@ -233,7 +233,7 @@ export function ReportViewer() {
           autoTable(doc, {
             startY: yOffset,
             head: [[t('rep.outflows', lang), '', '']],
-            body: cashFlow.outflows.map(i => [`${i.accountCode} - ${i.accountName}`, '', formatNumber(i.amount)]),
+            body: cashFlow.outflows.map(i => [i.accountName, '', formatNumber(i.amount)]),
             foot: [[t('rep.total', lang), '', formatNumber(cashFlow.totalOutflows)]],
             styles: { fontSize: 9 },
             headStyles: { fillColor: [239, 68, 68] },
@@ -285,7 +285,7 @@ export function ReportViewer() {
     switch (reportType) {
       case 'trial-balance': {
         const data = trialBalance.map(r => ({
-          [t('rep.account', lang)]: `${r.accountCode} - ${r.accountName}`,
+          [t('rep.account', lang)]: r.accountName,
           [t('rep.debit', lang)]: r.debit,
           [t('rep.credit', lang)]: r.credit,
         }));
@@ -302,15 +302,15 @@ export function ReportViewer() {
         if (balanceSheet) {
           const data: Record<string, any>[] = [];
           data.push({ [t('rep.account', lang)]: balanceSheet.assets.label, [t('rep.balance', lang)]: '' });
-          balanceSheet.assets.items.forEach(i => data.push({ [t('rep.account', lang)]: `${i.accountCode ? i.accountCode + ' - ' : ''}${i.accountName}`, [t('rep.balance', lang)]: i.amount }));
+          balanceSheet.assets.items.forEach(i => data.push({ [t('rep.account', lang)]: i.accountName, [t('rep.balance', lang)]: i.amount }));
           data.push({ [t('rep.account', lang)]: t('rep.total', lang), [t('rep.balance', lang)]: balanceSheet.assets.total });
           data.push({});
           data.push({ [t('rep.account', lang)]: balanceSheet.liabilities.label, [t('rep.balance', lang)]: '' });
-          balanceSheet.liabilities.items.forEach(i => data.push({ [t('rep.account', lang)]: `${i.accountCode ? i.accountCode + ' - ' : ''}${i.accountName}`, [t('rep.balance', lang)]: i.amount }));
+          balanceSheet.liabilities.items.forEach(i => data.push({ [t('rep.account', lang)]: i.accountName, [t('rep.balance', lang)]: i.amount }));
           data.push({ [t('rep.account', lang)]: t('rep.total', lang), [t('rep.balance', lang)]: balanceSheet.liabilities.total });
           data.push({});
           data.push({ [t('rep.account', lang)]: balanceSheet.equity.label, [t('rep.balance', lang)]: '' });
-          balanceSheet.equity.items.forEach(i => data.push({ [t('rep.account', lang)]: `${i.accountCode ? i.accountCode + ' - ' : ''}${i.accountName}`, [t('rep.balance', lang)]: i.amount }));
+          balanceSheet.equity.items.forEach(i => data.push({ [t('rep.account', lang)]: i.accountName, [t('rep.balance', lang)]: i.amount }));
           data.push({ [t('rep.account', lang)]: t('rep.total', lang), [t('rep.balance', lang)]: balanceSheet.equity.total });
           const ws = XLSX.utils.json_to_sheet(data);
           XLSX.utils.book_append_sheet(wb, ws, reportTitle);
@@ -321,11 +321,11 @@ export function ReportViewer() {
         if (profitLoss) {
           const data: Record<string, any>[] = [];
           data.push({ [t('rep.account', lang)]: t('dash.income', lang), [t('rep.balance', lang)]: '' });
-          profitLoss.income.items.forEach(i => data.push({ [t('rep.account', lang)]: `${i.accountCode} - ${i.accountName}`, [t('rep.balance', lang)]: i.amount }));
+          profitLoss.income.items.forEach(i => data.push({ [t('rep.account', lang)]: i.accountName, [t('rep.balance', lang)]: i.amount }));
           data.push({ [t('rep.account', lang)]: t('rep.total', lang), [t('rep.balance', lang)]: profitLoss.income.total });
           data.push({});
           data.push({ [t('rep.account', lang)]: t('dash.expense', lang), [t('rep.balance', lang)]: '' });
-          profitLoss.expenses.items.forEach(i => data.push({ [t('rep.account', lang)]: `${i.accountCode} - ${i.accountName}`, [t('rep.balance', lang)]: i.amount }));
+          profitLoss.expenses.items.forEach(i => data.push({ [t('rep.account', lang)]: i.accountName, [t('rep.balance', lang)]: i.amount }));
           data.push({ [t('rep.account', lang)]: t('rep.total', lang), [t('rep.balance', lang)]: profitLoss.expenses.total });
           data.push({});
           data.push({ [t('rep.account', lang)]: t('rep.netProfit', lang), [t('rep.balance', lang)]: profitLoss.netProfit });
@@ -340,11 +340,11 @@ export function ReportViewer() {
           data.push({ [t('rep.account', lang)]: t('rep.beginning', lang), [t('rep.balance', lang)]: cashFlow.beginningBalance });
           data.push({});
           data.push({ [t('rep.account', lang)]: t('rep.inflows', lang), [t('rep.balance', lang)]: '' });
-          cashFlow.inflows.forEach(i => data.push({ [t('rep.account', lang)]: `${i.accountCode} - ${i.accountName}`, [t('rep.balance', lang)]: i.amount }));
+          cashFlow.inflows.forEach(i => data.push({ [t('rep.account', lang)]: i.accountName, [t('rep.balance', lang)]: i.amount }));
           data.push({ [t('rep.account', lang)]: t('rep.total', lang), [t('rep.balance', lang)]: cashFlow.totalInflows });
           data.push({});
           data.push({ [t('rep.account', lang)]: t('rep.outflows', lang), [t('rep.balance', lang)]: '' });
-          cashFlow.outflows.forEach(i => data.push({ [t('rep.account', lang)]: `${i.accountCode} - ${i.accountName}`, [t('rep.balance', lang)]: i.amount }));
+          cashFlow.outflows.forEach(i => data.push({ [t('rep.account', lang)]: i.accountName, [t('rep.balance', lang)]: i.amount }));
           data.push({ [t('rep.account', lang)]: t('rep.total', lang), [t('rep.balance', lang)]: cashFlow.totalOutflows });
           data.push({});
           data.push({ [t('rep.account', lang)]: t('rep.netChange', lang), [t('rep.balance', lang)]: cashFlow.netChange });
@@ -429,7 +429,7 @@ export function ReportViewer() {
             <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder={t('rep.selectAccount', lang)} /></SelectTrigger>
             <SelectContent>
               {accounts.filter(a => a.parentId).map(a => (
-                <SelectItem key={a.id} value={a.id}>{a.code} - {getAccountName(a, lang)}</SelectItem>
+                <SelectItem key={a.id} value={a.id}>{getAccountName(a, lang)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -464,7 +464,7 @@ export function ReportViewer() {
               <tbody>
                 {trialBalance.map((r) => (
                   <tr key={r.accountId} className="border-t">
-                    <td className="p-3">{r.accountCode} - {r.accountName}</td>
+                    <td className="p-3">{r.accountName}</td>
                     <td className="text-right p-3">{r.debit > 0 ? formatNumber(r.debit) : ''}</td>
                     <td className="text-right p-3">{r.credit > 0 ? formatNumber(r.credit) : ''}</td>
                   </tr>
@@ -491,7 +491,7 @@ export function ReportViewer() {
                     <tbody>
                       {section.items.map((item, idx) => (
                         <tr key={idx} className="border-t">
-                          <td className="p-2">{item.accountCode ? `${item.accountCode} - ` : ''}{item.accountName}</td>
+                          <td className="p-2">{item.accountName}</td>
                           <td className="text-right p-2">{formatNumber(item.amount)}</td>
                         </tr>
                       ))}
@@ -516,7 +516,7 @@ export function ReportViewer() {
                 <tbody>
                   {profitLoss.income.items.map((item, idx) => (
                     <tr key={idx} className="border-t">
-                      <td className="p-2">{item.accountCode} - {item.accountName}</td>
+                      <td className="p-2">{item.accountName}</td>
                       <td className="text-right p-2">{formatNumber(item.amount)}</td>
                     </tr>
                   ))}
@@ -531,7 +531,7 @@ export function ReportViewer() {
                 <tbody>
                   {profitLoss.expenses.items.map((item, idx) => (
                     <tr key={idx} className="border-t">
-                      <td className="p-2">{item.accountCode} - {item.accountName}</td>
+                      <td className="p-2">{item.accountName}</td>
                       <td className="text-right p-2">{formatNumber(item.amount)}</td>
                     </tr>
                   ))}
@@ -557,7 +557,7 @@ export function ReportViewer() {
                 <tbody>
                   {cashFlow.inflows.map((item, idx) => (
                     <tr key={idx} className="border-t">
-                      <td className="p-2">{item.accountCode} - {item.accountName}</td>
+                      <td className="p-2">{item.accountName}</td>
                       <td className="text-right p-2">{formatNumber(item.amount)}</td>
                     </tr>
                   ))}
@@ -572,7 +572,7 @@ export function ReportViewer() {
                 <tbody>
                   {cashFlow.outflows.map((item, idx) => (
                     <tr key={idx} className="border-t">
-                      <td className="p-2">{item.accountCode} - {item.accountName}</td>
+                      <td className="p-2">{item.accountName}</td>
                       <td className="text-right p-2">{formatNumber(item.amount)}</td>
                     </tr>
                   ))}

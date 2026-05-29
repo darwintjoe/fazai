@@ -15,13 +15,15 @@ import { AiChat } from '@/components/fazai/ai-chat';
 import { SettingsPage } from '@/components/fazai/settings';
 import { UserGuide } from '@/components/fazai/user-guide';
 import { AnimatePresence, motion } from 'framer-motion';
+import { LogOut } from 'lucide-react';
+import { t } from '@/lib/i18n';
 
 const emptySubscribe = () => () => {};
 const getSnapshot = () => true;
 const getServerSnapshot = () => false;
 
 export default function Home() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, logout, lang, userName, userRole } = useAuthStore();
   const { currentPage } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, getSnapshot, getServerSnapshot);
 
@@ -69,7 +71,26 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="max-w-2xl mx-auto px-4 pt-4 safe-area-top">
+      {/* Top-right header with user info and logout */}
+      <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
+        <div className="max-w-2xl mx-auto px-4 h-10 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{userName}</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 capitalize">
+              {userRole}
+            </span>
+          </div>
+          <button
+            onClick={logout}
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-500 transition-colors"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            {t('nav.logout', lang)}
+          </button>
+        </div>
+      </div>
+
+      <main className="max-w-2xl mx-auto px-4 pt-3 safe-area-top">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPage}

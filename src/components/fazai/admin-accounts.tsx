@@ -4,62 +4,92 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { t, getAccountName } from '@/lib/i18n';
 import { db, type Account } from '@/lib/fazai-db';
+import { getAccountBalance } from '@/lib/ledger-engine';
+import { formatNumber } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Pencil, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Pencil, ChevronDown, ChevronRight, ToggleLeft, ToggleRight } from 'lucide-react';
 import { v4 as uuid } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
 
 const ACCOUNT_TYPES = ['asset', 'cashBank', 'liability', 'equity', 'income', 'expense'] as const;
 
+const TYPE_ROOT_MAP: Record<string, string> = {
+  asset: 'acc-asset-root',
+  cashBank: 'acc-cashbank-root',
+  liability: 'acc-liability-root',
+  equity: 'acc-equity-root',
+  income: 'acc-income-root',
+  expense: 'acc-expense-root',
+};
+
 export function AdminAccounts() {
   const { lang } = useAuthStore();
   const { toast } = useToast();
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [balances, setBalances] = useState<Record<string, number>>({});
   const [showAdd, setShowAdd] = useState(false);
   const [editAccount, setEditAccount] = useState<Account | null>(null);
-  const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [type, setType] = useState<Account['type']>('expense');
   const [parentId, setParentId] = useState('');
+  const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set(['cashBank', 'income', 'expense']));
 
   const loadRef = useRef(false);
 
   const loadAccounts = useCallback(async () => {
     const list = await db.accounts.toArray();
     setAccounts(list.sort((a, b) => a.code.localeCompare(b.code)));
+    // Load balances for child accounts
+    const balMap: Record<string, number> = {};
+    for (const acc of list.filter(a => a.parentId)) {
+      balMap[acc.id] = await getAccountBalance(acc.id);
+    }
+    setBalances(balMap);
   }, []);
 
   useEffect(() => {
     if (!loadRef.current) {
       loadRef.current = true;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadAccounts();
     }
   }, [loadAccounts]);
 
-  const rootAccounts = accounts.filter(a => !a.parentId);
+  const handleTypeChange = (newType: Account['type']) => {
+    setType(newType);
+    // Auto-select parent to matching type root
+    setParentId(TYPE_ROOT_MAP[newType] || '');
+  };
 
   const handleSave = async () => {
-    if (!code.trim() || !name.trim()) return;
+    if (!name.trim()) return;
 
     if (editAccount) {
       await db.accounts.update(editAccount.id, {
-        code: code.trim(),
         name: name.trim(),
         type,
-        parentId: parentId || undefined,
+        parentId: parentId || TYPE_ROOT_MAP[type] || undefined,
       });
     } else {
+      // Auto-generate code based on type
+      const typeAccounts = accounts.filter(a => a.type === type);
+      const prefix = type === 'asset' ? '1' : type === 'cashBank' ? '1' : type === 'liability' ? '2' : type === 'equity' ? '3' : type === 'income' ? '4' : '5';
+      const subCode = type === 'cashBank' ? '1' : '0';
+      const maxSuffix = typeAccounts.reduce((max, a) => {
+        const parts = a.code.split('-');
+        return parts.length > 1 ? Math.max(max, parseInt(parts[1])) : max;
+      }, 0);
+      const newCode = `${prefix}-${subCode}${String(maxSuffix + 100).padStart(3, '0')}`;
+
       await db.accounts.add({
         id: `acc-${uuid()}`,
-        code: code.trim(),
+        code: newCode,
         name: name.trim(),
         type,
-        parentId: parentId || undefined,
+        parentId: parentId || TYPE_ROOT_MAP[type] || undefined,
         isSystem: false,
         isActive: true,
         createdAt: new Date(),
@@ -79,104 +109,133 @@ export function AdminAccounts() {
 
   const startEdit = (acc: Account) => {
     setEditAccount(acc);
-    setCode(acc.code);
     setName(acc.name);
     setType(acc.type);
-    setParentId(acc.parentId || '');
+    setParentId(acc.parentId || TYPE_ROOT_MAP[acc.type] || '');
   };
 
   const resetForm = () => {
     setEditAccount(null);
     setShowAdd(false);
-    setCode('');
     setName('');
     setType('expense');
-    setParentId('');
+    setParentId(TYPE_ROOT_MAP['expense']);
   };
+
+  const toggleType = (accType: string) => {
+    setExpandedTypes(prev => {
+      const next = new Set(prev);
+      if (next.has(accType)) next.delete(accType);
+      else next.add(accType);
+      return next;
+    });
+  };
+
+  // Group accounts by type
+  const groupedAccounts = ACCOUNT_TYPES.map(accType => ({
+    type: accType,
+    accounts: accounts.filter(a => a.type === accType),
+  })).filter(g => g.accounts.length > 0);
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold">{t('admin.accounts', lang)}</h3>
-        <Button size="sm" onClick={() => { setShowAdd(true); resetForm(); setShowAdd(true); }}>
-          <Plus className="w-4 h-4 mr-1" /> {t('admin.addAccount', lang)}
+        <h3 className="font-semibold text-sm">{t('admin.accounts', lang)}</h3>
+        <Button size="sm" onClick={() => { resetForm(); setShowAdd(true); }} className="h-8 text-xs">
+          <Plus className="w-3.5 h-3.5 mr-1" /> {t('admin.addAccount', lang)}
         </Button>
       </div>
 
-      {accounts.map((acc) => {
-        const isRoot = !acc.parentId;
+      {groupedAccounts.map(({ type: accType, accounts: typeAccounts }) => {
+        const isExpanded = expandedTypes.has(accType);
+        const rootAccount = typeAccounts.find(a => !a.parentId);
+        const childAccounts = typeAccounts.filter(a => a.parentId);
+        const typeBalance = childAccounts.reduce((sum, a) => sum + (balances[a.id] || 0), 0);
+
         return (
-          <Card key={acc.id} className={`p-3 ${!acc.isActive ? 'opacity-50' : ''}`}>
-            <div className="flex items-center justify-between">
+          <div key={accType} className="border rounded-lg overflow-hidden">
+            {/* Type Header - Expandable */}
+            <button
+              onClick={() => toggleType(accType)}
+              className="w-full flex items-center justify-between px-3 py-2.5 bg-muted/50 hover:bg-muted/80 transition-colors"
+            >
               <div className="flex items-center gap-2">
-                <span className="text-xs font-mono text-muted-foreground">{acc.code}</span>
-                <span className={`text-sm ${isRoot ? 'font-bold' : ''}`}>
-                  {isRoot ? '' : '└ '}{getAccountName(acc, lang)}
-                </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-                  {t(`type.${acc.type}` as any, lang)}
-                </span>
+                {isExpanded ? <ChevronDown className="w-4 h-4 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 text-muted-foreground" />}
+                <span className="font-semibold text-xs">{t(`type.${accType}` as keyof import('@/lib/i18n').TranslationKeys, lang)}</span>
+                <span className="text-[10px] text-muted-foreground">({childAccounts.length})</span>
               </div>
-              <div className="flex gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleToggleActive(acc)}>
-                  {acc.isActive
-                    ? <ToggleRight className="w-4 h-4 text-emerald-500" />
-                    : <ToggleLeft className="w-4 h-4 text-muted-foreground" />
-                  }
-                </Button>
-                {!acc.isSystem && (
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => startEdit(acc)}>
-                    <Pencil className="w-4 h-4" />
-                  </Button>
+              <span className="text-xs font-medium">{formatNumber(typeBalance)}</span>
+            </button>
+
+            {/* Child accounts */}
+            {isExpanded && (
+              <div className="divide-y">
+                {childAccounts.map((acc) => (
+                  <div key={acc.id} className={`flex items-center justify-between px-3 py-2 ${!acc.isActive ? 'opacity-40' : ''}`}>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-xs truncate">{getAccountName(acc, lang)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs font-medium tabular-nums">{formatNumber(balances[acc.id] || 0)}</span>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleToggleActive(acc)}>
+                        {acc.isActive
+                          ? <ToggleRight className="w-4 h-4 text-emerald-500" />
+                          : <ToggleLeft className="w-4 h-4 text-muted-foreground" />
+                        }
+                      </Button>
+                      {!acc.isSystem && (
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => startEdit(acc)}>
+                          <Pencil className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {childAccounts.length === 0 && (
+                  <div className="px-3 py-3 text-xs text-muted-foreground text-center">No accounts</div>
                 )}
               </div>
-            </div>
-          </Card>
+            )}
+          </div>
         );
       })}
 
-      {/* Add/Edit Dialog */}
       <Dialog open={!!editAccount || showAdd} onOpenChange={() => resetForm()}>
-        <DialogContent>
+        <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>{editAccount ? t('admin.editAccount', lang) : t('admin.addAccount', lang)}</DialogTitle>
+            <DialogTitle className="text-sm">{editAccount ? t('admin.editAccount', lang) : t('admin.addAccount', lang)}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-3">
             <div>
-              <label className="text-sm font-medium">{t('admin.code', lang)}</label>
-              <Input value={code} onChange={(e) => setCode(e.target.value)} className="mt-1" placeholder="5-1000" />
+              <label className="text-xs font-medium">{t('admin.name', lang)}</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 h-9 text-sm" />
             </div>
             <div>
-              <label className="text-sm font-medium">{t('admin.name', lang)}</label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} className="mt-1" />
-            </div>
-            <div>
-              <label className="text-sm font-medium">{t('admin.type', lang)}</label>
-              <Select value={type} onValueChange={(v) => setType(v as Account['type'])}>
-                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+              <label className="text-xs font-medium">{t('admin.type', lang)}</label>
+              <Select value={type} onValueChange={(v) => handleTypeChange(v as Account['type'])}>
+                <SelectTrigger className="mt-1 h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {ACCOUNT_TYPES.map(at => (
-                    <SelectItem key={at} value={at}>{t(`type.${at}` as any, lang)}</SelectItem>
+                    <SelectItem key={at} value={at}>{t(`type.${at}` as keyof import('@/lib/i18n').TranslationKeys, lang)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium">Parent</label>
+              <label className="text-xs font-medium">Parent</label>
               <Select value={parentId} onValueChange={setParentId}>
-                <SelectTrigger className="mt-1"><SelectValue placeholder="None (root)" /></SelectTrigger>
+                <SelectTrigger className="mt-1 h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">None (root)</SelectItem>
-                  {rootAccounts.map(a => (
-                    <SelectItem key={a.id} value={a.id}>{a.code} - {getAccountName(a, lang)}</SelectItem>
+                  {accounts.filter(a => !a.parentId).map(a => (
+                    <SelectItem key={a.id} value={a.id}>{getAccountName(a, lang)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={resetForm}>{t('common.cancel', lang)}</Button>
-            <Button onClick={handleSave} disabled={!code.trim() || !name.trim()}>{t('common.save', lang)}</Button>
+            <Button variant="outline" size="sm" onClick={resetForm}>{t('common.cancel', lang)}</Button>
+            <Button size="sm" onClick={handleSave} disabled={!name.trim()}>{t('common.save', lang)}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

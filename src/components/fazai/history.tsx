@@ -207,7 +207,7 @@ export function History() {
                     return (
                       <div key={entry.id} className="flex items-center justify-between text-sm py-1">
                         <span className="text-muted-foreground">
-                          {acc ? `${acc.code} - ${getAccountName(acc, lang)}` : entry.accountId}
+                          {acc ? getAccountName(acc, lang) : entry.accountId}
                         </span>
                         <div className="flex gap-4">
                           <span className={entry.debit > 0 ? 'font-medium' : 'text-muted-foreground'}>

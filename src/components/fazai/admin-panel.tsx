@@ -7,24 +7,21 @@ import { t } from '@/lib/i18n';
 import { AdminUsers } from './admin-users';
 import { AdminAccounts } from './admin-accounts';
 import { AdminCustomEntry } from './admin-custom-entry';
-import { AdminSettings } from './admin-settings';
 import { AdminBackup } from './admin-backup';
-import { Users, BookOpen, PenTool, Settings, Database } from 'lucide-react';
-import { Card } from '@/components/ui/card';
+import { Users, BookOpen, PenTool, Database } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const ADMIN_TABS = [
   { id: 'admin-users', icon: Users, labelKey: 'admin.users' as const },
   { id: 'admin-accounts', icon: BookOpen, labelKey: 'admin.accounts' as const },
   { id: 'admin-custom', icon: PenTool, labelKey: 'admin.customTransaction' as const },
-  { id: 'admin-settings', icon: Settings, labelKey: 'admin.settings' as const },
   { id: 'admin-backup', icon: Database, labelKey: 'admin.backup' as const },
 ];
 
 export function AdminPanel() {
   const { lang, userRole } = useAuthStore();
   const { currentPage, navigate } = useAppStore();
-  const [activeTab, setActiveTab] = useState(currentPage.startsWith('admin-') ? currentPage : 'admin-users');
+  const [activeTab, setActiveTab] = useState<string>(currentPage.startsWith('admin-') ? currentPage : 'admin-users');
 
   if (userRole !== 'admin') {
     return (
@@ -38,7 +35,6 @@ export function AdminPanel() {
     <div className="flex flex-col gap-4 pb-20">
       <h2 className="text-xl font-bold">{t('admin.title', lang)}</h2>
 
-      {/* Tab navigation */}
       <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
         {ADMIN_TABS.map((tab) => {
           const Icon = tab.icon;
@@ -60,7 +56,6 @@ export function AdminPanel() {
         })}
       </div>
 
-      {/* Tab Content */}
       <motion.div
         key={activeTab}
         initial={{ opacity: 0, y: 5 }}
@@ -70,7 +65,6 @@ export function AdminPanel() {
         {activeTab === 'admin-users' && <AdminUsers />}
         {activeTab === 'admin-accounts' && <AdminAccounts />}
         {activeTab === 'admin-custom' && <AdminCustomEntry />}
-        {activeTab === 'admin-settings' && <AdminSettings />}
         {activeTab === 'admin-backup' && <AdminBackup />}
       </motion.div>
     </div>

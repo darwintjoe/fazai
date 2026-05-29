@@ -413,6 +413,22 @@ export async function generateCashFlow(fromDate: Date, toDate: Date, lang: Lang 
     }
   }
 
+  // Opening Balance equity — credits to acc-opening-balance represent cash/bank inflows
+  const openingBalAcc = accounts.find(a => a.id === 'acc-opening-balance');
+  if (openingBalAcc) {
+    const obBal = balances.get('acc-opening-balance');
+    if (obBal) {
+      const obNet = obBal.credit - obBal.debit;
+      if (obNet > 0) {
+        inflows.push({ accountCode: openingBalAcc.code, accountName: getAccountName(openingBalAcc, lang), amount: obNet });
+        totalInflows += obNet;
+      } else if (obNet < 0) {
+        outflows.push({ accountCode: openingBalAcc.code, accountName: getAccountName(openingBalAcc, lang), amount: Math.abs(obNet) });
+        totalOutflows += Math.abs(obNet);
+      }
+    }
+  }
+
   const netChange = totalInflows - totalOutflows;
 
   // Ending balance
@@ -544,4 +560,43 @@ export async function getDashboardSummary() {
     .slice(0, 10);
 
   return { totalBalance, todayIncome, todayExpense, recentTransactions };
+}
+
+// Create a multi-entry custom transaction (admin - spreadsheet-like)
+export async function createMultiEntryTransaction(params: {
+  entries: { accountId: string; debit: number; credit: number }[];
+  description: string;
+  date: Date;
+  userId: string;
+}): Promise<Transaction> {
+  const { entries, description, date, userId } = params;
+
+  const transaction: Transaction = {
+    id: uuid(),
+    date,
+    description,
+    counterparty: '',
+    type: 'custom',
+    createdBy: userId,
+    createdAt: new Date(),
+    entries: entries
+      .filter(e => e.debit > 0 || e.credit > 0)
+      .map(e => ({ id: uuid(), accountId: e.accountId, debit: e.debit, credit: e.credit })),
+  };
+
+  await db.transactions.add(transaction);
+  return transaction;
+}
+
+// Get the current balance for a single account (for display in account list)
+export async function getAccountBalance(accountId: string): Promise<number> {
+  const account = await db.accounts.get(accountId);
+  if (!account) return 0;
+
+  const balances = await getAccountBalances(undefined, undefined);
+  const bal = balances.get(accountId);
+  if (!bal) return 0;
+
+  const isDebitNormal = account.type === 'asset' || account.type === 'cashBank' || account.type === 'expense';
+  return isDebitNormal ? bal.debit - bal.credit : bal.credit - bal.debit;
 }

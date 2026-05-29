@@ -6,7 +6,7 @@ import { useAppStore } from '@/lib/app-store';
 import { t, getAccountName, type Lang } from '@/lib/i18n';
 import { formatNumber, parseFormattedNumber, today } from '@/lib/format';
 import { db, type Account } from '@/lib/fazai-db';
-import { createIncomeTransaction, createExpenseTransaction } from '@/lib/ledger-engine';
+import { createIncomeTransaction, createExpenseTransaction, createOpeningBalanceTransaction } from '@/lib/ledger-engine';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,6 +39,8 @@ export function TransactionForm({ type }: TransactionFormProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewAccount, setShowNewAccount] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
+  const [showNewCashBank, setShowNewCashBank] = useState(false);
+  const [newCashBankName, setNewCashBankName] = useState('');
   const [saving, setSaving] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState('');
 
@@ -58,10 +60,13 @@ export function TransactionForm({ type }: TransactionFormProps) {
     loadAccounts();
   }, [loadAccounts]);
 
-  const filteredAccounts = accounts.filter(a => {
-    const name = getAccountName(a, lang).toLowerCase();
-    return name.includes(searchQuery.toLowerCase());
-  });
+  // Only show filtered accounts when there's a search query
+  const filteredAccounts = searchQuery
+    ? accounts.filter(a => {
+        const name = getAccountName(a, lang).toLowerCase();
+        return name.includes(searchQuery.toLowerCase());
+      })
+    : [];
 
   const handleCreateAccount = async () => {
     if (!newAccountName.trim()) return;
@@ -93,6 +98,34 @@ export function TransactionForm({ type }: TransactionFormProps) {
     setShowNewAccount(false);
     await loadAccounts();
     setSelectedAccountId(newAccount.id);
+  };
+
+  const handleCreateCashBank = async () => {
+    if (!newCashBankName.trim()) return;
+
+    const existingCashBank = opponentAccounts;
+    const maxCode = existingCashBank.reduce((max, a) => {
+      const parts = a.code.split('-');
+      return parts.length > 1 ? Math.max(max, parseInt(parts[1])) : max;
+    }, 0);
+    const newCode = `1-${String(maxCode + 100).padStart(4, '0')}`;
+
+    const newAccount: Account = {
+      id: `acc-${uuid()}`,
+      code: newCode,
+      name: newCashBankName.trim(),
+      type: 'cashBank',
+      parentId: 'acc-cashbank-root',
+      isSystem: false,
+      isActive: true,
+      createdAt: new Date(),
+    };
+
+    await db.accounts.add(newAccount);
+    setNewCashBankName('');
+    setShowNewCashBank(false);
+    await loadAccounts();
+    setOpponentAccountId(newAccount.id);
   };
 
   const handleAmountChange = (value: string) => {
@@ -196,34 +229,44 @@ export function TransactionForm({ type }: TransactionFormProps) {
           />
         </div>
 
-        {/* Account Selection */}
+        {/* Account Selection — Hidden until search */}
         <div>
           <label className="text-sm font-medium text-muted-foreground">{t('form.account', lang)}</label>
+          {selectedAccountId && (
+            <div className="mt-1 mb-2 flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950 px-3 py-2 rounded-lg">
+              <span className="text-sm font-medium">{getAccountName(accounts.find(a => a.id === selectedAccountId)!, lang)}</span>
+              <button onClick={() => setSelectedAccountId('')} className="text-xs text-muted-foreground hover:text-foreground ml-auto">✕</button>
+            </div>
+          )}
           <div className="relative mt-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={t('form.searchAccount', lang)}
-              className="pl-9 mb-2"
+              className="pl-9"
             />
           </div>
-          <div className="flex flex-col gap-1 max-h-40 overflow-y-auto">
-            {filteredAccounts.map((acc) => (
-              <button
-                key={acc.id}
-                onClick={() => setSelectedAccountId(acc.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  selectedAccountId === acc.id
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
-                    : 'hover:bg-accent'
-                }`}
-              >
-                <span className="text-xs text-muted-foreground font-mono">{acc.code}</span>
-                <span>{getAccountName(acc, lang)}</span>
-              </button>
-            ))}
-          </div>
+          {searchQuery && (
+            <div className="flex flex-col gap-1 mt-2 max-h-40 overflow-y-auto">
+              {filteredAccounts.map((acc) => (
+                <button
+                  key={acc.id}
+                  onClick={() => { setSelectedAccountId(acc.id); setSearchQuery(''); }}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    selectedAccountId === acc.id
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
+                      : 'hover:bg-accent'
+                  }`}
+                >
+                  <span>{getAccountName(acc, lang)}</span>
+                </button>
+              ))}
+              {filteredAccounts.length === 0 && (
+                <p className="text-xs text-muted-foreground px-3 py-2">No accounts found</p>
+              )}
+            </div>
+          )}
           <button
             onClick={() => setShowNewAccount(!showNewAccount)}
             className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 mt-2"
@@ -264,7 +307,28 @@ export function TransactionForm({ type }: TransactionFormProps) {
                 {getAccountName(acc, lang)}
               </button>
             ))}
+            <button
+              onClick={() => setShowNewCashBank(!showNewCashBank)}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition-colors"
+            >
+              <Plus className="w-3 h-3" />
+              {t('form.createCashBank', lang)}
+            </button>
           </div>
+          {showNewCashBank && (
+            <div className="flex gap-2 mt-2">
+              <Input
+                value={newCashBankName}
+                onChange={(e) => setNewCashBankName(e.target.value)}
+                placeholder={t('form.newCashBank', lang)}
+                className="text-sm"
+                onKeyDown={(e) => e.key === 'Enter' && handleCreateCashBank()}
+              />
+              <Button size="sm" onClick={handleCreateCashBank} variant="outline">
+                {t('form.createAccount', lang)}
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Description */}

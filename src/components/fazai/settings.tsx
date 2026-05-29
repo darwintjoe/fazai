@@ -10,10 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
-import { LogOut, BookOpen } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 
 export function SettingsPage() {
-  const { lang, setLang, userId, logout } = useAuthStore();
+  const { lang, setLang, userId } = useAuthStore();
   const { navigate } = useAppStore();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
@@ -143,16 +143,6 @@ export function SettingsPage() {
           </Button>
         </div>
       </Card>
-
-      {/* Logout */}
-      <Button
-        variant="destructive"
-        onClick={logout}
-        className="w-full"
-      >
-        <LogOut className="w-4 h-4 mr-2" />
-        Logout
-      </Button>
     </div>
   );
 }

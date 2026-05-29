@@ -13,7 +13,7 @@ export function BottomNav() {
 
   const items = [
     { id: 'dashboard' as const, icon: Home, label: t('nav.home', lang) },
-    { id: 'reports' as const, icon: BarChart3, label: t('nav.reports', lang) },
+    ...(isAdmin ? [{ id: 'reports' as const, icon: BarChart3, label: t('nav.reports', lang) }] : []),
     { id: 'history' as const, icon: History, label: t('nav.history', lang) },
     ...(isAdmin ? [{ id: 'admin' as const, icon: Shield, label: t('nav.admin', lang) }] : []),
     { id: 'settings' as const, icon: Settings, label: t('nav.settings', lang) },
