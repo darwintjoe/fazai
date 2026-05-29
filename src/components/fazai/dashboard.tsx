@@ -55,12 +55,9 @@ export function Dashboard() {
     <div className="flex flex-col gap-4 pb-20">
       {/* Header */}
       <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2">
-          <img src="/apple-touch-icon-180x180.png" alt="FAZAI" className="w-8 h-8 rounded-lg" />
-          <div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">FAZAI</h2>
-            <p className="text-xs text-muted-foreground">{t('dash.today', lang)}</p>
-          </div>
+        <div>
+          <h2 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">FAZAI</h2>
+          <p className="text-xs text-muted-foreground">{t('dash.today', lang)}</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs px-2 py-1 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 capitalize">

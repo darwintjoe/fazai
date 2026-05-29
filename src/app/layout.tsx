@@ -19,14 +19,8 @@ export const metadata: Metadata = {
   description: "Modern simple accounting PWA with double-entry ledger engine",
   manifest: "/manifest.json",
   icons: {
-    icon: [
-      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon.ico", sizes: "48x48" },
-    ],
-    apple: [
-      { url: "/apple-touch-icon-180x180.png", sizes: "180x180", type: "image/png" },
-    ],
+    icon: "/logo.svg",
+    apple: "/logo.svg",
   },
 };
 
