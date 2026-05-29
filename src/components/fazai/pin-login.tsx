@@ -6,7 +6,7 @@ import { t, LANG_LABELS, type Lang } from '@/lib/i18n';
 import { db, seedDatabase } from '@/lib/fazai-db';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Button } from '@/components/ui/button';
-import { Wallet, Globe } from 'lucide-react';
+import { Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export function PinLogin() {
@@ -68,11 +68,11 @@ export function PinLogin() {
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col items-center gap-2 mb-8"
       >
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
-          <Wallet className="w-10 h-10 text-white" />
+        <div className="w-20 h-20 rounded-2xl overflow-hidden shadow-lg">
+          <img src="/icon-192x192.png" alt="FAZAI" className="w-full h-full object-cover" />
         </div>
         <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-          {t('login.title', lang)}
+          FAZAI
         </h1>
         <p className="text-muted-foreground text-sm">Simple Accounting</p>
       </motion.div>
