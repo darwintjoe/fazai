@@ -92,6 +92,42 @@ export async function createCustomTransaction(params: {
   return transaction;
 }
 
+// Create an opening balance transaction
+export async function createOpeningBalanceTransaction(params: {
+  accountId: string;
+  amount: number;
+  date: Date;
+  userId: string;
+}): Promise<Transaction> {
+  const { accountId, amount, date, userId } = params;
+  // Opening balance: debit the asset/cashBank account, credit opening balance equity
+  const account = await db.accounts.get(accountId);
+  if (!account) throw new Error('Account not found');
+
+  const isDebitNormal = account.type === 'asset' || account.type === 'cashBank' || account.type === 'expense';
+
+  const transaction: Transaction = {
+    id: uuid(),
+    date,
+    description: 'Opening Balance',
+    counterparty: '',
+    type: 'custom',
+    createdBy: userId,
+    createdAt: new Date(),
+    entries: isDebitNormal
+      ? [
+          { id: uuid(), accountId, debit: amount, credit: 0 },
+          { id: uuid(), accountId: 'acc-opening-balance', debit: 0, credit: amount },
+        ]
+      : [
+          { id: uuid(), accountId, debit: 0, credit: amount },
+          { id: uuid(), accountId: 'acc-opening-balance', debit: amount, credit: 0 },
+        ],
+  };
+  await db.transactions.add(transaction);
+  return transaction;
+}
+
 // Delete a transaction
 export async function deleteTransaction(id: string): Promise<void> {
   await db.transactions.delete(id);
@@ -131,19 +167,22 @@ export interface TrialBalanceRow {
   credit: number;
 }
 
-export async function generateTrialBalance(fromDate?: Date, toDate?: Date, lang: Lang = 'en'): Promise<TrialBalanceRow[]> {
-  const [accounts, balances] = await Promise.all([
-    db.accounts.filter(a => a.isActive).toArray(),
-    getAccountBalances(fromDate, toDate),
-  ]);
+export async function generateTrialBalance(asOfDate: Date, lang: Lang = 'en'): Promise<TrialBalanceRow[]> {
+  const accounts = await db.accounts.filter(a => a.isActive).toArray();
+
+  // For BS accounts: cumulative to asOfDate
+  const bsBalances = await getAccountBalances(undefined, asOfDate);
+  // For Income/Expense: YTD (from start of year to asOfDate)
+  const yearStart = new Date(asOfDate.getFullYear(), 0, 1);
+  const ytdBalances = await getAccountBalances(yearStart, asOfDate);
 
   const rows: TrialBalanceRow[] = [];
 
   for (const account of accounts) {
-    const bal = balances.get(account.id);
+    const isIncomeExpense = account.type === 'income' || account.type === 'expense';
+    const bal = isIncomeExpense ? ytdBalances.get(account.id) : bsBalances.get(account.id);
     if (!bal || (bal.debit === 0 && bal.credit === 0)) continue;
 
-    // Normal balance: assets & expenses = debit; liabilities, equity, income = credit
     const netDebit = bal.debit - bal.credit;
     const netCredit = bal.credit - bal.debit;
 
@@ -182,12 +221,11 @@ export async function generateBalanceSheet(toDate: Date, lang: Lang = 'en'): Pro
 
   const getAccountLabel = (acc: Account) => getAccountName(acc, lang);
 
-  // Assets
-  const assetAccounts = accounts.filter(a => a.type === 'asset' && !a.parentId);
+  // Assets (include both 'asset' and 'cashBank' types)
   const assetItems: BalanceSheetSection['items'] = [];
   let assetTotal = 0;
 
-  for (const acc of accounts.filter(a => a.type === 'asset')) {
+  for (const acc of accounts.filter(a => a.type === 'asset' || a.type === 'cashBank')) {
     const bal = balances.get(acc.id);
     if (!bal || (bal.debit === 0 && bal.credit === 0 && !acc.parentId)) continue;
     if (acc.parentId) {
@@ -339,7 +377,7 @@ export async function generateCashFlow(fromDate: Date, toDate: Date, lang: Lang 
     getAccountBalances(undefined, undefined),
   ]);
 
-  const cashAccountIds = accounts.filter(a => a.type === 'asset' && a.parentId).map(a => a.id);
+  const cashAccountIds = accounts.filter(a => (a.type === 'asset' || a.type === 'cashBank') && a.parentId).map(a => a.id);
 
   // Beginning balance (before fromDate)
   const beforeBalances = await getAccountBalances(undefined, new Date(fromDate.getTime() - 1));
@@ -349,7 +387,7 @@ export async function generateCashFlow(fromDate: Date, toDate: Date, lang: Lang 
     if (bal) beginningBalance += bal.debit - bal.credit;
   }
 
-  // Cash inflows from income accounts
+  // Cash inflows from income accounts (credits to income accounts)
   const inflows: CashFlowItem[] = [];
   let totalInflows = 0;
 
@@ -362,7 +400,7 @@ export async function generateCashFlow(fromDate: Date, toDate: Date, lang: Lang 
     }
   }
 
-  // Cash outflows from expense accounts
+  // Cash outflows from expense accounts (debits to expense accounts)
   const outflows: CashFlowItem[] = [];
   let totalOutflows = 0;
 
@@ -419,7 +457,7 @@ export async function generateLedger(accountId: string, fromDate?: Date, toDate?
   let runningBalance = 0;
 
   const account = await db.accounts.get(accountId);
-  const isDebitNormal = account?.type === 'asset' || account?.type === 'expense';
+  const isDebitNormal = account?.type === 'asset' || account?.type === 'cashBank' || account?.type === 'expense';
 
   // Calculate beginning balance
   if (fromDate) {
@@ -461,7 +499,7 @@ export async function generateLedger(accountId: string, fromDate?: Date, toDate?
   return entries;
 }
 
-// Get dashboard summary
+// Get dashboard summary - derives from account movements (NOT tx.type)
 export async function getDashboardSummary() {
   const transactions = await db.transactions.toArray();
   const accounts = await db.accounts.toArray();
@@ -472,23 +510,31 @@ export async function getDashboardSummary() {
   let todayIncome = 0;
   let todayExpense = 0;
 
-  const cashAccountIds = accounts.filter(a => a.type === 'asset' && a.parentId).map(a => a.id);
+  // Cash/Bank accounts = asset or cashBank type with parentId
+  const cashAccountIds = accounts
+    .filter(a => (a.type === 'asset' || a.type === 'cashBank') && a.parentId)
+    .map(a => a.id);
+
+  // Income accounts
+  const incomeAccountIds = accounts.filter(a => a.type === 'income').map(a => a.id);
+  // Expense accounts
+  const expenseAccountIds = accounts.filter(a => a.type === 'expense').map(a => a.id);
 
   for (const tx of transactions) {
+    const txDate = new Date(tx.date);
     for (const entry of tx.entries) {
       // Total balance (all time)
       if (cashAccountIds.includes(entry.accountId)) {
         totalBalance += entry.debit - entry.credit;
       }
 
-      // Today's income/expense
-      if (new Date(tx.date) >= todayStart) {
-        if (tx.type === 'income' && entry.debit > 0 && cashAccountIds.includes(entry.accountId)) {
-          todayIncome += entry.debit;
-        }
-        if (tx.type === 'expense' && entry.credit > 0 && cashAccountIds.includes(entry.accountId)) {
-          todayExpense += entry.credit;
-        }
+      // Today's income: credits to income accounts
+      if (txDate >= todayStart && incomeAccountIds.includes(entry.accountId) && entry.credit > 0) {
+        todayIncome += entry.credit;
+      }
+      // Today's expense: debits to expense accounts
+      if (txDate >= todayStart && expenseAccountIds.includes(entry.accountId) && entry.debit > 0) {
+        todayExpense += entry.debit;
       }
     }
   }

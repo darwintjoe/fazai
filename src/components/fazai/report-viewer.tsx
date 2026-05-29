@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useAppStore } from '@/lib/app-store';
-import { t, getAccountName, type Lang } from '@/lib/i18n';
-import { formatNumber, formatDate, startOfYear } from '@/lib/format';
+import { t, getAccountName, type Lang, type TranslationKeys } from '@/lib/i18n';
+import { formatNumber, formatDate, startOfMonthFor, endOfMonthFor, MONTH_LABELS } from '@/lib/format';
 import { db, type Account } from '@/lib/fazai-db';
 import {
   generateTrialBalance,
@@ -30,12 +30,17 @@ export function ReportViewer() {
   const { navigate, reportType } = useAppStore();
 
   const now = new Date();
-  const [fromDate, setFromDate] = useState<Date>(startOfYear());
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+  const [fromDate, setFromDate] = useState<Date>(startOfMonthFor(now.getFullYear(), now.getMonth()));
   const [toDate, setToDate] = useState<Date>(now);
   const [fromCalOpen, setFromCalOpen] = useState(false);
   const [toCalOpen, setToCalOpen] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
+
+  const YEAR_OPTIONS: number[] = [];
+  for (let y = now.getFullYear() - 5; y <= now.getFullYear() + 1; y++) YEAR_OPTIONS.push(y);
 
   // Report data
   const [trialBalance, setTrialBalance] = useState<TrialBalanceRow[]>([]);
@@ -62,14 +67,16 @@ export function ReportViewer() {
   }, [loadAccounts]);
 
   const generateReport = useCallback(async () => {
+    const asOfDate = endOfMonthFor(selectedYear, selectedMonth);
+
     switch (reportType) {
       case 'trial-balance': {
-        const data = await generateTrialBalance(fromDate, toDate, lang);
+        const data = await generateTrialBalance(asOfDate, lang);
         setTrialBalance(data);
         break;
       }
       case 'balance-sheet': {
-        const data = await generateBalanceSheet(toDate, lang);
+        const data = await generateBalanceSheet(asOfDate, lang);
         setBalanceSheet(data);
         break;
       }
@@ -91,7 +98,7 @@ export function ReportViewer() {
         break;
       }
     }
-  }, [reportType, fromDate, toDate, lang, selectedAccountId]);
+  }, [reportType, fromDate, toDate, selectedMonth, selectedYear, lang, selectedAccountId]);
 
   const reportLoadRef = useRef(false);
 
@@ -110,7 +117,15 @@ export function ReportViewer() {
     'ledger': 'rep.ledger',
   };
 
-  const reportTitle = t(REPORT_KEY_MAP[reportType] as any, lang);
+  const reportTitle = t(REPORT_KEY_MAP[reportType] as keyof TranslationKeys, lang);
+
+  // Get date label for export headers
+  const getDateLabel = () => {
+    if (reportType === 'balance-sheet' || reportType === 'trial-balance') {
+      return formatDate(endOfMonthFor(selectedYear, selectedMonth), lang);
+    }
+    return `${formatDate(fromDate, lang)} - ${formatDate(toDate, lang)}`;
+  };
 
   const exportPdf = async () => {
     const { default: jsPDF } = await import('jspdf');
@@ -127,12 +142,7 @@ export function ReportViewer() {
     doc.setTextColor(100);
     doc.text(reportTitle, pageWidth / 2, 22, { align: 'center' });
     doc.setFontSize(9);
-    doc.text(
-      `${formatDate(fromDate, lang)} - ${formatDate(toDate, lang)}`,
-      pageWidth / 2,
-      28,
-      { align: 'center' }
-    );
+    doc.text(getDateLabel(), pageWidth / 2, 28, { align: 'center' });
 
     let yOffset = 35;
 
@@ -373,26 +383,47 @@ export function ReportViewer() {
 
       {/* Date Range & Filters */}
       <div className="flex flex-col sm:flex-row gap-2">
-        <div className="flex gap-2 flex-1">
-          <Popover open={fromCalOpen} onOpenChange={setFromCalOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="flex-1 justify-start text-left font-normal text-xs">
-                <CalendarIcon className="mr-1 h-3 w-3" />
-                {formatDate(fromDate, lang)}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={fromDate} onSelect={(d) => { if (d) { setFromDate(d); setFromCalOpen(false); } }} initialFocus /></PopoverContent>
-          </Popover>
-          <Popover open={toCalOpen} onOpenChange={setToCalOpen}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="flex-1 justify-start text-left font-normal text-xs">
-                <CalendarIcon className="mr-1 h-3 w-3" />
-                {formatDate(toDate, lang)}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={toDate} onSelect={(d) => { if (d) { setToDate(d); setToCalOpen(false); } }} initialFocus /></PopoverContent>
-          </Popover>
-        </div>
+        {/* Balance Sheet & Trial Balance: Month-Year Picker */}
+        {(reportType === 'balance-sheet' || reportType === 'trial-balance') && (
+          <div className="flex gap-2 items-center">
+            <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {MONTH_LABELS.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+              <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {YEAR_OPTIONS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* P&L, Cash Flow, Ledger: Date Range with MTD default */}
+        {(reportType === 'profit-loss' || reportType === 'cash-flow' || reportType === 'ledger') && (
+          <div className="flex gap-2 flex-1">
+            <Popover open={fromCalOpen} onOpenChange={setFromCalOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="flex-1 justify-start text-left font-normal text-xs">
+                  <CalendarIcon className="mr-1 h-3 w-3" />
+                  {formatDate(fromDate, lang)}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={fromDate} onSelect={(d) => { if (d) { setFromDate(d); setFromCalOpen(false); } }} initialFocus /></PopoverContent>
+            </Popover>
+            <Popover open={toCalOpen} onOpenChange={setToCalOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="flex-1 justify-start text-left font-normal text-xs">
+                  <CalendarIcon className="mr-1 h-3 w-3" />
+                  {formatDate(toDate, lang)}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={toDate} onSelect={(d) => { if (d) { setToDate(d); setToCalOpen(false); } }} initialFocus /></PopoverContent>
+            </Popover>
+          </div>
+        )}
         {reportType === 'ledger' && (
           <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
             <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder={t('rep.selectAccount', lang)} /></SelectTrigger>
@@ -405,8 +436,11 @@ export function ReportViewer() {
         )}
       </div>
 
-      {/* Export Buttons */}
+      {/* Generate & Export Buttons */}
       <div className="flex gap-2">
+        <Button size="sm" onClick={generateReport} className="text-xs">
+          {t('rep.generate', lang)}
+        </Button>
         <Button variant="outline" size="sm" onClick={exportPdf} className="text-xs">
           <FileDown className="w-3 h-3 mr-1" /> {t('rep.exportPdf', lang)}
         </Button>
@@ -581,7 +615,10 @@ export function ReportViewer() {
           )}
 
           {((reportType === 'trial-balance' && trialBalance.length === 0) ||
-            (reportType === 'ledger' && ledgerEntries.length === 0)) && (
+            (reportType === 'ledger' && ledgerEntries.length === 0) ||
+            (reportType === 'balance-sheet' && !balanceSheet) ||
+            (reportType === 'profit-loss' && !profitLoss) ||
+            (reportType === 'cash-flow' && !cashFlow)) && (
             <div className="p-8 text-center text-muted-foreground text-sm">{t('rep.noData', lang)}</div>
           )}
         </div>

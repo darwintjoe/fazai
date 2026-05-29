@@ -157,7 +157,7 @@ export function PinLogin() {
         className="mt-4 flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 text-xs font-medium transition-colors"
       >
         <BookOpen className="w-4 h-4" />
-        {t('guide.userGuide', lang)}
+        {t('guide.title', lang)}
       </motion.button>
 
       {showGuide && (

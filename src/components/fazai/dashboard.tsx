@@ -135,8 +135,8 @@ export function Dashboard() {
             {recentTx.map((tx) => {
               const isIncome = tx.type === 'income';
               const amount = isIncome
-                ? tx.entries.find(e => e.debit > 0 && accounts.find(a => a.id === e.accountId)?.type === 'asset')?.debit || 0
-                : tx.entries.find(e => e.credit > 0 && accounts.find(a => a.id === e.accountId)?.type === 'asset')?.credit || 0;
+                ? tx.entries.find(e => e.debit > 0 && ['asset', 'cashBank'].includes(accounts.find(a => a.id === e.accountId)?.type || ''))?.debit || 0
+                : tx.entries.find(e => e.credit > 0 && ['asset', 'cashBank'].includes(accounts.find(a => a.id === e.accountId)?.type || ''))?.credit || 0;
 
               return (
                 <motion.div

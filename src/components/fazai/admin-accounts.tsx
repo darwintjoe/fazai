@@ -13,7 +13,7 @@ import { Plus, Pencil, ToggleLeft, ToggleRight } from 'lucide-react';
 import { v4 as uuid } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
 
-const ACCOUNT_TYPES = ['asset', 'liability', 'equity', 'income', 'expense'] as const;
+const ACCOUNT_TYPES = ['asset', 'cashBank', 'liability', 'equity', 'income', 'expense'] as const;
 
 export function AdminAccounts() {
   const { lang } = useAuthStore();

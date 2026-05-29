@@ -109,6 +109,19 @@ export type TranslationKeys = {
   'admin.importData': string;
   'admin.confirmImport': string;
   'admin.importWarning': string;
+  'admin.openingBalance': string;
+  'admin.resetTransactions': string;
+  'admin.resetTransactionsDesc': string;
+  'admin.resetTransactionsWarning': string;
+  'admin.fullFactoryReset': string;
+  'admin.fullFactoryResetDesc': string;
+  'admin.fullResetWarning': string;
+  'admin.typeToConfirm': string;
+  'admin.enterAdminPin': string;
+  'admin.confirmReset': string;
+  'admin.proceedReset': string;
+  'admin.challengeMismatch': string;
+  'admin.wrongPin': string;
 
   // Common
   'common.cancel': string;
@@ -142,6 +155,7 @@ export type TranslationKeys = {
 
   // Account types
   'type.asset': string;
+  'type.cashBank': string;
   'type.liability': string;
   'type.equity': string;
   'type.income': string;
@@ -149,6 +163,8 @@ export type TranslationKeys = {
 
   // Guide
   'guide.title': string;
+  'guide.gettingStarted': string;
+  'guide.defaultPin': string;
   'guide.overview': string;
   'guide.overview.desc': string;
   'guide.login': string;
@@ -170,12 +186,12 @@ export type TranslationKeys = {
   'guide.admin.desc': string;
   'guide.backup': string;
   'guide.backup.desc': string;
+  'guide.factoryReset': string;
+  'guide.factoryResetDesc': string;
   'guide.ai': string;
   'guide.ai.desc': string;
   'guide.tips': string;
   'guide.tips.desc': string;
-  'guide.userGuide': string;
-  'guide.close': string;
 };
 
 const en: TranslationKeys = {
@@ -276,6 +292,19 @@ const en: TranslationKeys = {
   'admin.importData': 'Import Data',
   'admin.confirmImport': 'Confirm Import',
   'admin.importWarning': 'This will replace all existing data. This action cannot be undone.',
+  'admin.openingBalance': 'Opening Balance',
+  'admin.resetTransactions': 'Reset Transactions',
+  'admin.resetTransactionsDesc': 'Delete all transactions while keeping accounts and users',
+  'admin.resetTransactionsWarning': 'This will permanently delete ALL transactions. This action cannot be undone.',
+  'admin.fullFactoryReset': 'Factory Reset',
+  'admin.fullFactoryResetDesc': 'Delete ALL data and restore to factory defaults',
+  'admin.fullResetWarning': 'This will permanently delete ALL data including users, accounts, and transactions. You will need to set up the app again from scratch.',
+  'admin.typeToConfirm': 'Type the code to confirm',
+  'admin.enterAdminPin': 'Enter Admin PIN',
+  'admin.confirmReset': 'Confirm Reset',
+  'admin.proceedReset': 'Proceed with Reset',
+  'admin.challengeMismatch': 'Confirmation code does not match',
+  'admin.wrongPin': 'Incorrect Admin PIN',
   'common.cancel': 'Cancel',
   'common.confirm': 'Confirm',
   'common.delete': 'Delete',
@@ -301,11 +330,14 @@ const en: TranslationKeys = {
   'nav.admin': 'Admin',
   'nav.settings': 'Settings',
   'type.asset': 'Asset',
+  'type.cashBank': 'Cash & Bank',
   'type.liability': 'Liability',
   'type.equity': 'Equity',
   'type.income': 'Income',
   'type.expense': 'Expense',
   'guide.title': 'User Guide',
+  'guide.gettingStarted': 'Getting Started',
+  'guide.defaultPin': 'Default PINs: Admin = 000000, User = 111111',
   'guide.overview': 'Overview',
   'guide.overview.desc': 'FAZAI is a simple cash-basis accounting app with a double-entry ledger engine running behind a clean Income/Expense interface. All data is stored locally on your device using IndexedDB — nothing is sent to any server. Your financial information stays completely private and secure on your device. The app works offline and can be installed as a Progressive Web App (PWA) for quick access from your home screen.',
   'guide.login': 'Login & PIN',
@@ -327,12 +359,12 @@ const en: TranslationKeys = {
   'guide.admin.desc': 'Only accessible by Admin users. Manage Users: add, edit, or delete user accounts and assign roles. Manage Accounts: create, edit, activate/deactivate accounts, organize by type. Custom Entry: create manual double-entry journal entries with specific debit and credit accounts. Settings: configure app preferences.',
   'guide.backup': 'Backup & Restore',
   'guide.backup.desc': 'Export all your data as a JSON file for safekeeping. Import a previously exported backup to restore your data. Factory Reset: permanently deletes ALL data. For safety, you must type a randomly generated challenge code and enter the Admin PIN to confirm. This prevents accidental resets.',
+  'guide.factoryReset': 'Factory Reset',
+  'guide.factoryResetDesc': 'Factory Reset permanently deletes ALL data. A random challenge code must be typed and Admin PIN entered to confirm, preventing accidental resets.',
   'guide.ai': 'AI Assistant',
   'guide.ai.desc': 'The floating AI chat button lets you ask questions about your finances. The AI can suggest accounts for transactions and help you understand your financial data. It uses your chart of accounts to provide contextual suggestions. All AI interactions are processed securely.',
   'guide.tips': 'Tips & Notes',
   'guide.tips.desc': 'All data is stored locally in your browser — clear your browser data and it\'s gone. Back up regularly using the Export function! Keep your Admin PIN secure — it\'s required for factory reset protection. The app works best in portrait mode on mobile devices. Install as a PWA for the best experience with offline support.',
-  'guide.userGuide': 'User Guide',
-  'guide.close': 'Close',
 };
 
 const id: TranslationKeys = {
@@ -433,6 +465,19 @@ const id: TranslationKeys = {
   'admin.importData': 'Impor Data',
   'admin.confirmImport': 'Konfirmasi Impor',
   'admin.importWarning': 'Ini akan mengganti semua data yang ada. Tindakan ini tidak dapat dibatalkan.',
+  'admin.openingBalance': 'Saldo Awal',
+  'admin.resetTransactions': 'Reset Transaksi',
+  'admin.resetTransactionsDesc': 'Hapus semua transaksi dengan tetap menyimpan akun dan pengguna',
+  'admin.resetTransactionsWarning': 'Ini akan menghapus semua transaksi secara permanen. Tindakan ini tidak dapat dibatalkan.',
+  'admin.fullFactoryReset': 'Reset Pabrik',
+  'admin.fullFactoryResetDesc': 'Hapus semua data dan kembalikan ke pengaturan pabrik',
+  'admin.fullResetWarning': 'Ini akan menghapus semua data secara permanen termasuk pengguna, akun, dan transaksi. Anda perlu mengatur ulang aplikasi dari awal.',
+  'admin.typeToConfirm': 'Ketik kode untuk mengkonfirmasi',
+  'admin.enterAdminPin': 'Masukkan PIN Admin',
+  'admin.confirmReset': 'Konfirmasi Reset',
+  'admin.proceedReset': 'Lanjutkan Reset',
+  'admin.challengeMismatch': 'Kode konfirmasi tidak cocok',
+  'admin.wrongPin': 'PIN Admin salah',
   'common.cancel': 'Batal',
   'common.confirm': 'Konfirmasi',
   'common.delete': 'Hapus',
@@ -458,11 +503,14 @@ const id: TranslationKeys = {
   'nav.admin': 'Admin',
   'nav.settings': 'Pengaturan',
   'type.asset': 'Aset',
+  'type.cashBank': 'Kas & Bank',
   'type.liability': 'Kewajiban',
   'type.equity': 'Modal',
   'type.income': 'Pendapatan',
   'type.expense': 'Pengeluaran',
   'guide.title': 'Panduan Pengguna',
+  'guide.gettingStarted': 'Memulai',
+  'guide.defaultPin': 'PIN default: Admin = 000000, Pengguna = 111111',
   'guide.overview': 'Tentang FAZAI',
   'guide.overview.desc': 'FAZAI adalah aplikasi akuntansi berbasis kas sederhana dengan mesin buku besar entri ganda yang berjalan di balik antarmukaan Pendapatan/Pengeluaran yang bersih. Semua data disimpan secara lokal di perangkat Anda menggunakan IndexedDB — tidak ada yang dikirim ke server mana pun. Informasi keuangan Anda tetap sepenuhnya pribadi dan aman di perangkat Anda. Aplikasi ini berfungsi offline dan dapat diinstal sebagai Progressive Web App (PWA) untuk akses cepat dari layar beranda.',
   'guide.login': 'Login & PIN',
@@ -484,12 +532,12 @@ const id: TranslationKeys = {
   'guide.admin.desc': 'Hanya dapat diakses oleh pengguna Admin. Kelola Pengguna: tambah, edit, atau hapus akun pengguna dan tetapkan peran. Kelola Akun: buat, edit, aktifkan/nonaktifkan akun, atur berdasarkan jenis. Entri Kustom: buat entri jurnal entri ganda manual dengan akun debit dan kredit tertentu. Pengaturan: konfigurasi preferensi aplikasi.',
   'guide.backup': 'Cadangan & Pemulihan',
   'guide.backup.desc': 'Ekspor semua data Anda sebagai file JSON untuk penyimpanan aman. Impor cadangan yang diekspor sebelumnya untuk memulihkan data Anda. Reset Pabrik: menghapus semua data secara permanen. Untuk keamanan, Anda harus mengetik kode tantangan yang dihasilkan secara acak dan memasukkan PIN Admin untuk mengkonfirmasi. Ini mencegah reset yang tidak disengaja.',
+  'guide.factoryReset': 'Reset Pabrik',
+  'guide.factoryResetDesc': 'Reset Pabrik menghapus semua data secara permanen. Kode tantangan acak harus diketik dan PIN Admin dimasukkan untuk mengkonfirmasi, mencegah reset yang tidak disengaja.',
   'guide.ai': 'Asisten AI',
   'guide.ai.desc': 'Tombol obrolan AI mengambang memungkinkan Anda bertanya tentang keuangan Anda. AI dapat menyarankan akun untuk transaksi dan membantu Anda memahami data keuangan Anda. AI menggunakan bagan akun Anda untuk memberikan saran kontekstual. Semua interaksi AI diproses dengan aman.',
   'guide.tips': 'Tips & Catatan',
   'guide.tips.desc': 'Semua data disimpan secara lokal di browser Anda — hapus data browser Anda dan data akan hilang. Cadangkan secara teratur menggunakan fungsi Ekspor! Jaga keamanan PIN Admin Anda — diperlukan untuk perlindungan reset pabrik. Aplikasi ini bekerja paling baik dalam mode potret di perangkat seluler. Instal sebagai PWA untuk pengalaman terbaik dengan dukungan offline.',
-  'guide.userGuide': 'Panduan Pengguna',
-  'guide.close': 'Tutup',
 };
 
 const zh: TranslationKeys = {
@@ -590,6 +638,19 @@ const zh: TranslationKeys = {
   'admin.importData': '导入数据',
   'admin.confirmImport': '确认导入',
   'admin.importWarning': '这将替换所有现有数据，此操作不可撤销。',
+  'admin.openingBalance': '期初余额',
+  'admin.resetTransactions': '重置交易',
+  'admin.resetTransactionsDesc': '删除所有交易，保留账户和用户',
+  'admin.resetTransactionsWarning': '这将永久删除所有交易。此操作不可撤销。',
+  'admin.fullFactoryReset': '恢复出厂设置',
+  'admin.fullFactoryResetDesc': '删除所有数据并恢复出厂默认值',
+  'admin.fullResetWarning': '这将永久删除所有数据，包括用户、账户和交易。您需要从头开始重新设置应用。',
+  'admin.typeToConfirm': '输入代码以确认',
+  'admin.enterAdminPin': '输入管理员PIN',
+  'admin.confirmReset': '确认重置',
+  'admin.proceedReset': '继续重置',
+  'admin.challengeMismatch': '确认代码不匹配',
+  'admin.wrongPin': '管理员PIN码错误',
   'common.cancel': '取消',
   'common.confirm': '确认',
   'common.delete': '删除',
@@ -615,11 +676,14 @@ const zh: TranslationKeys = {
   'nav.admin': '管理',
   'nav.settings': '设置',
   'type.asset': '资产',
+  'type.cashBank': '现金与银行',
   'type.liability': '负债',
   'type.equity': '权益',
   'type.income': '收入',
   'type.expense': '支出',
   'guide.title': '用户指南',
+  'guide.gettingStarted': '入门指南',
+  'guide.defaultPin': '默认PIN码：管理员 = 000000，用户 = 111111',
   'guide.overview': '概述',
   'guide.overview.desc': 'FAZAI 是一款简单的收付实现制会计应用，在简洁的收入/支出界面背后运行着复式记账引擎。所有数据使用 IndexedDB 存储在您的设备本地——不会发送到任何服务器。您的财务信息完全保密且安全地保存在您的设备上。该应用可离线使用，并可作为渐进式网络应用（PWA）安装，方便从主屏幕快速访问。',
   'guide.login': '登录与PIN码',
@@ -641,12 +705,12 @@ const zh: TranslationKeys = {
   'guide.admin.desc': '仅管理员用户可访问。管理用户：添加、编辑或删除用户账户并分配角色。管理账户：创建、编辑、启用/停用账户，按类型组织。自定义分录：创建具有特定借方和贷方账户的手动复式记账分录。设置：配置应用偏好。',
   'guide.backup': '备份与恢复',
   'guide.backup.desc': '将所有数据导出为JSON文件以安全保存。导入之前导出的备份以恢复数据。恢复出厂设置：永久删除所有数据。为安全起见，您必须输入随机生成的验证码和管理员PIN码才能确认。这可以防止意外重置。',
+  'guide.factoryReset': '恢复出厂设置',
+  'guide.factoryResetDesc': '恢复出厂设置将永久删除所有数据。必须输入随机验证码和管理员PIN码才能确认，防止意外重置。',
   'guide.ai': 'AI助手',
   'guide.ai.desc': '浮动的AI聊天按钮让您可以询问有关财务的问题。AI可以建议交易账户并帮助您理解财务数据。它使用您的科目表提供上下文建议。所有AI交互均安全处理。',
   'guide.tips': '提示与说明',
   'guide.tips.desc': '所有数据存储在浏览器本地——清除浏览器数据即会丢失。请定期使用导出功能备份！保管好您的管理员PIN码——这是恢复出厂设置保护的必要条件。应用在移动设备的竖屏模式下效果最佳。安装为PWA可获得最佳体验和离线支持。',
-  'guide.userGuide': '用户指南',
-  'guide.close': '关闭',
 };
 
 const translations: Record<Lang, TranslationKeys> = { en, id, zh };

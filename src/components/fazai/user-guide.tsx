@@ -6,7 +6,7 @@ import { useAppStore } from '@/lib/app-store';
 import { t, type TranslationKeys, type Lang } from '@/lib/i18n';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, BookOpen, Lightbulb, BarChart3, Users, Shield, Database, Bot, Wallet, LayoutDashboard } from 'lucide-react';
+import { ArrowLeft, BookOpen, Lightbulb, BarChart3, Users, Shield, Database, Bot, Wallet, LayoutDashboard, Rocket, RotateCcw } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface GuideSection {
@@ -14,10 +14,16 @@ interface GuideSection {
   titleKey: keyof TranslationKeys;
   descKey: keyof TranslationKeys;
   icon: React.ElementType;
-  subSections?: { titleKey: keyof TranslationKeys }[];
+  subSections?: { titleKey: keyof TranslationKeys; descKey?: keyof TranslationKeys }[];
 }
 
 const guideSections: GuideSection[] = [
+  {
+    id: 'getting-started',
+    titleKey: 'guide.gettingStarted',
+    descKey: 'guide.defaultPin',
+    icon: Rocket,
+  },
   {
     id: 'overview',
     titleKey: 'guide.overview',
@@ -72,6 +78,9 @@ const guideSections: GuideSection[] = [
     titleKey: 'guide.backup',
     descKey: 'guide.backup.desc',
     icon: Database,
+    subSections: [
+      { titleKey: 'guide.factoryReset', descKey: 'guide.factoryResetDesc' },
+    ],
   },
   {
     id: 'ai',
@@ -168,9 +177,14 @@ export function UserGuide({ standalone = false, overlay = false, onClose }: User
                         <div className="mt-3 flex flex-col gap-2">
                           {section.subSections.map((sub, subIndex) => (
                             <Card key={subIndex} className="p-3 bg-muted/50">
-                              <p className="text-sm text-muted-foreground leading-relaxed">
+                              <p className="text-sm font-medium text-foreground mb-1">
                                 {t(sub.titleKey, lang)}
                               </p>
+                              {sub.descKey && (
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                  {t(sub.descKey, lang)}
+                                </p>
+                              )}
                             </Card>
                           ))}
                         </div>
@@ -191,7 +205,7 @@ export function UserGuide({ standalone = false, overlay = false, onClose }: User
             onClick={onClose}
             className="w-full py-3 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition-colors"
           >
-            {t('guide.close', lang)}
+            {t('common.close', lang)}
           </button>
         </div>
       )}

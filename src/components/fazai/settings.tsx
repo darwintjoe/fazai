@@ -56,7 +56,7 @@ export function SettingsPage() {
             <BookOpen className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div>
-            <p className="font-medium text-sm">{t('guide.userGuide', lang)}</p>
+            <p className="font-medium text-sm">{t('guide.title', lang)}</p>
             <p className="text-xs text-muted-foreground">{t('guide.overview', lang)}</p>
           </div>
         </div>

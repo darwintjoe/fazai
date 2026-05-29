@@ -49,7 +49,9 @@ export function TransactionForm({ type }: TransactionFormProps) {
     setAccounts(leafAccs);
 
     const cashAccs = await db.accounts.where('type').equals('asset').toArray();
-    setOpponentAccounts(cashAccs.filter(a => a.parentId && a.isActive));
+    const cashBankAccs = await db.accounts.where('type').equals('cashBank').toArray();
+    const allCashAccs = [...cashAccs, ...cashBankAccs];
+    setOpponentAccounts(allCashAccs.filter(a => a.parentId && a.isActive));
   }, [isIncome]);
 
   useEffect(() => {
