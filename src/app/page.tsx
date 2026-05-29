@@ -13,6 +13,7 @@ import { AdminPanel } from '@/components/fazai/admin-panel';
 import { BottomNav } from '@/components/fazai/bottom-nav';
 import { AiChat } from '@/components/fazai/ai-chat';
 import { SettingsPage } from '@/components/fazai/settings';
+import { UserGuide } from '@/components/fazai/user-guide';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const emptySubscribe = () => () => {};
@@ -59,6 +60,8 @@ export default function Home() {
         return <AdminPanel />;
       case 'settings':
         return <SettingsPage />;
+      case 'guide':
+        return <UserGuide standalone />;
       default:
         return <Dashboard />;
     }

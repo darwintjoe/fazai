@@ -3,16 +3,18 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { t, LANG_LABELS, type Lang } from '@/lib/i18n';
+import { useAppStore } from '@/lib/app-store';
 import { db } from '@/lib/fazai-db';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
-import { LogOut } from 'lucide-react';
+import { LogOut, BookOpen } from 'lucide-react';
 
 export function SettingsPage() {
   const { lang, setLang, userId, logout } = useAuthStore();
+  const { navigate } = useAppStore();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const [oldPin, setOldPin] = useState('');
@@ -43,6 +45,22 @@ export function SettingsPage() {
   return (
     <div className="flex flex-col gap-4 pb-20">
       <h2 className="text-xl font-bold">{t('nav.settings', lang)}</h2>
+
+      {/* User Guide */}
+      <Card
+        className="p-4 cursor-pointer hover:bg-accent/50 transition-colors border-emerald-200 dark:border-emerald-800"
+        onClick={() => navigate('guide')}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
+            <BookOpen className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div>
+            <p className="font-medium text-sm">{t('guide.userGuide', lang)}</p>
+            <p className="text-xs text-muted-foreground">{t('guide.overview', lang)}</p>
+          </div>
+        </div>
+      </Card>
 
       {/* Language */}
       <Card className="p-4">

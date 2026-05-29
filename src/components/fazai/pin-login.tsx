@@ -6,14 +6,16 @@ import { t, LANG_LABELS, type Lang } from '@/lib/i18n';
 import { db, seedDatabase } from '@/lib/fazai-db';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Button } from '@/components/ui/button';
-import { Wallet, Globe } from 'lucide-react';
+import { Wallet, Globe, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { UserGuide } from '@/components/fazai/user-guide';
 
 export function PinLogin() {
   const { login, lang, setLang } = useAuthStore();
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
   const [seeding, setSeeding] = useState(true);
+  const [showGuide, setShowGuide] = useState(false);
 
   const handlePinSubmit = useCallback(async (pinValue: string) => {
     if (pinValue.length !== 6) return;
@@ -146,6 +148,21 @@ export function PinLogin() {
           </button>
         ))}
       </motion.div>
+
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+        onClick={() => setShowGuide(true)}
+        className="mt-4 flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 text-xs font-medium transition-colors"
+      >
+        <BookOpen className="w-4 h-4" />
+        {t('guide.userGuide', lang)}
+      </motion.button>
+
+      {showGuide && (
+        <UserGuide overlay onClose={() => setShowGuide(false)} />
+      )}
     </div>
   );
 }
