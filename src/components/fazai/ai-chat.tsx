@@ -1,26 +1,118 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { t } from '@/lib/i18n';
+import { db, type Account } from '@/lib/fazai-db';
+import { createIncomeTransaction, createExpenseTransaction } from '@/lib/ledger-engine';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Check, ArrowRight, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
+
+interface PendingTransaction {
+  type: 'income' | 'expense';
+  amount: number;
+  description: string;
+  accountId: string;
+  counterparty: string;
+  opponentAccountId: string;
+}
 
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  transaction?: PendingTransaction | null;
+  confirmed?: boolean;
+}
+
+function formatAmount(n: number): string {
+  return n.toLocaleString('id-ID');
 }
 
 export function AiChat() {
-  const { lang } = useAuthStore();
+  const { lang, user } = useAuthStore();
+  const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [confirming, setConfirming] = useState<string | null>(null); // message index being confirmed
+
+  // Load accounts on mount
+  useEffect(() => {
+    if (isOpen) {
+      db.accounts.filter(a => a.isActive).toArray().then(setAccounts);
+    }
+  }, [isOpen]);
+
+  const getAccountDisplayName = useCallback((accountId: string) => {
+    const acc = accounts.find(a => a.id === accountId);
+    if (!acc) return accountId;
+    if (lang === 'id' && acc.nameId) return acc.nameId;
+    if (lang === 'zh' && acc.nameZh) return acc.nameZh;
+    return acc.name;
+  }, [accounts, lang]);
+
+  const handleConfirmTransaction = async (msgIndex: number) => {
+    const msg = messages[msgIndex];
+    if (!msg?.transaction) return;
+
+    setConfirming(String(msgIndex));
+    try {
+      const tx = msg.transaction;
+      const userId = user?.id || 'admin-1';
+      const today = new Date();
+
+      if (tx.type === 'income') {
+        await createIncomeTransaction({
+          amount: tx.amount,
+          counterparty: tx.counterparty,
+          incomeAccountId: tx.accountId,
+          opponentAccountId: tx.opponentAccountId,
+          description: tx.description,
+          date: today,
+          userId,
+        });
+      } else {
+        await createExpenseTransaction({
+          amount: tx.amount,
+          counterparty: tx.counterparty,
+          expenseAccountId: tx.accountId,
+          opponentAccountId: tx.opponentAccountId,
+          description: tx.description,
+          date: today,
+          userId,
+        });
+      }
+
+      // Mark as confirmed
+      setMessages(prev => prev.map((m, i) =>
+        i === msgIndex ? { ...m, confirmed: true } : m
+      ));
+
+      const successMsg = lang === 'id'
+        ? '✓ Transaksi berhasil dicatat!'
+        : lang === 'zh'
+        ? '✓ 交易已成功记录！'
+        : '✓ Transaction recorded successfully!';
+
+      toast({ title: successMsg, description: `${tx.type === 'income' ? '+' : '-'} ${formatAmount(tx.amount)} — ${tx.description}` });
+    } catch (err) {
+      const errorMsg = lang === 'id'
+        ? 'Gagal mencatat transaksi. Silakan coba lagi.'
+        : lang === 'zh'
+        ? '记录交易失败，请重试。'
+        : 'Failed to record transaction. Please try again.';
+      toast({ title: errorMsg, variant: 'destructive' });
+    } finally {
+      setConfirming(null);
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
@@ -31,15 +123,38 @@ export function AiChat() {
     setLoading(true);
 
     try {
+      // Build accounts payload for the API
+      const accountsPayload = accounts.map(a => ({
+        id: a.id,
+        name: a.name,
+        nameId: a.nameId,
+        nameZh: a.nameZh,
+        type: a.type,
+        code: a.code,
+      }));
+
       const res = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage, lang }),
+        body: JSON.stringify({
+          message: userMessage,
+          lang,
+          accounts: accountsPayload,
+        }),
       });
       const data = await res.json();
-      setMessages(prev => [...prev, { role: 'assistant', content: data.response || 'Sorry, I could not process that.' }]);
+
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: data.response || 'Sorry, I could not process that.',
+        transaction: data.transaction || null,
+      }]);
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, something went wrong.' }]);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Sorry, something went wrong.',
+        transaction: null,
+      }]);
     } finally {
       setLoading(false);
     }
@@ -84,8 +199,17 @@ export function AiChat() {
               {messages.length === 0 && (
                 <div className="text-center text-muted-foreground text-sm py-8">
                   <p className="mb-2">💡</p>
-                  <p>Ask me about your finances!</p>
-                  <p className="text-xs mt-1">e.g., &quot;How much did I spend on food?&quot;</p>
+                  <p className="font-medium">
+                    {lang === 'id' ? 'Ketik transaksi dengan bahasa sehari-hari!' : lang === 'zh' ? '用日常语言记录交易！' : 'Record transactions in everyday language!'}
+                  </p>
+                  <p className="text-xs mt-2">
+                    {lang === 'id'
+                      ? 'Contoh: "beli makan 5000", "terima gaji 1 juta"'
+                      : lang === 'zh'
+                      ? '例如："买饭50"、"收到工资1万"'
+                      : 'e.g., "lunch 25k", "got salary 5000"'
+                    }
+                  </p>
                 </div>
               )}
               <div className="flex flex-col gap-3">
@@ -96,12 +220,98 @@ export function AiChat() {
                         <Bot className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                       </div>
                     )}
-                    <div className={`max-w-[80%] px-3 py-2 rounded-xl text-sm ${
-                      msg.role === 'user'
-                        ? 'bg-emerald-500 text-white'
-                        : 'bg-muted'
-                    }`}>
-                      {msg.content}
+                    <div className={`max-w-[85%] ${msg.role === 'user' ? '' : ''}`}>
+                      <div className={`px-3 py-2 rounded-xl text-sm ${
+                        msg.role === 'user'
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-muted'
+                      }`}>
+                        {msg.content}
+                      </div>
+
+                      {/* Transaction confirmation card */}
+                      {msg.role === 'assistant' && msg.transaction && (
+                        <Card className={`mt-2 p-3 border-2 ${
+                          msg.confirmed
+                            ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30'
+                            : 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30'
+                        }`}>
+                          {/* Transaction type badge */}
+                          <div className="flex items-center gap-2 mb-2">
+                            {msg.transaction.type === 'income' ? (
+                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
+                                <ArrowDownLeft className="w-3 h-3" />
+                                {lang === 'id' ? 'Pendapatan' : lang === 'zh' ? '收入' : 'Income'}
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs font-semibold">
+                                <ArrowUpRight className="w-3 h-3" />
+                                {lang === 'id' ? 'Pengeluaran' : lang === 'zh' ? '支出' : 'Expense'}
+                              </div>
+                            )}
+                            {msg.confirmed && (
+                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
+                                <Check className="w-3 h-3" />
+                                {lang === 'id' ? 'Tercatat' : lang === 'zh' ? '已记录' : 'Recorded'}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Transaction details */}
+                          <div className="space-y-1.5 text-sm">
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground text-xs">
+                                {lang === 'id' ? 'Jumlah' : lang === 'zh' ? '金额' : 'Amount'}
+                              </span>
+                              <span className={`font-bold ${msg.transaction.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                                {msg.transaction.type === 'income' ? '+' : '-'} {formatAmount(msg.transaction.amount)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground text-xs">
+                                {lang === 'id' ? 'Akun' : lang === 'zh' ? '账户' : 'Account'}
+                              </span>
+                              <span className="font-medium text-xs">{getAccountDisplayName(msg.transaction.accountId)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground text-xs">
+                                {lang === 'id' ? 'Keterangan' : lang === 'zh' ? '描述' : 'Description'}
+                              </span>
+                              <span className="text-xs">{msg.transaction.description}</span>
+                            </div>
+                            {msg.transaction.counterparty && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground text-xs">
+                                  {lang === 'id' ? 'Pihak' : lang === 'zh' ? '对方' : 'Counterparty'}
+                                </span>
+                                <span className="text-xs">{msg.transaction.counterparty}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Confirm / Confirmed button */}
+                          {!msg.confirmed && (
+                            <Button
+                              size="sm"
+                              className="w-full mt-3 bg-emerald-500 hover:bg-emerald-600 text-white h-8 text-xs"
+                              onClick={() => handleConfirmTransaction(idx)}
+                              disabled={confirming === String(idx)}
+                            >
+                              {confirming === String(idx) ? (
+                                <span className="flex items-center gap-1">
+                                  <span className="animate-spin">⏳</span>
+                                  {lang === 'id' ? 'Menyimpan...' : lang === 'zh' ? '保存中...' : 'Saving...'}
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1">
+                                  <Check className="w-3.5 h-3.5" />
+                                  {lang === 'id' ? 'Konfirmasi & Catat' : lang === 'zh' ? '确认并记录' : 'Confirm & Record'}
+                                </span>
+                              )}
+                            </Button>
+                          )}
+                        </Card>
+                      )}
                     </div>
                     {msg.role === 'user' && (
                       <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center shrink-0">
@@ -129,7 +339,11 @@ export function AiChat() {
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder={t('ai.placeholder', lang)}
+                  placeholder={
+                    lang === 'id' ? 'Ketik: "beli makan 5000"...'
+                    : lang === 'zh' ? '输入："买饭50"...'
+                    : 'Type: "lunch 25k"...'
+                  }
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                   className="text-sm"
                   disabled={loading}
