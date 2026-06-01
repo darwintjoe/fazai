@@ -28,8 +28,14 @@ export function ReportViewer() {
   const { navigate, reportType } = useAppStore();
 
   const now = new Date();
+  // For TB & BS: "as of" a single month end
   const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+  // For PL, CF, Ledger: period range (from month → to month)
+  const [fromMonth, setFromMonth] = useState<number>(0); // January
+  const [fromYear, setFromYear] = useState<number>(now.getFullYear());
+  const [toMonth, setToMonth] = useState<number>(now.getMonth());
+  const [toYear, setToYear] = useState<number>(now.getFullYear());
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
 
@@ -60,14 +66,14 @@ export function ReportViewer() {
     }
   }, [loadAccounts]);
 
-  // Compute period dates from selected month/year
+  // Compute period dates for PL, CF, Ledger from fromMonth/fromYear → toMonth/toYear
   const getPeriodDates = useCallback(() => {
-    const fromDate = startOfMonthFor(selectedYear, selectedMonth);
-    const toDate = isCurrentMonth(selectedYear, selectedMonth)
+    const fromDate = startOfMonthFor(fromYear, fromMonth);
+    const toDate = isCurrentMonth(toYear, toMonth)
       ? new Date() // MTD for current month
-      : endOfMonthFor(selectedYear, selectedMonth); // Full month for past months
+      : endOfMonthFor(toYear, toMonth); // Full month for past months
     return { fromDate, toDate };
-  }, [selectedYear, selectedMonth]);
+  }, [fromYear, fromMonth, toYear, toMonth]);
 
   const generateReport = useCallback(async () => {
     const asOfDate = endOfMonthFor(selectedYear, selectedMonth);
@@ -102,7 +108,7 @@ export function ReportViewer() {
         break;
       }
     }
-  }, [reportType, selectedMonth, selectedYear, lang, selectedAccountId, getPeriodDates]);
+  }, [reportType, selectedMonth, selectedYear, fromMonth, fromYear, toMonth, toYear, lang, selectedAccountId, getPeriodDates]);
 
   const reportLoadRef = useRef(false);
 
@@ -125,12 +131,16 @@ export function ReportViewer() {
 
   // Get date label for export headers
   const getDateLabel = () => {
-    const mtdLabel = isCurrentMonth(selectedYear, selectedMonth) ? ' (MTD)' : '';
-    const monthYear = formatMonthYear(selectedYear, selectedMonth, lang);
     if (reportType === 'balance-sheet' || reportType === 'trial-balance') {
       return formatDate(endOfMonthFor(selectedYear, selectedMonth), lang);
     }
-    return `${monthYear}${mtdLabel}`;
+    const fromLabel = formatMonthYear(fromYear, fromMonth, lang);
+    const toLabel = formatMonthYear(toYear, toMonth, lang);
+    const mtdLabel = isCurrentMonth(toYear, toMonth) ? ' (MTD)' : '';
+    if (fromYear === toYear && fromMonth === toMonth) {
+      return `${fromLabel}${mtdLabel}`;
+    }
+    return `${fromLabel} – ${toLabel}${mtdLabel}`;
   };
 
   const exportPdf = async () => {
@@ -387,26 +397,62 @@ export function ReportViewer() {
         <h2 className="text-xl font-bold">{reportTitle}</h2>
       </div>
 
-      {/* Month/Year Picker & Filters */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        {/* All report types: Month-Year Picker */}
-        <div className="flex gap-2 items-center">
-          <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
-            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {MONTH_LABELS.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {YEAR_OPTIONS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          {isCurrentMonth(selectedYear, selectedMonth) && (
-            <span className="text-xs text-amber-600 font-semibold">MTD</span>
-          )}
-        </div>
+      {/* Date Pickers & Filters */}
+      <div className="flex flex-col gap-2">
+        {/* TB & BS: Single "As Of" Month-Year Picker */}
+        {(reportType === 'balance-sheet' || reportType === 'trial-balance') && (
+          <div className="flex gap-2 items-center flex-wrap">
+            <span className="text-xs text-muted-foreground font-medium">{lang === 'id' ? 'Sampai' : lang === 'zh' ? '截至' : 'As of'}:</span>
+            <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+              <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {MONTH_LABELS.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+              <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {YEAR_OPTIONS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* PL, CF, Ledger: From–To Month-Year Picker */}
+        {(reportType === 'profit-loss' || reportType === 'cash-flow' || reportType === 'ledger') && (
+          <div className="flex gap-2 items-center flex-wrap">
+            <span className="text-xs text-muted-foreground font-medium">{lang === 'id' ? 'Dari' : lang === 'zh' ? '从' : 'From'}:</span>
+            <Select value={String(fromMonth)} onValueChange={(v) => setFromMonth(Number(v))}>
+              <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {MONTH_LABELS.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={String(fromYear)} onValueChange={(v) => setFromYear(Number(v))}>
+              <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {YEAR_OPTIONS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <span className="text-xs text-muted-foreground font-medium">{lang === 'id' ? 'Sampai' : lang === 'zh' ? '至' : 'To'}:</span>
+            <Select value={String(toMonth)} onValueChange={(v) => setToMonth(Number(v))}>
+              <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {MONTH_LABELS.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={String(toYear)} onValueChange={(v) => setToYear(Number(v))}>
+              <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {YEAR_OPTIONS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {isCurrentMonth(toYear, toMonth) && (
+              <span className="text-xs text-amber-600 font-semibold">MTD</span>
+            )}
+          </div>
+        )}
+
         {reportType === 'ledger' && (
           <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
             <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder={t('rep.selectAccount', lang)} /></SelectTrigger>

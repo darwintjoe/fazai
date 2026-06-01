@@ -89,3 +89,23 @@ Stage Summary:
 - All 5 report types now use consistent Month + Year picker (no day selection)
 - MTD logic: current month = start of month to now, past months = full month range
 - Cleaner UI with fewer controls, better mobile experience
+---
+Task ID: period-range-picker
+Agent: Main Agent
+Task: Separate period date pickers for point-in-time vs period reports
+
+Work Log:
+- Added fromMonth/fromYear/toMonth/toYear state for period reports (PL, CF, Ledger)
+- Default FROM = January of current year, TO = current month (YTD/MTD)
+- TB & BS keep single "As of" month/year picker (point-in-time reports)
+- PL, CF, Ledger get "From: [Month] [Year] To: [Month] [Year]" range picker
+- Added localized labels: "From/Dari/从" and "To/Sampai/至" and "As of/Sampai/截至"
+- MTD badge only shows on period reports when TO = current month
+- getDateLabel() updated: TB/BS = as-of date, period reports = "From – To (MTD)"
+- fromDate = start of FROM month, toDate = MTD if TO=current month else end of TO month
+- Build verified passing
+
+Stage Summary:
+- Two distinct date picker patterns: single month (TB/BS) vs FROM→TO range (PL/CF/Ledger)
+- Default period is YTD (Jan current year → current month MTD)
+- Proper accounting semantics: point-in-time vs changes-over-period
