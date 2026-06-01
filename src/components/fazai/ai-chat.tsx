@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuthStore } from '@/lib/auth-store';
 import { t } from '@/lib/i18n';
 import { db, type Account } from '@/lib/fazai-db';
@@ -47,39 +48,18 @@ export function AiChat({ mode }: AiChatProps) {
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Track client-side mount for portal
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
       db.accounts.filter(a => a.isActive).toArray().then(setAccounts);
     }
-  }, [isOpen]);
-
-  // Close on outside click — with delay to avoid the opening click
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
-      const target = e.target as Node;
-      // Don't close if click is inside the panel
-      if (panelRef.current && panelRef.current.contains(target)) return;
-      // Don't close if click is on the trigger button
-      if (buttonRef.current && buttonRef.current.contains(target)) return;
-      setIsOpen(false);
-    };
-
-    // Delay attaching listener so the click that opened the panel doesn't close it
-    const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside, true);
-      document.addEventListener('touchstart', handleClickOutside, true);
-    }, 150);
-
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener('mousedown', handleClickOutside, true);
-      document.removeEventListener('touchstart', handleClickOutside, true);
-    };
   }, [isOpen]);
 
   const getAccountDisplayName = useCallback((accountId: string) => {
@@ -190,21 +170,26 @@ export function AiChat({ mode }: AiChatProps) {
     }
   };
 
-  return (
-    <>
-      {/* Header button trigger (for top bar) */}
-      {mode === 'button' && !isOpen && (
-        <button
-          ref={buttonRef}
-          onClick={() => setIsOpen(true)}
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-600 transition-colors"
-        >
-          <MessageCircle className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">{t('ai.title', lang)}</span>
-        </button>
-      )}
+  const closePanel = useCallback(() => setIsOpen(false), []);
 
-      {/* Chat Panel — single child inside AnimatePresence */}
+  const panelContent = (
+    <>
+      {/* Semi-transparent backdrop — click to close */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            key="ai-backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={closePanel}
+            className="fixed inset-0 z-40 bg-black/20"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Chat Panel */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -222,7 +207,7 @@ export function AiChat({ mode }: AiChatProps) {
                 <Bot className="w-5 h-5" />
                 <span className="font-semibold text-sm">{t('ai.title', lang)}</span>
               </div>
-              <button onClick={() => setIsOpen(false)} className="p-1 hover:bg-white/20 rounded-lg">
+              <button onClick={closePanel} className="p-1 hover:bg-white/20 rounded-lg">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -391,6 +376,28 @@ export function AiChat({ mode }: AiChatProps) {
           </motion.div>
         )}
       </AnimatePresence>
+    </>
+  );
+
+  return (
+    <>
+      {/* Header button trigger — always visible, toggles panel */}
+      {mode === 'button' && (
+        <button
+          onClick={() => setIsOpen(prev => !prev)}
+          className={`flex items-center gap-1.5 text-xs transition-colors ${
+            isOpen
+              ? 'text-red-600'
+              : 'text-muted-foreground hover:text-red-600'
+          }`}
+        >
+          <MessageCircle className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">{t('ai.title', lang)}</span>
+        </button>
+      )}
+
+      {/* Portal the panel into document.body to escape the header's backdrop-blur containing block */}
+      {mounted && createPortal(panelContent, document.body)}
     </>
   );
 }
