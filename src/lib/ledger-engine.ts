@@ -1,28 +1,16 @@
-import { db, type Account, type Transaction, type Entry, type AccountMonthlySummary, type ArchivedTransaction } from './fazai-db';
+import { db, type Account, type Transaction, type AccountMonthlySummary, type ArchivedTransaction } from './fazai-db';
 import { getAccountName } from './i18n';
 import type { Lang } from './i18n';
+import { startOfMonthFor, endOfMonthFor, isCurrentMonth } from './format';
 import { v4 as uuid } from 'uuid';
 
 // ============================================
-// Date Helpers
+// Date Helpers (engine-specific)
 // ============================================
-
-function startOfMonth(year: number, month: number): Date {
-  return new Date(year, month, 1, 0, 0, 0, 0);
-}
-
-function endOfMonth(year: number, month: number): Date {
-  return new Date(year, month + 1, 0, 23, 59, 59, 999);
-}
 
 function getCurrentYearMonth(): { year: number; month: number } {
   const now = new Date();
   return { year: now.getFullYear(), month: now.getMonth() };
-}
-
-function isCurrentMonth(year: number, month: number): boolean {
-  const { year: cy, month: cm } = getCurrentYearMonth();
-  return year === cy && month === cm;
 }
 
 function previousMonth(year: number, month: number): { year: number; month: number } {
@@ -46,8 +34,8 @@ function summaryId(accountId: string, year: number, month: number): string {
 // ============================================
 
 async function calculateMonthlySummary(accountId: string, year: number, month: number): Promise<AccountMonthlySummary | null> {
-  const from = startOfMonth(year, month);
-  const to = endOfMonth(year, month);
+  const from = startOfMonthFor(year, month);
+  const to = endOfMonthFor(year, month);
 
   // Include both live and archived transactions for this month
   const [liveTx, archivedTx] = await Promise.all([
@@ -203,7 +191,7 @@ async function getAccountBalancesOptimized(fromDate: Date, toDate: Date): Promis
   // 2. For current month (if in range), use live transactions
   if ((curYear > fromYM.year || (curYear === fromYM.year && curMonth >= fromYM.month)) &&
       (curYear < toYM.year || (curYear === toYM.year && curMonth <= toYM.month))) {
-    const curFrom = startOfMonth(curYear, curMonth);
+    const curFrom = startOfMonthFor(curYear, curMonth);
     const effectiveFrom = fromDate > curFrom ? fromDate : curFrom;
     const effectiveTo = toDate < new Date() ? toDate : new Date();
 
@@ -241,7 +229,7 @@ async function getCumulativeBalances(toDate: Date): Promise<Map<string, { debit:
   }
 
   // 2. Current month live transactions up to toDate
-  const curFrom = startOfMonth(curYear, curMonth);
+  const curFrom = startOfMonthFor(curYear, curMonth);
   if (toDate >= curFrom) {
     const effectiveTo = toDate < new Date() ? toDate : new Date();
     const liveTx = await db.transactions.where('date').between(curFrom, effectiveTo, true, true).toArray();
@@ -258,7 +246,7 @@ async function getCumulativeBalances(toDate: Date): Promise<Map<string, { debit:
 /** Get balances up to end of previous month (for beginning balance calculation) */
 async function getBeginningBalances(toDate: Date): Promise<Map<string, { debit: number; credit: number }>> {
   const prev = previousMonth(toDate.getFullYear(), toDate.getMonth());
-  return getCumulativeBalances(endOfMonth(prev.year, prev.month));
+  return getCumulativeBalances(endOfMonthFor(prev.year, prev.month));
 }
 
 // ============================================
@@ -767,7 +755,7 @@ export interface LedgerEntry {
   balance: number;
 }
 
-export async function generateLedger(accountId: string, fromDate?: Date, toDate?: Date, lang: Lang = 'en'): Promise<LedgerEntry[]> {
+export async function generateLedger(accountId: string, fromDate?: Date, toDate?: Date, _lang: Lang = 'en'): Promise<LedgerEntry[]> {
   // Get live transactions for this account
   let transactions = await db.transactions.orderBy('date').toArray();
 

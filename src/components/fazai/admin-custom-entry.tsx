@@ -359,7 +359,7 @@ export function AdminCustomEntry() {
         </div>
 
         {/* Rows */}
-        {rows.map((row, rowIdx) => (
+        {rows.map((row, _rowIdx) => (
           <div key={row.id} className="grid grid-cols-[1fr_100px_52px_28px] gap-1 px-2 py-1.5 border-t items-center">
             {/* Account selector with grouped options */}
             <Select value={row.accountId} onValueChange={(v) => handleAccountSelect(row.id, v)}>

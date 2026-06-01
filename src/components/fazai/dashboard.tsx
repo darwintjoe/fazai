@@ -46,7 +46,7 @@ function useDashboardData(lang: Lang) {
 }
 
 export function Dashboard() {
-  const { lang, userRole } = useAuthStore();
+  const { lang } = useAuthStore();
   const { navigate } = useAppStore();
   const { balance, todayIncome, todayExpense, recentTx, accounts } = useDashboardData(lang);
 

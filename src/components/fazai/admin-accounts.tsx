@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { t, getAccountName } from '@/lib/i18n';
 import { db, type Account } from '@/lib/fazai-db';
@@ -8,7 +8,7 @@ import { getAccountBalance, createOpeningBalanceTransaction } from '@/lib/ledger
 import { formatNumber, parseFormattedNumber, today } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Pencil, ChevronDown, ChevronRight, ToggleLeft, ToggleRight } from 'lucide-react';
@@ -42,8 +42,6 @@ export function AdminAccounts() {
   const [balance, setBalance] = useState('');
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set(['cashBank', 'income', 'expense']));
 
-  const loadRef = useRef(false);
-
   const loadAccounts = useCallback(async () => {
     const list = await db.accounts.toArray();
     setAccounts(list.sort((a, b) => a.code.localeCompare(b.code)));
@@ -55,11 +53,9 @@ export function AdminAccounts() {
   }, []);
 
   useEffect(() => {
-    if (!loadRef.current) {
-      loadRef.current = true;
-      loadAccounts();
-    }
-  }, [loadAccounts]);
+    loadAccounts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleTypeChange = (newType: Account['type']) => {
     setType(newType);
@@ -181,7 +177,7 @@ export function AdminAccounts() {
 
       {groupedAccounts.map(({ type: accType, accounts: typeAccounts }) => {
         const isExpanded = expandedTypes.has(accType);
-        const rootAccount = typeAccounts.find(a => !a.parentId);
+        const _rootAccount = typeAccounts.find(a => !a.parentId);
         const childAccounts = typeAccounts.filter(a => a.parentId);
         const typeBalance = childAccounts.reduce((sum, a) => sum + (balances[a.id] || 0), 0);
 

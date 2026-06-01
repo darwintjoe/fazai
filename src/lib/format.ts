@@ -23,46 +23,18 @@ export function formatDate(date: Date | string, lang: string = 'en'): string {
   });
 }
 
-export function formatDateShort(date: Date | string, lang: string = 'en'): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  const localeMap: Record<string, string> = {
-    en: 'en-US',
-    id: 'id-ID',
-    zh: 'zh-CN',
-  };
-  const locale = localeMap[lang] || 'en-US';
-  return d.toLocaleDateString(locale, {
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
 export function today(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
   return d;
 }
 
-export function startOfMonth(): Date {
-  const d = new Date();
-  d.setDate(1);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-export function startOfYear(): Date {
-  const d = new Date();
-  d.setMonth(0, 1);
-  d.setHours(0, 0, 0, 0);
-  return d;
+export function startOfMonthFor(year: number, month: number): Date {
+  return new Date(year, month, 1, 0, 0, 0, 0);
 }
 
 export function endOfMonthFor(year: number, month: number): Date {
   return new Date(year, month + 1, 0, 23, 59, 59, 999);
-}
-
-export function startOfMonthFor(year: number, month: number): Date {
-  return new Date(year, month, 1, 0, 0, 0, 0);
 }
 
 export function startOfYearFor(year: number): Date {

@@ -20,7 +20,7 @@ const ADMIN_TABS = [
 
 export function AdminPanel() {
   const { lang, userRole } = useAuthStore();
-  const { currentPage, navigate } = useAppStore();
+  const { currentPage } = useAppStore();
   const [activeTab, setActiveTab] = useState<string>(currentPage.startsWith('admin-') ? currentPage : 'admin-users');
 
   if (userRole !== 'admin') {

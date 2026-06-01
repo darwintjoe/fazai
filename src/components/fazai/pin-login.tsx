@@ -6,7 +6,7 @@ import { t, LANG_LABELS, type Lang } from '@/lib/i18n';
 import { db, seedDatabase } from '@/lib/fazai-db';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Button } from '@/components/ui/button';
-import { Wallet, Globe, BookOpen } from 'lucide-react';
+import { Globe, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { UserGuide } from '@/components/fazai/user-guide';
 

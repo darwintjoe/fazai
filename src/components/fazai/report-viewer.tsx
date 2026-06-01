@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useAppStore } from '@/lib/app-store';
-import { t, getAccountName, type Lang, type TranslationKeys } from '@/lib/i18n';
+import { t, getAccountName, type TranslationKeys } from '@/lib/i18n';
 import { formatNumber, formatDate, startOfMonthFor, endOfMonthFor, MONTH_LABELS, formatMonthYear, isCurrentMonth } from '@/lib/format';
 import { db, type Account } from '@/lib/fazai-db';
 import {

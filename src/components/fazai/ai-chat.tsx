@@ -4,12 +4,12 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuthStore } from '@/lib/auth-store';
 import { t } from '@/lib/i18n';
-import { db, type Account, type Transaction } from '@/lib/fazai-db';
+import { db, type Account } from '@/lib/fazai-db';
 import { createIncomeTransaction, createExpenseTransaction, deleteTransaction, getDashboardSummary } from '@/lib/ledger-engine';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { MessageCircle, X, Send, Bot, User, Check, ArrowDownLeft, ArrowUpRight, Trash2, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Check, ArrowDownLeft, ArrowUpRight, Trash2, TrendingUp, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 
@@ -45,7 +45,7 @@ interface AiChatProps {
 }
 
 export function AiChat({ mode }: AiChatProps) {
-  const { lang, user } = useAuthStore();
+  const { lang, userId } = useAuthStore();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -133,7 +133,7 @@ export function AiChat({ mode }: AiChatProps) {
     setConfirming(`tx-${msgIndex}`);
     try {
       const tx = msg.transaction;
-      const userId = user?.id || 'admin-1';
+      const currentUserId = userId || 'admin-1';
       const today = new Date();
 
       if (tx.type === 'income') {
@@ -144,7 +144,7 @@ export function AiChat({ mode }: AiChatProps) {
           opponentAccountId: tx.opponentAccountId,
           description: tx.description,
           date: today,
-          userId,
+          userId: currentUserId,
         });
       } else {
         await createExpenseTransaction({
@@ -154,7 +154,7 @@ export function AiChat({ mode }: AiChatProps) {
           opponentAccountId: tx.opponentAccountId,
           description: tx.description,
           date: today,
-          userId,
+          userId: currentUserId,
         });
       }
 
@@ -169,7 +169,7 @@ export function AiChat({ mode }: AiChatProps) {
         : '✓ Transaction recorded successfully!';
 
       toast({ title: successMsg, description: `${tx.type === 'income' ? '+' : '-'} ${formatAmount(tx.amount)} — ${tx.description}` });
-    } catch (err) {
+    } catch (_err) {
       const errorMsg = lang === 'id'
         ? 'Gagal mencatat transaksi. Silakan coba lagi.'
         : lang === 'zh'
@@ -200,7 +200,7 @@ export function AiChat({ mode }: AiChatProps) {
         : '✓ Transaction deleted successfully!';
 
       toast({ title: successMsg });
-    } catch (err) {
+    } catch (_err) {
       const errorMsg = lang === 'id'
         ? 'Gagal menghapus transaksi.'
         : lang === 'zh'

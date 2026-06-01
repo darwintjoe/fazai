@@ -14,6 +14,7 @@ import { BottomNav } from '@/components/fazai/bottom-nav';
 import { AiChat } from '@/components/fazai/ai-chat';
 import { SettingsPage } from '@/components/fazai/settings';
 import { UserGuide } from '@/components/fazai/user-guide';
+import { ErrorBoundary } from '@/components/fazai/error-boundary';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LogOut } from 'lucide-react';
 import { t } from '@/lib/i18n';
@@ -34,6 +35,15 @@ export default function Home() {
       runStartupMaintenance();
     }
   }, [isAuthenticated]);
+
+  // Register service worker
+  React.useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {
+        // SW registration failed — app still works
+      });
+    }
+  }, []);
 
   if (!mounted) {
     return (
@@ -111,7 +121,9 @@ export default function Home() {
             exit={{ opacity: 0, x: -10 }}
             transition={{ duration: 0.15 }}
           >
-            {renderPage()}
+            <ErrorBoundary>
+              {renderPage()}
+            </ErrorBoundary>
           </motion.div>
         </AnimatePresence>
       </main>

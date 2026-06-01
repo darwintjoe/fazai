@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
-import { useAppStore } from '@/lib/app-store';
 import { t, getAccountName } from '@/lib/i18n';
 import { formatNumber, formatDate } from '@/lib/format';
 import { db, type Transaction, type Account } from '@/lib/fazai-db';
@@ -42,7 +41,6 @@ function useHistoryData() {
 
 export function History() {
   const { lang, userRole } = useAuthStore();
-  const { navigate } = useAppStore();
   const { toast } = useToast();
   const { transactions, accounts, loadData } = useHistoryData();
   const [searchQuery, setSearchQuery] = useState('');

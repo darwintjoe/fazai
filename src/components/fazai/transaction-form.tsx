@@ -3,10 +3,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useAppStore } from '@/lib/app-store';
-import { t, getAccountName, type Lang } from '@/lib/i18n';
+import { t, getAccountName } from '@/lib/i18n';
 import { formatNumber, parseFormattedNumber, today } from '@/lib/format';
 import { db, type Account } from '@/lib/fazai-db';
-import { createIncomeTransaction, createExpenseTransaction, createOpeningBalanceTransaction } from '@/lib/ledger-engine';
+import { createIncomeTransaction, createExpenseTransaction } from '@/lib/ledger-engine';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';

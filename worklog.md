@@ -128,3 +128,31 @@ Stage Summary:
 - Code Review: Executive summary, project overview, 3 severity tiers of findings, dependency analysis, architecture assessment, phased recommendations
 - PRD: Product overview, personas, 32 feature requirements with status, NFRs, data model, business rules
 - Architecture: System overview, 16-component table, 5 data flow patterns, state management, API design, security architecture, deployment, tech stack decisions
+---
+Task ID: 1-8
+Agent: Main
+Task: Comprehensive codebase cleanup (9 items)
+
+Work Log:
+- Removed 16 unused npm packages + 20 unused Radix UI packages + 7 packages for unused UI
+- Deleted orphaned files: db.ts, api/route.ts, prisma/, db/, examples/
+- Deleted admin-settings.tsx (dead code, never imported)
+- Deleted 33 unused shadcn/ui component files (kept 14 used ones)
+- Cleaned dead exports from format.ts (removed 7 unused functions)
+- Consolidated duplicate date helpers: ledger-engine.ts now imports from format.ts
+- Fixed ai/context/route.ts: imports shared formatNumber, MONTH_LABELS, getAccountName
+- Fixed TOAST_REMOVE_DELAY from 1000000 (17min) to 5000 (5s)
+- Removed unused reducer/toast exports from use-toast.ts
+- Created ErrorBoundary component and wrapped renderPage() in page.tsx
+- Re-enabled ESLint rules: no-unused-vars, prefer-const, no-console, no-unreachable, no-explicit-any, exhaustive-deps
+- Fixed ESLint errors: setState-in-effect in admin-accounts, 20+ unused import/var warnings
+- Setup Vitest test framework with 27 passing tests across 2 test files
+- Created manual service worker (sw.js) with cache-first for static, network-first for API
+- Registered SW in page.tsx
+
+Stage Summary:
+- ESLint: 0 errors, 16 warnings (all acceptable any-type warnings in dynamic imports)
+- TypeScript: 0 errors in src/
+- Tests: 27 passing
+- Dependencies: 26 deps + 13 devDeps (was 40+20 = 60, now 39)
+- Bundle: Removed ~11MB+ of unused packages (prisma, sharp, mdxeditor, etc.)

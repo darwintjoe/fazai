@@ -3,10 +3,10 @@
 import React from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useAppStore } from '@/lib/app-store';
-import { t, type TranslationKeys, type Lang } from '@/lib/i18n';
+import { t, type TranslationKeys } from '@/lib/i18n';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, BookOpen, Lightbulb, BarChart3, Users, Shield, Database, Bot, Wallet, LayoutDashboard, Rocket, RotateCcw } from 'lucide-react';
+import { ArrowLeft, BookOpen, Lightbulb, BarChart3, Users, Shield, Database, Bot, Wallet, LayoutDashboard, Rocket } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface GuideSection {
