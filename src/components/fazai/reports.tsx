@@ -11,7 +11,7 @@ import { motion } from 'framer-motion';
 const REPORT_TYPES = [
   { id: 'trial-balance', icon: FileText, color: 'from-blue-500 to-indigo-600' },
   { id: 'balance-sheet', icon: PieChart, color: 'from-purple-500 to-violet-600' },
-  { id: 'profit-loss', icon: TrendingUp, color: 'from-emerald-500 to-teal-600' },
+  { id: 'profit-loss', icon: TrendingUp, color: 'from-red-600 to-amber-600' },
   { id: 'cash-flow', icon: DollarSign, color: 'from-amber-500 to-orange-600' },
   { id: 'ledger', icon: BookOpen, color: 'from-rose-500 to-pink-600' },
 ] as const;

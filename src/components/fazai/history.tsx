@@ -105,7 +105,7 @@ export function History() {
             onClick={() => setFilterType(ft)}
             className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
               filterType === ft
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
+                ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
                 : 'bg-muted text-muted-foreground hover:bg-accent'
             }`}
           >
@@ -141,10 +141,10 @@ export function History() {
                   className="flex items-center gap-3 p-3 bg-card rounded-xl border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                 >
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                    isIncome ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'
+                    isIncome ? 'bg-red-100 dark:bg-red-900' : 'bg-gray-100 dark:bg-gray-700'
                   }`}>
                     {isIncome
-                      ? <ArrowUpRight className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      ? <ArrowUpRight className="w-5 h-5 text-red-600 dark:text-red-400" />
                       : <ArrowDownRight className="w-5 h-5 text-red-600 dark:text-red-400" />
                     }
                   </div>
@@ -157,7 +157,7 @@ export function History() {
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className={`text-sm font-semibold ${isIncome ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    <p className={`text-sm font-semibold ${isIncome ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
                       {isIncome ? '+' : '-'}{formatNumber(amount)}
                     </p>
                     <p className="text-[10px] text-muted-foreground">{formatDate(tx.date, lang)}</p>

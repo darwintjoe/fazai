@@ -242,7 +242,7 @@ export function AdminCustomEntry() {
                         {getAccountName(a, lang)}
                       </SelectItem>
                     ))}
-                    <SelectItem value={`__new_${group.type}`} className="text-xs text-emerald-600 font-medium">
+                    <SelectItem value={`__new_${group.type}`} className="text-xs text-red-600 font-medium">
                       + {lang === 'id' ? 'Tambah' : lang === 'zh' ? '新增' : 'Add New'}
                     </SelectItem>
                   </SelectGroup>
@@ -307,7 +307,7 @@ export function AdminCustomEntry() {
         </div>
       )}
       {isBalanced && (
-        <div className="text-xs text-emerald-600 text-center">✓ Balanced</div>
+        <div className="text-xs text-amber-600 text-center">✓ Balanced</div>
       )}
 
       {/* Actions */}
@@ -326,7 +326,7 @@ export function AdminCustomEntry() {
       <Button
         onClick={handleSave}
         disabled={saving || !isBalanced}
-        className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white h-10"
+        className="w-full bg-gradient-to-r from-red-600 to-red-700 text-white h-10"
       >
         {saving ? t('common.loading', lang) : t('form.save', lang)}
       </Button>

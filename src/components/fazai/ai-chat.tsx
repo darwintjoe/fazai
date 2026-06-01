@@ -234,7 +234,7 @@ export function AiChat({ mode }: AiChatProps) {
                       {msg.role === 'assistant' && msg.transaction && (
                         <Card className={`mt-2 p-3 border-2 ${
                           msg.confirmed
-                            ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30'
+                            ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30'
                             : 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30'
                         }`}>
                           <div className="flex items-center gap-2 mb-2">
@@ -250,7 +250,7 @@ export function AiChat({ mode }: AiChatProps) {
                               </div>
                             )}
                             {msg.confirmed && (
-                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
+                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 text-xs font-semibold">
                                 <Check className="w-3 h-3" />
                                 {lang === 'id' ? 'Tercatat' : lang === 'zh' ? '已记录' : 'Recorded'}
                               </div>

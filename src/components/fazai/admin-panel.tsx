@@ -45,7 +45,7 @@ export function AdminPanel() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
                 isActive
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
                   : 'bg-muted text-muted-foreground hover:bg-accent'
               }`}
             >

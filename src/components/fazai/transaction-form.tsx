@@ -233,7 +233,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
         <div>
           <label className="text-sm font-medium text-muted-foreground">{t('form.account', lang)}</label>
           {selectedAccountId && (
-            <div className="mt-1 mb-2 flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950 px-3 py-2 rounded-lg">
+            <div className="mt-1 mb-2 flex items-center gap-2 bg-red-50 dark:bg-red-950 px-3 py-2 rounded-lg">
               <span className="text-sm font-medium">{getAccountName(accounts.find(a => a.id === selectedAccountId)!, lang)}</span>
               <button onClick={() => setSelectedAccountId('')} className="text-xs text-muted-foreground hover:text-foreground ml-auto">✕</button>
             </div>
@@ -255,7 +255,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
                   onClick={() => { setSelectedAccountId(acc.id); setSearchQuery(''); }}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                     selectedAccountId === acc.id
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
+                      ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
                       : 'hover:bg-accent'
                   }`}
                 >
@@ -269,7 +269,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
           )}
           <button
             onClick={() => setShowNewAccount(!showNewAccount)}
-            className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 mt-2"
+            className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 mt-2"
           >
             <Plus className="w-3 h-3" />
             {t('form.newAccount', lang)}
@@ -300,7 +300,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
                 onClick={() => setOpponentAccountId(acc.id)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
                   opponentAccountId === acc.id
-                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
+                    ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
                     : 'bg-muted text-muted-foreground hover:bg-accent'
                 }`}
               >
@@ -309,7 +309,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
             ))}
             <button
               onClick={() => setShowNewCashBank(!showNewCashBank)}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium text-red-600 bg-red-50 dark:bg-red-950 hover:bg-red-100 dark:hover:bg-red-900 transition-colors"
             >
               <Plus className="w-3 h-3" />
               {t('form.createCashBank', lang)}
@@ -343,13 +343,13 @@ export function TransactionForm({ type }: TransactionFormProps) {
           />
           <button
             onClick={fetchAiSuggestion}
-            className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 mt-1"
+            className="flex items-center gap-1 text-xs text-red-600 hover:text-red-700 mt-1"
           >
             <Sparkles className="w-3 h-3" />
             {t('form.aiSuggestion', lang)}
           </button>
           {aiSuggestion && (
-            <p className="text-xs text-emerald-600 mt-1">
+            <p className="text-xs text-red-600 mt-1">
               ✨ {aiSuggestion}
             </p>
           )}

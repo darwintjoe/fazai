@@ -51,12 +51,12 @@ export function SettingsPage() {
 
       {/* User Guide */}
       <Card
-        className="p-4 cursor-pointer hover:bg-accent/50 transition-colors border-emerald-200 dark:border-emerald-800"
+        className="p-4 cursor-pointer hover:bg-accent/50 transition-colors border-red-200 dark:border-red-800"
         onClick={() => navigate('guide')}
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
-            <BookOpen className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+          <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
+            <BookOpen className="w-5 h-5 text-red-600 dark:text-red-400" />
           </div>
           <div>
             <p className="font-medium text-sm">{t('guide.title', lang)}</p>
@@ -75,7 +75,7 @@ export function SettingsPage() {
               onClick={() => setLang(key)}
               className={`px-4 py-2 text-sm rounded-lg transition-colors ${
                 lang === key
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 font-medium'
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 font-medium'
                   : 'bg-muted text-muted-foreground hover:bg-accent'
               }`}
             >
@@ -93,7 +93,7 @@ export function SettingsPage() {
             onClick={() => setTheme('light')}
             className={`px-4 py-2 text-sm rounded-lg transition-colors ${
               theme === 'light'
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 font-medium'
+                ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 font-medium'
                 : 'bg-muted text-muted-foreground hover:bg-accent'
             }`}
           >
@@ -103,7 +103,7 @@ export function SettingsPage() {
             onClick={() => setTheme('dark')}
             className={`px-4 py-2 text-sm rounded-lg transition-colors ${
               theme === 'dark'
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 font-medium'
+                ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 font-medium'
                 : 'bg-muted text-muted-foreground hover:bg-accent'
             }`}
           >

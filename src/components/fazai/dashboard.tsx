@@ -104,7 +104,7 @@ export function Dashboard() {
           <h3 className="text-sm font-semibold">{t('dash.recentTransactions', lang)}</h3>
           <button
             onClick={() => navigate('history')}
-            className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5"
+            className="text-xs text-red-600 hover:text-red-700 flex items-center gap-0.5"
           >
             {t('common.search', lang)} <ChevronRight className="w-3 h-3" />
           </button>

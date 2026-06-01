@@ -142,7 +142,7 @@ export function UserGuide({ standalone = false, overlay = false, onClose }: User
           </button>
         )}
         <div className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5 text-emerald-600" />
+          <BookOpen className="w-5 h-5 text-red-600" />
           <h2 className="text-xl font-bold">{t('guide.title', lang)}</h2>
         </div>
       </div>
@@ -162,8 +162,8 @@ export function UserGuide({ standalone = false, overlay = false, onClose }: User
                 <AccordionItem value={section.id}>
                   <AccordionTrigger className="hover:no-underline py-3">
                     <div className="flex items-center gap-3 text-left">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center shrink-0">
-                        <Icon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/50 flex items-center justify-center shrink-0">
+                        <Icon className="w-4 h-4 text-red-600 dark:text-red-400" />
                       </div>
                       <span className="font-medium text-sm">{t(section.titleKey, lang)}</span>
                     </div>
@@ -203,7 +203,7 @@ export function UserGuide({ standalone = false, overlay = false, onClose }: User
         <div className="px-4 pb-8 pt-4">
           <button
             onClick={onClose}
-            className="w-full py-3 rounded-xl bg-emerald-600 text-white font-medium hover:bg-emerald-700 transition-colors"
+            className="w-full py-3 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors"
           >
             {t('common.close', lang)}
           </button>

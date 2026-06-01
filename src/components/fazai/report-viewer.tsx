@@ -136,7 +136,7 @@ export function ReportViewer() {
 
     // Header
     doc.setFontSize(20);
-    doc.setTextColor(16, 185, 129);
+    doc.setTextColor(220, 38, 38);
     doc.text('FAZAI', pageWidth / 2, 15, { align: 'center' });
     doc.setFontSize(12);
     doc.setTextColor(100);
@@ -154,7 +154,7 @@ export function ReportViewer() {
           body: trialBalance.map(r => [r.accountName, formatNumber(r.debit), formatNumber(r.credit)]),
           foot: [[t('rep.total', lang), formatNumber(trialBalance.reduce((s, r) => s + r.debit, 0)), formatNumber(trialBalance.reduce((s, r) => s + r.credit, 0))]],
           styles: { fontSize: 9 },
-          headStyles: { fillColor: [16, 185, 129] },
+          headStyles: { fillColor: [220, 38, 38] },
           footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
         });
         break;
@@ -177,7 +177,7 @@ export function ReportViewer() {
               body: section.items.map(i => [i.accountName, formatNumber(i.amount)]),
               foot: [[t('rep.total', lang), formatNumber(section.total)]],
               styles: { fontSize: 9 },
-              headStyles: { fillColor: [16, 185, 129] },
+              headStyles: { fillColor: [220, 38, 38] },
               footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
             });
             yOffset = (doc as any).lastAutoTable.finalY + 10;
@@ -195,7 +195,7 @@ export function ReportViewer() {
             body: profitLoss.income.items.map(i => [i.accountName, '', formatNumber(i.amount)]),
             foot: [[t('rep.total', lang) + ' ' + t('dash.income', lang), '', formatNumber(profitLoss.income.total)]],
             styles: { fontSize: 9 },
-            headStyles: { fillColor: [34, 197, 94] },
+            headStyles: { fillColor: [220, 38, 38] },
             footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
           });
           yOffset = (doc as any).lastAutoTable.finalY + 10;
@@ -226,7 +226,7 @@ export function ReportViewer() {
             body: cashFlow.inflows.map(i => [i.accountName, '', formatNumber(i.amount)]),
             foot: [[t('rep.total', lang), '', formatNumber(cashFlow.totalInflows)]],
             styles: { fontSize: 9 },
-            headStyles: { fillColor: [34, 197, 94] },
+            headStyles: { fillColor: [220, 38, 38] },
             footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
           });
           yOffset = (doc as any).lastAutoTable.finalY + 8;
@@ -260,7 +260,7 @@ export function ReportViewer() {
             formatNumber(e.balance),
           ]),
           styles: { fontSize: 8 },
-          headStyles: { fillColor: [16, 185, 129] },
+          headStyles: { fillColor: [220, 38, 38] },
         });
         break;
       }
@@ -455,7 +455,7 @@ export function ReportViewer() {
           {reportType === 'trial-balance' && (
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-emerald-50 dark:bg-emerald-950">
+                <tr className="bg-red-50 dark:bg-red-950">
                   <th className="text-left p-3 font-medium">{t('rep.account', lang)}</th>
                   <th className="text-right p-3 font-medium">{t('rep.debit', lang)}</th>
                   <th className="text-right p-3 font-medium">{t('rep.credit', lang)}</th>
@@ -481,7 +481,7 @@ export function ReportViewer() {
           {reportType === 'balance-sheet' && balanceSheet && (
             <div className="p-4">
               {[
-                { section: balanceSheet.assets, color: 'emerald' },
+                { section: balanceSheet.assets, color: 'red' },
                 { section: balanceSheet.liabilities, color: 'blue' },
                 { section: balanceSheet.equity, color: 'purple' },
               ].map(({ section, color }) => (
@@ -511,7 +511,7 @@ export function ReportViewer() {
 
           {reportType === 'profit-loss' && profitLoss && (
             <div className="p-4">
-              <h3 className="font-semibold text-sm mb-2 text-green-600">{t('dash.income', lang)}</h3>
+              <h3 className="font-semibold text-sm mb-2 text-red-600">{t('dash.income', lang)}</h3>
               <table className="w-full text-sm mb-4">
                 <tbody>
                   {profitLoss.income.items.map((item, idx) => (
@@ -541,7 +541,7 @@ export function ReportViewer() {
                   </tr>
                 </tbody>
               </table>
-              <div className={`border-t-2 pt-3 font-bold text-lg ${profitLoss.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <div className={`border-t-2 pt-3 font-bold text-lg ${profitLoss.netProfit >= 0 ? 'text-red-600' : 'text-red-600'}`}>
                 {t('rep.netProfit', lang)}: {formatNumber(profitLoss.netProfit)}
               </div>
             </div>
@@ -552,7 +552,7 @@ export function ReportViewer() {
               <div className="mb-4 text-sm">
                 <span className="font-medium">{t('rep.beginning', lang)}:</span> {formatNumber(cashFlow.beginningBalance)}
               </div>
-              <h3 className="font-semibold text-sm mb-2 text-green-600">{t('rep.inflows', lang)}</h3>
+              <h3 className="font-semibold text-sm mb-2 text-red-600">{t('rep.inflows', lang)}</h3>
               <table className="w-full text-sm mb-4">
                 <tbody>
                   {cashFlow.inflows.map((item, idx) => (
@@ -592,7 +592,7 @@ export function ReportViewer() {
           {reportType === 'ledger' && (
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-emerald-50 dark:bg-emerald-950">
+                <tr className="bg-red-50 dark:bg-red-950">
                   <th className="text-left p-3 font-medium">{t('form.date', lang)}</th>
                   <th className="text-left p-3 font-medium">{t('rep.description', lang)}</th>
                   <th className="text-right p-3 font-medium">{t('rep.debit', lang)}</th>

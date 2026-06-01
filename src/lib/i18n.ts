@@ -365,7 +365,7 @@ const en: TranslationKeys = {
   'guide.login': 'Login & PIN',
   'guide.login.desc': 'Enter your 6-digit PIN to unlock the app. Default PINs: Admin = 000000, User = 111111. Each user has a role (Admin or User) that controls access to features. Admins can access the Admin Panel for managing users, accounts, and backups. You can change your PIN anytime from Settings after logging in.',
   'guide.dashboard': 'Dashboard',
-  'guide.dashboard.desc': 'The dashboard shows your current total balance, today\'s income and expense totals, and a list of recent transactions. Use the green Income and red Expense buttons to quickly add new transactions. Tap any recent transaction to view its details in the History page.',
+  'guide.dashboard.desc': 'The dashboard shows your current total balance, today\'s income and expense totals, and a list of recent transactions. Use the red Income and gray Expense buttons to quickly add new transactions. Tap any recent transaction to view its details in the History page.',
   'guide.incomeExpense': 'Income & Expense',
   'guide.incomeExpense.desc': 'Behind the simple form, FAZAI creates proper double-entry journal entries. For Income: the income account is credited and your Cash/Bank account is debited. For Expense: the expense account is debited and your Cash/Bank account is credited. This ensures your books always balance while keeping the interface simple and intuitive.',
   'guide.accounts': 'Accounts',

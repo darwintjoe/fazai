@@ -57,7 +57,7 @@ export function AdminSettings() {
               onClick={() => setLang(key)}
               className={`px-4 py-2 text-sm rounded-lg transition-colors ${
                 lang === key
-                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 font-medium'
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 font-medium'
                   : 'bg-muted text-muted-foreground hover:bg-accent'
               }`}
             >
@@ -75,7 +75,7 @@ export function AdminSettings() {
             onClick={() => setTheme('light')}
             className={`px-4 py-2 text-sm rounded-lg transition-colors ${
               theme === 'light'
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 font-medium'
+                ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 font-medium'
                 : 'bg-muted text-muted-foreground hover:bg-accent'
             }`}
           >
@@ -85,7 +85,7 @@ export function AdminSettings() {
             onClick={() => setTheme('dark')}
             className={`px-4 py-2 text-sm rounded-lg transition-colors ${
               theme === 'dark'
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 font-medium'
+                ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 font-medium'
                 : 'bg-muted text-muted-foreground hover:bg-accent'
             }`}
           >

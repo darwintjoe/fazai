@@ -210,7 +210,7 @@ export function AdminAccounts() {
                       <span className="text-xs font-medium tabular-nums">{formatNumber(balances[acc.id] || 0)}</span>
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleToggleActive(acc)}>
                         {acc.isActive
-                          ? <ToggleRight className="w-4 h-4 text-emerald-500" />
+                          ? <ToggleRight className="w-4 h-4 text-red-500" />
                           : <ToggleLeft className="w-4 h-4 text-muted-foreground" />
                         }
                       </Button>
