@@ -93,14 +93,6 @@ const guideSections: GuideSection[] = [
     titleKey: 'guide.migration',
     descKey: 'guide.migration.desc',
     icon: ArrowRightLeft,
-    subSections: [
-      { titleKey: 'guide.migration.step1', descKey: 'guide.migration.step1.desc' },
-      { titleKey: 'guide.migration.step2', descKey: 'guide.migration.step2.desc' },
-      { titleKey: 'guide.migration.step3', descKey: 'guide.migration.step3.desc' },
-      { titleKey: 'guide.migration.step4', descKey: 'guide.migration.step4.desc' },
-      { titleKey: 'guide.migration.step5', descKey: 'guide.migration.step5.desc' },
-      { titleKey: 'guide.migration.step6', descKey: 'guide.migration.step6.desc' },
-    ],
   },
   {
     id: 'tips',
@@ -184,7 +176,7 @@ export function UserGuide({ standalone = false, overlay = false, onClose }: User
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="pl-11 pr-2">
-                      <p className="text-sm text-muted-foreground leading-relaxed">
+                      <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
                         {t(section.descKey, lang)}
                       </p>
                       {section.subSections && section.subSections.length > 0 && (
