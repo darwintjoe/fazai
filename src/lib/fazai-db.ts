@@ -40,6 +40,20 @@ export interface Transaction {
   entries: Entry[];
 }
 
+export interface ArchivedTransaction extends Transaction {
+  archivedAt: Date;
+}
+
+export interface AccountMonthlySummary {
+  id: string;           // "acc-xxx-2026-4" (accountId-year-month)
+  accountId: string;
+  year: number;         // 2026
+  month: number;        // 0-11
+  totalDebit: number;   // sum of all debits for this account this month
+  totalCredit: number;  // sum of all credits
+  lastCalculated: Date;
+}
+
 export interface Setting {
   key: string;
   value: string;
@@ -49,6 +63,8 @@ class FazaiDB extends Dexie {
   users!: Table<User, string>;
   accounts!: Table<Account, string>;
   transactions!: Table<Transaction, string>;
+  accountMonthlySummaries!: Table<AccountMonthlySummary, string>;
+  archivedTransactions!: Table<ArchivedTransaction, string>;
   settings!: Table<Setting, string>;
 
   constructor() {
@@ -58,6 +74,24 @@ class FazaiDB extends Dexie {
       accounts: 'id, code, name, type, isActive, parentId',
       transactions: 'id, date, type, createdBy, description, counterparty',
       settings: 'key',
+    });
+    this.version(2).stores({
+      users: 'id, pin, name, role',
+      accounts: 'id, code, name, type, isActive, parentId',
+      transactions: 'id, date, type, createdBy, description, counterparty',
+      settings: 'key',
+    }).upgrade(async () => {
+      // Empty upgrade - preparing for v3
+    });
+    this.version(3).stores({
+      users: 'id, pin, name, role',
+      accounts: 'id, code, name, type, isActive, parentId',
+      transactions: 'id, date, type, createdBy, description, counterparty',
+      accountMonthlySummaries: 'id, accountId, year, month, [accountId+year+month]',
+      archivedTransactions: 'id, date, type, createdBy, archivedAt',
+      settings: 'key',
+    }).upgrade(async () => {
+      // Migration to v3: will be handled by rollover on startup
     });
   }
 }
@@ -115,28 +149,38 @@ export async function exportAllData() {
   const users = await db.users.toArray();
   const accounts = await db.accounts.toArray();
   const transactions = await db.transactions.toArray();
+  const summaries = await db.accountMonthlySummaries.toArray();
+  const archivedTransactions = await db.archivedTransactions.toArray();
   const settings = await db.settings.toArray();
-  return { users, accounts, transactions, settings, exportedAt: new Date().toISOString(), version: 1 };
+  return { users, accounts, transactions, accountMonthlySummaries: summaries, archivedTransactions, settings, exportedAt: new Date().toISOString(), version: 3 };
 }
 
 export type ExportData = Awaited<ReturnType<typeof exportAllData>>;
 
 export async function importAllData(data: ExportData) {
-  await db.transaction('rw', [db.users, db.accounts, db.transactions, db.settings], async () => {
+  await db.transaction('rw', [db.users, db.accounts, db.transactions, db.accountMonthlySummaries, db.archivedTransactions, db.settings], async () => {
     await db.users.clear();
     await db.accounts.clear();
     await db.transactions.clear();
+    await db.accountMonthlySummaries.clear();
+    await db.archivedTransactions.clear();
     await db.settings.clear();
 
     if (data.users?.length) await db.users.bulkAdd(data.users);
     if (data.accounts?.length) await db.accounts.bulkAdd(data.accounts);
     if (data.transactions?.length) await db.transactions.bulkAdd(data.transactions);
+    if (data.accountMonthlySummaries?.length) await db.accountMonthlySummaries.bulkAdd(data.accountMonthlySummaries);
+    if (data.archivedTransactions?.length) await db.archivedTransactions.bulkAdd(data.archivedTransactions);
     if (data.settings?.length) await db.settings.bulkAdd(data.settings);
   });
 }
 
 export async function deleteAllTransactions(): Promise<void> {
-  await db.transactions.clear();
+  await db.transaction('rw', [db.transactions, db.accountMonthlySummaries, db.archivedTransactions], async () => {
+    await db.transactions.clear();
+    await db.accountMonthlySummaries.clear();
+    await db.archivedTransactions.clear();
+  });
 }
 
 export async function verifyAdminPin(pin: string): Promise<boolean> {
@@ -145,10 +189,12 @@ export async function verifyAdminPin(pin: string): Promise<boolean> {
 }
 
 export async function factoryReset(): Promise<void> {
-  await db.transaction('rw', [db.users, db.accounts, db.transactions, db.settings], async () => {
+  await db.transaction('rw', [db.users, db.accounts, db.transactions, db.accountMonthlySummaries, db.archivedTransactions, db.settings], async () => {
     await db.users.clear();
     await db.accounts.clear();
     await db.transactions.clear();
+    await db.accountMonthlySummaries.clear();
+    await db.archivedTransactions.clear();
     await db.settings.clear();
   });
   await seedDatabase();

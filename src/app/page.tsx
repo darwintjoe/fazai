@@ -17,6 +17,7 @@ import { UserGuide } from '@/components/fazai/user-guide';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LogOut } from 'lucide-react';
 import { t } from '@/lib/i18n';
+import { runStartupMaintenance } from '@/lib/ledger-engine';
 
 const emptySubscribe = () => () => {};
 const getSnapshot = () => true;
@@ -26,6 +27,13 @@ export default function Home() {
   const { isAuthenticated, logout, lang, userName, userRole } = useAuthStore();
   const { currentPage } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, getSnapshot, getServerSnapshot);
+
+  // Run startup maintenance (rollover summaries, archive old tx) when app loads
+  React.useEffect(() => {
+    if (isAuthenticated) {
+      runStartupMaintenance();
+    }
+  }, [isAuthenticated]);
 
   if (!mounted) {
     return (
