@@ -248,15 +248,13 @@ export function ReportViewer() {
         break;
       }
       case 'ledger': {
-        const acc = accounts.find(a => a.id === selectedAccountId);
         autoTable(doc, {
           startY: yOffset,
-          head: [[t('form.date', lang), t('rep.description', lang), t('rep.debit', lang), t('rep.credit', lang), t('rep.balance', lang)]],
+          head: [[t('form.date', lang), t('rep.description', lang), lang === 'id' ? 'Jumlah' : lang === 'zh' ? '金额' : 'Amount', t('rep.balance', lang)]],
           body: ledgerEntries.map(e => [
             formatDate(e.date, lang),
             `${e.description}${e.counterparty ? ' (' + e.counterparty + ')' : ''}`,
-            e.debit > 0 ? formatNumber(e.debit) : '',
-            e.credit > 0 ? formatNumber(e.credit) : '',
+            `${formatNumber(e.debit > 0 ? e.debit : e.credit)} ${e.debit > 0 ? 'Dr' : 'Cr'}`,
             formatNumber(e.balance),
           ]),
           styles: { fontSize: 8 },
@@ -355,11 +353,13 @@ export function ReportViewer() {
         break;
       }
       case 'ledger': {
+        const amtLabel = lang === 'id' ? 'Jumlah' : lang === 'zh' ? '金额' : 'Amount';
+        const dcLabel = lang === 'id' ? 'D/K' : lang === 'zh' ? '借/贷' : 'Dr/Cr';
         const data = ledgerEntries.map(e => ({
           [t('form.date', lang)]: formatDate(e.date, lang),
           [t('rep.description', lang)]: `${e.description}${e.counterparty ? ' (' + e.counterparty + ')' : ''}`,
-          [t('rep.debit', lang)]: e.debit,
-          [t('rep.credit', lang)]: e.credit,
+          [amtLabel]: e.debit > 0 ? e.debit : e.credit,
+          [dcLabel]: e.debit > 0 ? 'Dr' : 'Cr',
           [t('rep.balance', lang)]: e.balance,
         }));
         const ws = XLSX.utils.json_to_sheet(data);
@@ -595,19 +595,29 @@ export function ReportViewer() {
                 <tr className="bg-red-50 dark:bg-red-950">
                   <th className="text-left p-3 font-medium">{t('form.date', lang)}</th>
                   <th className="text-left p-3 font-medium">{t('rep.description', lang)}</th>
-                  <th className="text-right p-3 font-medium">{t('rep.debit', lang)}</th>
-                  <th className="text-right p-3 font-medium">{t('rep.credit', lang)}</th>
+                  <th className="text-right p-3 font-medium">{lang === 'id' ? 'Jumlah' : lang === 'zh' ? '金额' : 'Amount'}</th>
                   <th className="text-right p-3 font-medium">{t('rep.balance', lang)}</th>
                 </tr>
               </thead>
               <tbody>
                 {ledgerEntries.map((e, idx) => (
                   <tr key={idx} className="border-t">
-                    <td className="p-3 text-xs">{formatDate(e.date, lang)}</td>
-                    <td className="p-3">{e.description}{e.counterparty ? ` (${e.counterparty})` : ''}</td>
-                    <td className="text-right p-3">{e.debit > 0 ? formatNumber(e.debit) : ''}</td>
-                    <td className="text-right p-3">{e.credit > 0 ? formatNumber(e.credit) : ''}</td>
-                    <td className="text-right p-3 font-medium">{formatNumber(e.balance)}</td>
+                    <td className="p-3 text-xs whitespace-nowrap">{formatDate(e.date, lang)}</td>
+                    <td className="p-3 text-xs">
+                      <span>{e.description}</span>
+                      {e.counterparty && <span className="text-muted-foreground"> ({e.counterparty})</span>}
+                    </td>
+                    <td className="text-right p-3 whitespace-nowrap">
+                      <span className="font-medium">{formatNumber(e.debit > 0 ? e.debit : e.credit)}</span>
+                      <span className={`ml-1 text-[10px] font-bold ${
+                        e.debit > 0
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : 'text-orange-600 dark:text-orange-400'
+                      }`}>
+                        {e.debit > 0 ? 'Dr' : 'Cr'}
+                      </span>
+                    </td>
+                    <td className="text-right p-3 font-medium whitespace-nowrap">{formatNumber(e.balance)}</td>
                   </tr>
                 ))}
               </tbody>
