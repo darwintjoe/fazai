@@ -9,7 +9,7 @@ import { createIncomeTransaction, createExpenseTransaction } from '@/lib/ledger-
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
+/* ScrollArea removed — plain overflow-y-auto div is more reliable in flex containers */
 import { MessageCircle, X, Send, Bot, User, Check, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
@@ -50,6 +50,7 @@ export function AiChat({ mode }: AiChatProps) {
   const [confirming, setConfirming] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Track client-side mount for portal
   useEffect(() => {
@@ -61,6 +62,13 @@ export function AiChat({ mode }: AiChatProps) {
       db.accounts.filter(a => a.isActive).toArray().then(setAccounts);
     }
   }, [isOpen]);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (isOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, isOpen]);
 
   const getAccountDisplayName = useCallback((accountId: string) => {
     const acc = accounts.find(a => a.id === accountId);
@@ -212,8 +220,8 @@ export function AiChat({ mode }: AiChatProps) {
               </button>
             </div>
 
-            {/* Messages */}
-            <ScrollArea className="flex-1 p-4 min-h-[200px] max-h-[50vh]">
+            {/* Messages — plain div with overflow-y-auto for reliable scrolling in flex layout */}
+            <div className="flex-1 overflow-y-auto p-4 min-h-0">
               {messages.length === 0 && (
                 <div className="text-center text-muted-foreground text-sm py-8">
                   <p className="mb-2">💡</p>
@@ -346,7 +354,9 @@ export function AiChat({ mode }: AiChatProps) {
                   </div>
                 )}
               </div>
-            </ScrollArea>
+              {/* Auto-scroll anchor */}
+              <div ref={messagesEndRef} />
+            </div>
 
             {/* Input */}
             <div className="p-3 border-t">
