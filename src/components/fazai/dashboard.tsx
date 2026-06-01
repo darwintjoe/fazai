@@ -54,19 +54,19 @@ export function Dashboard() {
     <div className="flex flex-col gap-4 pb-20">
       {/* Balance Card */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <Card className="bg-gradient-to-br from-emerald-500 to-teal-600 text-white p-5 rounded-2xl shadow-lg border-0">
+        <Card className="bg-gradient-to-br from-red-600 to-red-700 text-white p-5 rounded-2xl shadow-lg border-0">
           <p className="text-xs opacity-90">{t('dash.balance', lang)}</p>
           <p className="text-2xl font-bold mt-1">{formatNumber(balance)}</p>
           <div className="flex gap-6 mt-3">
             <div className="flex items-center gap-1.5">
-              <ArrowUpRight className="w-3.5 h-3.5 text-green-200" />
+              <ArrowUpRight className="w-3.5 h-3.5 text-red-200" />
               <div>
                 <p className="text-[10px] opacity-80">{t('dash.income', lang)}</p>
                 <p className="text-xs font-semibold">{formatNumber(todayIncome)}</p>
               </div>
             </div>
             <div className="flex items-center gap-1.5">
-              <ArrowDownRight className="w-3.5 h-3.5 text-red-200" />
+              <ArrowDownRight className="w-3.5 h-3.5 text-white/60" />
               <div>
                 <p className="text-[10px] opacity-80">{t('dash.expense', lang)}</p>
                 <p className="text-xs font-semibold">{formatNumber(todayExpense)}</p>
@@ -82,7 +82,7 @@ export function Dashboard() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate('income')}
-          className="flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-2xl p-4 shadow-md min-h-[100px] active:scale-95 transition-transform"
+          className="flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-red-600 to-red-700 text-white rounded-2xl p-4 shadow-md min-h-[100px] active:scale-95 transition-transform"
         >
           <TrendingUp className="w-7 h-7" />
           <span className="text-base font-bold">{t('dash.income', lang)}</span>
@@ -91,7 +91,7 @@ export function Dashboard() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => navigate('expense')}
-          className="flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-red-500 to-rose-600 text-white rounded-2xl p-4 shadow-md min-h-[100px] active:scale-95 transition-transform"
+          className="flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-200 rounded-2xl p-4 shadow-md min-h-[100px] active:scale-95 transition-transform"
         >
           <TrendingDown className="w-7 h-7" />
           <span className="text-base font-bold">{t('dash.expense', lang)}</span>
@@ -133,11 +133,11 @@ export function Dashboard() {
                   className="flex items-center gap-3 p-3 bg-card rounded-xl border shadow-sm cursor-pointer hover:shadow-md transition-shadow"
                 >
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                    isIncome ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'
+                    isIncome ? 'bg-red-100 dark:bg-red-900' : 'bg-gray-100 dark:bg-gray-700'
                   }`}>
                     {isIncome
-                      ? <ArrowUpRight className="w-4 h-4 text-green-600 dark:text-green-400" />
-                      : <ArrowDownRight className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      ? <ArrowUpRight className="w-4 h-4 text-red-600 dark:text-red-400" />
+                      : <ArrowDownRight className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                     }
                   </div>
                   <div className="flex-1 min-w-0">
@@ -147,7 +147,7 @@ export function Dashboard() {
                     </p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className={`text-sm font-semibold ${isIncome ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    <p className={`text-sm font-semibold ${isIncome ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
                       {isIncome ? '+' : '-'}{formatNumber(amount)}
                     </p>
                     <p className="text-[10px] text-muted-foreground">

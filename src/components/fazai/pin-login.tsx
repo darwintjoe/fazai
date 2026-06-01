@@ -53,27 +53,25 @@ export function PinLogin() {
 
   if (seeding) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-900 dark:to-gray-800">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-amber-50 dark:from-gray-900 dark:to-gray-800">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full"
+          className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full"
         />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-gray-900 dark:to-gray-800 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-red-50 to-amber-50 dark:from-gray-900 dark:to-gray-800 p-4">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="flex flex-col items-center gap-2 mb-8"
       >
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg">
-          <Wallet className="w-10 h-10 text-white" />
-        </div>
-        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+        <img src="/FAZAI.jpg" alt="FAZAI" className="w-20 h-20 rounded-2xl shadow-lg object-cover" />
+        <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-red-600 to-amber-600 bg-clip-text text-transparent">
           {t('login.title', lang)}
         </h1>
         <p className="text-muted-foreground text-sm">Simple Accounting</p>
@@ -120,7 +118,7 @@ export function PinLogin() {
         <Button
           onClick={() => handlePinSubmit(pin)}
           disabled={pin.length !== 6}
-          className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white"
+          className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white"
         >
           {t('login.unlock', lang)}
         </Button>
@@ -140,7 +138,7 @@ export function PinLogin() {
             onClick={() => setLang(key)}
             className={`px-3 py-1 text-xs rounded-full transition-colors ${
               lang === key
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300'
+                ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
                 : 'bg-muted text-muted-foreground hover:bg-accent'
             }`}
           >
@@ -154,7 +152,7 @@ export function PinLogin() {
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
         onClick={() => setShowGuide(true)}
-        className="mt-4 flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 text-xs font-medium transition-colors"
+        className="mt-4 flex items-center gap-1.5 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs font-medium transition-colors"
       >
         <BookOpen className="w-4 h-4" />
         {t('guide.title', lang)}

@@ -4,8 +4,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { t, getAccountName } from '@/lib/i18n';
 import { db, type Account } from '@/lib/fazai-db';
-import { getAccountBalance } from '@/lib/ledger-engine';
-import { formatNumber } from '@/lib/format';
+import { getAccountBalance, createOpeningBalanceTransaction } from '@/lib/ledger-engine';
+import { formatNumber, parseFormattedNumber, today } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -26,8 +26,11 @@ const TYPE_ROOT_MAP: Record<string, string> = {
   expense: 'acc-expense-root',
 };
 
+// Account types that can have an opening balance (BS accounts)
+const BALANCE_ELIGIBLE_TYPES = new Set(['asset', 'cashBank', 'liability', 'equity']);
+
 export function AdminAccounts() {
-  const { lang } = useAuthStore();
+  const { lang, userId } = useAuthStore();
   const { toast } = useToast();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [balances, setBalances] = useState<Record<string, number>>({});
@@ -36,6 +39,7 @@ export function AdminAccounts() {
   const [name, setName] = useState('');
   const [type, setType] = useState<Account['type']>('expense');
   const [parentId, setParentId] = useState('');
+  const [balance, setBalance] = useState('');
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set(['cashBank', 'income', 'expense']));
 
   const loadRef = useRef(false);
@@ -43,7 +47,6 @@ export function AdminAccounts() {
   const loadAccounts = useCallback(async () => {
     const list = await db.accounts.toArray();
     setAccounts(list.sort((a, b) => a.code.localeCompare(b.code)));
-    // Load balances for child accounts
     const balMap: Record<string, number> = {};
     for (const acc of list.filter(a => a.parentId)) {
       balMap[acc.id] = await getAccountBalance(acc.id);
@@ -60,8 +63,18 @@ export function AdminAccounts() {
 
   const handleTypeChange = (newType: Account['type']) => {
     setType(newType);
-    // Auto-select parent to matching type root
     setParentId(TYPE_ROOT_MAP[newType] || '');
+    // Clear balance if switching to income/expense
+    if (!BALANCE_ELIGIBLE_TYPES.has(newType)) {
+      setBalance('');
+    }
+  };
+
+  const handleBalanceChange = (value: string) => {
+    const parsed = parseFormattedNumber(value);
+    if (!isNaN(parsed) || value === '') {
+      setBalance(value === '' ? '' : formatNumber(parsed));
+    }
   };
 
   const handleSave = async () => {
@@ -84,8 +97,10 @@ export function AdminAccounts() {
       }, 0);
       const newCode = `${prefix}-${subCode}${String(maxSuffix + 100).padStart(3, '0')}`;
 
+      const newAccountId = `acc-${uuid()}`;
+
       await db.accounts.add({
-        id: `acc-${uuid()}`,
+        id: newAccountId,
         code: newCode,
         name: name.trim(),
         type,
@@ -94,6 +109,21 @@ export function AdminAccounts() {
         isActive: true,
         createdAt: new Date(),
       });
+
+      // Create opening balance transaction if balance is provided and account type is eligible
+      const numBalance = parseFormattedNumber(balance);
+      if (numBalance > 0 && BALANCE_ELIGIBLE_TYPES.has(type)) {
+        try {
+          await createOpeningBalanceTransaction({
+            accountId: newAccountId,
+            amount: numBalance,
+            date: today(),
+            userId: userId || '',
+          });
+        } catch (err) {
+          console.error('Failed to create opening balance:', err);
+        }
+      }
     }
 
     resetForm();
@@ -112,6 +142,7 @@ export function AdminAccounts() {
     setName(acc.name);
     setType(acc.type);
     setParentId(acc.parentId || TYPE_ROOT_MAP[acc.type] || '');
+    setBalance('');
   };
 
   const resetForm = () => {
@@ -120,6 +151,7 @@ export function AdminAccounts() {
     setName('');
     setType('expense');
     setParentId(TYPE_ROOT_MAP['expense']);
+    setBalance('');
   };
 
   const toggleType = (accType: string) => {
@@ -131,7 +163,8 @@ export function AdminAccounts() {
     });
   };
 
-  // Group accounts by type
+  const showBalanceField = !editAccount && BALANCE_ELIGIBLE_TYPES.has(type);
+
   const groupedAccounts = ACCOUNT_TYPES.map(accType => ({
     type: accType,
     accounts: accounts.filter(a => a.type === accType),
@@ -154,7 +187,6 @@ export function AdminAccounts() {
 
         return (
           <div key={accType} className="border rounded-lg overflow-hidden">
-            {/* Type Header - Expandable */}
             <button
               onClick={() => toggleType(accType)}
               className="w-full flex items-center justify-between px-3 py-2.5 bg-muted/50 hover:bg-muted/80 transition-colors"
@@ -167,7 +199,6 @@ export function AdminAccounts() {
               <span className="text-xs font-medium">{formatNumber(typeBalance)}</span>
             </button>
 
-            {/* Child accounts */}
             {isExpanded && (
               <div className="divide-y">
                 {childAccounts.map((acc) => (
@@ -232,6 +263,29 @@ export function AdminAccounts() {
                 </SelectContent>
               </Select>
             </div>
+            {/* Balance field - only for new accounts of BS types (asset, cashBank, liability, equity) */}
+            {showBalanceField && (
+              <div>
+                <label className="text-xs font-medium">
+                  {lang === 'id' ? 'Saldo Awal' : lang === 'zh' ? '期初余额' : 'Opening Balance'}
+                </label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={balance}
+                  onChange={(e) => handleBalanceChange(e.target.value)}
+                  placeholder="0"
+                  className="mt-1 h-9 text-sm font-medium"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {lang === 'id'
+                    ? 'Akan dicatat sebagai Saldo Awal (lawan: Modal - Saldo Awal)'
+                    : lang === 'zh'
+                    ? '将记为期初余额（对方科目：权益-期初余额）'
+                    : 'Recorded as Opening Balance (counter: Equity - Opening Balance)'}
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={resetForm}>{t('common.cancel', lang)}</Button>

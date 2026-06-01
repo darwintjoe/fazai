@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, X, Send, Bot, User, Check, ArrowRight, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Check, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 
@@ -33,7 +33,12 @@ function formatAmount(n: number): string {
   return n.toLocaleString('id-ID');
 }
 
-export function AiChat() {
+interface AiChatProps {
+  /** "button" = small header button, undefined = standalone (no trigger, panel controlled externally) */
+  mode?: 'button';
+}
+
+export function AiChat({ mode }: AiChatProps) {
   const { lang, user } = useAuthStore();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
@@ -41,9 +46,8 @@ export function AiChat() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [confirming, setConfirming] = useState<string | null>(null); // message index being confirmed
+  const [confirming, setConfirming] = useState<string | null>(null);
 
-  // Load accounts on mount
   useEffect(() => {
     if (isOpen) {
       db.accounts.filter(a => a.isActive).toArray().then(setAccounts);
@@ -90,7 +94,6 @@ export function AiChat() {
         });
       }
 
-      // Mark as confirmed
       setMessages(prev => prev.map((m, i) =>
         i === msgIndex ? { ...m, confirmed: true } : m
       ));
@@ -123,7 +126,6 @@ export function AiChat() {
     setLoading(true);
 
     try {
-      // Build accounts payload for the API
       const accountsPayload = accounts.map(a => ({
         id: a.id,
         name: a.name,
@@ -162,16 +164,15 @@ export function AiChat() {
 
   return (
     <>
-      {/* Floating Button */}
-      {!isOpen && (
-        <motion.button
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
+      {/* Header button trigger (for top bar) */}
+      {mode === 'button' && !isOpen && (
+        <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-20 right-4 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg flex items-center justify-center hover:shadow-xl transition-shadow"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-600 transition-colors"
         >
-          <MessageCircle className="w-6 h-6" />
-        </motion.button>
+          <MessageCircle className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">{t('ai.title', lang)}</span>
+        </button>
       )}
 
       {/* Chat Panel */}
@@ -184,7 +185,7 @@ export function AiChat() {
             className="fixed bottom-16 right-2 sm:right-4 z-50 w-[calc(100%-16px)] sm:w-96 max-h-[70vh] bg-card border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
+            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-red-600 to-red-700 text-white">
               <div className="flex items-center gap-2">
                 <Bot className="w-5 h-5" />
                 <span className="font-semibold text-sm">{t('ai.title', lang)}</span>
@@ -216,14 +217,14 @@ export function AiChat() {
                 {messages.map((msg, idx) => (
                   <div key={idx} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {msg.role === 'assistant' && (
-                      <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center shrink-0">
-                        <Bot className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                      <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center shrink-0">
+                        <Bot className="w-3 h-3 text-red-600 dark:text-red-400" />
                       </div>
                     )}
-                    <div className={`max-w-[85%] ${msg.role === 'user' ? '' : ''}`}>
+                    <div className="max-w-[85%]">
                       <div className={`px-3 py-2 rounded-xl text-sm ${
                         msg.role === 'user'
-                          ? 'bg-emerald-500 text-white'
+                          ? 'bg-red-600 text-white'
                           : 'bg-muted'
                       }`}>
                         {msg.content}
@@ -236,15 +237,14 @@ export function AiChat() {
                             ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/30'
                             : 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30'
                         }`}>
-                          {/* Transaction type badge */}
                           <div className="flex items-center gap-2 mb-2">
                             {msg.transaction.type === 'income' ? (
-                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">
+                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs font-semibold">
                                 <ArrowDownLeft className="w-3 h-3" />
                                 {lang === 'id' ? 'Pendapatan' : lang === 'zh' ? '收入' : 'Income'}
                               </div>
                             ) : (
-                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs font-semibold">
+                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-semibold">
                                 <ArrowUpRight className="w-3 h-3" />
                                 {lang === 'id' ? 'Pengeluaran' : lang === 'zh' ? '支出' : 'Expense'}
                               </div>
@@ -257,13 +257,12 @@ export function AiChat() {
                             )}
                           </div>
 
-                          {/* Transaction details */}
                           <div className="space-y-1.5 text-sm">
                             <div className="flex justify-between items-center">
                               <span className="text-muted-foreground text-xs">
                                 {lang === 'id' ? 'Jumlah' : lang === 'zh' ? '金额' : 'Amount'}
                               </span>
-                              <span className={`font-bold ${msg.transaction.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                              <span className={`font-bold ${msg.transaction.type === 'income' ? 'text-red-600 dark:text-red-400' : 'text-gray-600 dark:text-gray-400'}`}>
                                 {msg.transaction.type === 'income' ? '+' : '-'} {formatAmount(msg.transaction.amount)}
                               </span>
                             </div>
@@ -289,11 +288,10 @@ export function AiChat() {
                             )}
                           </div>
 
-                          {/* Confirm / Confirmed button */}
                           {!msg.confirmed && (
                             <Button
                               size="sm"
-                              className="w-full mt-3 bg-emerald-500 hover:bg-emerald-600 text-white h-8 text-xs"
+                              className="w-full mt-3 bg-red-600 hover:bg-red-700 text-white h-8 text-xs"
                               onClick={() => handleConfirmTransaction(idx)}
                               disabled={confirming === String(idx)}
                             >
@@ -314,16 +312,16 @@ export function AiChat() {
                       )}
                     </div>
                     {msg.role === 'user' && (
-                      <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center shrink-0">
-                        <User className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                      <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center shrink-0">
+                        <User className="w-3 h-3 text-red-600 dark:text-red-400" />
                       </div>
                     )}
                   </div>
                 ))}
                 {loading && (
                   <div className="flex gap-2">
-                    <div className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900 flex items-center justify-center shrink-0">
-                      <Bot className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center shrink-0">
+                      <Bot className="w-3 h-3 text-red-600 dark:text-red-400" />
                     </div>
                     <div className="bg-muted px-3 py-2 rounded-xl text-sm text-muted-foreground">
                       {t('ai.thinking', lang)}
@@ -352,7 +350,7 @@ export function AiChat() {
                   onClick={handleSend}
                   disabled={loading || !input.trim()}
                   size="icon"
-                  className="bg-emerald-500 hover:bg-emerald-600 shrink-0"
+                  className="bg-red-600 hover:bg-red-700 shrink-0"
                 >
                   <Send className="w-4 h-4" />
                 </Button>

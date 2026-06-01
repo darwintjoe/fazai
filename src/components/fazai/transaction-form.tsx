@@ -197,7 +197,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
         <button onClick={() => navigate('dashboard')} className="p-2 rounded-lg hover:bg-accent">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h2 className={`text-xl font-bold ${isIncome ? 'text-green-600' : 'text-red-600'}`}>
+        <h2 className={`text-xl font-bold ${isIncome ? 'text-red-600' : 'text-gray-600 dark:text-gray-400'}`}>
           {isIncome ? t('dash.income', lang) : t('dash.expense', lang)}
         </h2>
       </div>
@@ -382,8 +382,8 @@ export function TransactionForm({ type }: TransactionFormProps) {
           disabled={saving || parseFormattedNumber(amount) <= 0 || !selectedAccountId}
           className={`w-full h-12 text-base font-semibold ${
             isIncome
-              ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700'
-              : 'bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700'
+              ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800'
+              : 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700'
           } text-white`}
         >
           {saving ? t('common.loading', lang) : t('form.save', lang)}

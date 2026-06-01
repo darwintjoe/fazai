@@ -10,16 +10,19 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon, Plus, Trash2, ArrowRightLeft, AlertCircle } from 'lucide-react';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CalendarIcon, Plus, Trash2, AlertCircle, Search } from 'lucide-react';
 import { formatNumber, parseFormattedNumber, today } from '@/lib/format';
 import { useToast } from '@/hooks/use-toast';
+import { v4 as uuid } from 'uuid';
+
+const ACCOUNT_TYPE_ORDER = ['asset', 'cashBank', 'liability', 'equity', 'income', 'expense'] as const;
 
 interface JournalRow {
   id: string;
   accountId: string;
-  debit: string;
-  credit: string;
+  amount: string;     // single value
+  isDebit: boolean;   // true = Dr, false = Cr
 }
 
 export function AdminCustomEntry() {
@@ -27,14 +30,16 @@ export function AdminCustomEntry() {
   const { toast } = useToast();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [rows, setRows] = useState<JournalRow[]>([
-    { id: crypto.randomUUID(), accountId: '', debit: '', credit: '' },
-    { id: crypto.randomUUID(), accountId: '', debit: '', credit: '' },
+    { id: crypto.randomUUID(), accountId: '', amount: '', isDebit: true },
+    { id: crypto.randomUUID(), accountId: '', amount: '', isDebit: false },
   ]);
   const [description, setDescription] = useState('');
   const [date, setDate] = useState<Date>(today());
   const [calOpen, setCalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showNewAccount, setShowNewAccount] = useState<string | null>(null); // type key
+  const [newAccountName, setNewAccountName] = useState('');
 
   const loadAccounts = useCallback(async () => {
     const accs = await db.accounts.filter(a => a.isActive).toArray();
@@ -46,7 +51,7 @@ export function AdminCustomEntry() {
   }, [loadAccounts]);
 
   const addRow = () => {
-    setRows(prev => [...prev, { id: crypto.randomUUID(), accountId: '', debit: '', credit: '' }]);
+    setRows(prev => [...prev, { id: crypto.randomUUID(), accountId: '', amount: '', isDebit: false }]);
   };
 
   const removeRow = (id: string) => {
@@ -54,41 +59,42 @@ export function AdminCustomEntry() {
     setRows(prev => prev.filter(r => r.id !== id));
   };
 
-  const updateRow = (id: string, field: keyof JournalRow, value: string) => {
+  const updateRow = (id: string, field: keyof JournalRow, value: string | boolean) => {
     setRows(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
   };
 
-  const toggleDebitCredit = (id: string) => {
-    setRows(prev => prev.map(r => {
-      if (r.id !== id) return r;
-      return { ...r, debit: r.credit, credit: r.debit };
-    }));
+  const toggleDrCr = (id: string) => {
+    setRows(prev => prev.map(r => r.id === id ? { ...r, isDebit: !r.isDebit } : r));
   };
 
-  const totalDebit = rows.reduce((sum, r) => sum + parseFormattedNumber(r.debit), 0);
-  const totalCredit = rows.reduce((sum, r) => sum + parseFormattedNumber(r.credit), 0);
+  // Calculate totals
+  const totalDebit = rows.reduce((sum, r) => {
+    const val = parseFormattedNumber(r.amount);
+    return sum + (r.isDebit ? val : 0);
+  }, 0);
+  const totalCredit = rows.reduce((sum, r) => {
+    const val = parseFormattedNumber(r.amount);
+    return sum + (!r.isDebit ? val : 0);
+  }, 0);
   const isBalanced = Math.abs(totalDebit - totalCredit) < 0.01 && totalDebit > 0;
   const difference = totalDebit - totalCredit;
 
-  const autoBalance = () => {
-    // If debits > credits, add the difference as credit on the first empty credit row
-    // If credits > debits, add the difference as debit on the first empty debit row
+  // Auto-suggest: fill the remaining balance amount into the last empty row
+  const autoSuggestRemaining = () => {
     if (Math.abs(difference) < 0.01) return;
 
     setRows(prev => {
       const newRows = [...prev];
-      if (difference > 0) {
-        // Need more credits
-        const emptyCreditRow = newRows.find(r => parseFormattedNumber(r.credit) === 0 && r.accountId);
-        if (emptyCreditRow) {
-          emptyCreditRow.credit = formatNumber(difference);
-        }
-      } else {
-        // Need more debits
-        const emptyDebitRow = newRows.find(r => parseFormattedNumber(r.debit) === 0 && r.accountId);
-        if (emptyDebitRow) {
-          emptyDebitRow.debit = formatNumber(Math.abs(difference));
-        }
+      // Find the first empty-amount row
+      const emptyRow = newRows.find(r => parseFormattedNumber(r.amount) === 0 && r.accountId);
+      if (emptyRow) {
+        const absDiff = Math.abs(difference);
+        emptyRow.amount = formatNumber(absDiff);
+        emptyRow.isDebit = difference > 0; // If debits > credits, need more debits? No — need more credits
+        emptyRow.isDebit = difference < 0; // If debits < credits, need more debits
+        // Actually: if difference > 0, we need more credits (isDebit: false)
+        // If difference < 0, we need more debits (isDebit: true)
+        emptyRow.isDebit = difference < 0;
       }
       return newRows;
     });
@@ -98,11 +104,11 @@ export function AdminCustomEntry() {
     if (!isBalanced) return;
 
     const entries = rows
-      .filter(r => r.accountId && (parseFormattedNumber(r.debit) > 0 || parseFormattedNumber(r.credit) > 0))
+      .filter(r => r.accountId && parseFormattedNumber(r.amount) > 0)
       .map(r => ({
         accountId: r.accountId,
-        debit: parseFormattedNumber(r.debit),
-        credit: parseFormattedNumber(r.credit),
+        debit: r.isDebit ? parseFormattedNumber(r.amount) : 0,
+        credit: !r.isDebit ? parseFormattedNumber(r.amount) : 0,
       }));
 
     if (entries.length < 2) return;
@@ -117,8 +123,8 @@ export function AdminCustomEntry() {
       });
       toast({ title: t('common.success', lang) });
       setRows([
-        { id: crypto.randomUUID(), accountId: '', debit: '', credit: '' },
-        { id: crypto.randomUUID(), accountId: '', debit: '', credit: '' },
+        { id: crypto.randomUUID(), accountId: '', amount: '', isDebit: true },
+        { id: crypto.randomUUID(), accountId: '', amount: '', isDebit: false },
       ]);
       setDescription('');
     } catch {
@@ -128,9 +134,49 @@ export function AdminCustomEntry() {
     }
   };
 
-  const filteredAccounts = searchQuery
-    ? accounts.filter(a => getAccountName(a, lang).toLowerCase().includes(searchQuery.toLowerCase()))
-    : accounts;
+  const handleCreateAccount = async (accType: string) => {
+    if (!newAccountName.trim()) return;
+
+    const existingAccounts = accounts.filter(a => a.type === accType);
+    const maxCode = existingAccounts.reduce((max, a) => {
+      const parts = a.code.split('-');
+      return parts.length > 1 ? Math.max(max, parseInt(parts[1])) : max;
+    }, 0);
+    const prefix = accType === 'asset' ? '1' : accType === 'cashBank' ? '1' : accType === 'liability' ? '2' : accType === 'equity' ? '3' : accType === 'income' ? '4' : '5';
+    const subCode = accType === 'cashBank' ? '1' : '0';
+    const newCode = `${prefix}-${subCode}${String(maxCode + 100).padStart(3, '0')}`;
+
+    const rootMap: Record<string, string> = {
+      asset: 'acc-asset-root', cashBank: 'acc-cashbank-root',
+      liability: 'acc-liability-root', equity: 'acc-equity-root',
+      income: 'acc-income-root', expense: 'acc-expense-root',
+    };
+
+    const newAccount: Account = {
+      id: `acc-${uuid()}`,
+      code: newCode,
+      name: newAccountName.trim(),
+      type: accType as Account['type'],
+      parentId: rootMap[accType],
+      isSystem: false,
+      isActive: true,
+      createdAt: new Date(),
+    };
+
+    await db.accounts.add(newAccount);
+    setNewAccountName('');
+    setShowNewAccount(null);
+    await loadAccounts();
+  };
+
+  // Group accounts by type for the selector
+  const groupedAccounts = ACCOUNT_TYPE_ORDER.map(accType => ({
+    type: accType,
+    label: t(`type.${accType}` as keyof import('@/lib/i18n').TranslationKeys, lang),
+    accounts: accounts
+      .filter(a => a.type === accType)
+      .filter(a => !searchQuery || getAccountName(a, lang).toLowerCase().includes(searchQuery.toLowerCase())),
+  })).filter(g => g.accounts.length > 0);
 
   return (
     <div className="flex flex-col gap-3">
@@ -158,67 +204,79 @@ export function AdminCustomEntry() {
         </Popover>
       </div>
 
-      {/* Search accounts */}
-      <div>
+      {/* Search accounts filter */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
         <Input
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={t('form.searchAccount', lang)}
-          className="h-9 text-sm"
+          className="h-8 text-xs pl-9"
         />
       </div>
 
-      {/* Journal Entry Rows */}
+      {/* Journal Entry Rows - Mobile Optimized */}
       <div className="border rounded-lg overflow-hidden">
         {/* Header */}
-        <div className="grid grid-cols-[1fr_90px_90px_36px] gap-1 px-2 py-1.5 bg-muted/50 text-[10px] font-semibold text-muted-foreground">
+        <div className="grid grid-cols-[1fr_100px_52px_28px] gap-1 px-2 py-1.5 bg-muted/50 text-[10px] font-semibold text-muted-foreground">
           <span>{t('rep.account', lang)}</span>
-          <span className="text-right">{t('rep.debit', lang)}</span>
-          <span className="text-right">{t('rep.credit', lang)}</span>
+          <span className="text-right">{lang === 'id' ? 'Jumlah' : lang === 'zh' ? '金额' : 'Amount'}</span>
+          <span className="text-center">Dr/Cr</span>
           <span></span>
         </div>
 
         {/* Rows */}
-        {rows.map((row) => (
-          <div key={row.id} className="grid grid-cols-[1fr_90px_90px_36px] gap-1 px-2 py-1.5 border-t items-center">
+        {rows.map((row, rowIdx) => (
+          <div key={row.id} className="grid grid-cols-[1fr_100px_52px_28px] gap-1 px-2 py-1.5 border-t items-center">
+            {/* Account selector with grouped options */}
             <Select value={row.accountId} onValueChange={(v) => updateRow(row.id, 'accountId', v)}>
               <SelectTrigger className="h-8 text-xs border-0 shadow-none p-1">
                 <SelectValue placeholder="—" />
               </SelectTrigger>
               <SelectContent>
-                {filteredAccounts.map(a => (
-                  <SelectItem key={a.id} value={a.id} className="text-xs">
-                    {getAccountName(a, lang)}
-                  </SelectItem>
+                {groupedAccounts.map(group => (
+                  <SelectGroup key={group.type}>
+                    <SelectLabel className="text-[10px] font-bold text-muted-foreground uppercase">{group.label}</SelectLabel>
+                    {group.accounts.map(a => (
+                      <SelectItem key={a.id} value={a.id} className="text-xs">
+                        {getAccountName(a, lang)}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value={`__new_${group.type}`} className="text-xs text-emerald-600 font-medium">
+                      + {lang === 'id' ? 'Tambah' : lang === 'zh' ? '新增' : 'Add New'}
+                    </SelectItem>
+                  </SelectGroup>
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Amount input */}
             <Input
               type="text"
               inputMode="numeric"
-              value={row.debit}
+              value={row.amount}
               onChange={(e) => {
                 const val = parseFormattedNumber(e.target.value);
-                updateRow(row.id, 'debit', e.target.value === '' ? '' : formatNumber(val));
+                updateRow(row.id, 'amount', e.target.value === '' ? '' : formatNumber(val));
               }}
               className="h-8 text-xs text-right border-0 shadow-none p-1"
               placeholder="0"
             />
-            <Input
-              type="text"
-              inputMode="numeric"
-              value={row.credit}
-              onChange={(e) => {
-                const val = parseFormattedNumber(e.target.value);
-                updateRow(row.id, 'credit', e.target.value === '' ? '' : formatNumber(val));
-              }}
-              className="h-8 text-xs text-right border-0 shadow-none p-1"
-              placeholder="0"
-            />
-            <div className="flex items-center gap-0.5">
-              <button onClick={() => toggleDebitCredit(row.id)} className="p-1 rounded hover:bg-accent" title="Swap Dr/Cr">
-                <ArrowRightLeft className="w-3 h-3 text-muted-foreground" />
-              </button>
+
+            {/* Dr/Cr Toggle */}
+            <button
+              onClick={() => toggleDrCr(row.id)}
+              className={`h-7 rounded-md text-[10px] font-bold transition-colors ${
+                row.isDebit
+                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                  : 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300'
+              }`}
+            >
+              {row.isDebit ? 'Dr' : 'Cr'}
+            </button>
+
+            {/* Delete */}
+            <div className="flex items-center">
               {rows.length > 2 && (
                 <button onClick={() => removeRow(row.id)} className="p-1 rounded hover:bg-destructive/10">
                   <Trash2 className="w-3 h-3 text-destructive" />
@@ -229,10 +287,14 @@ export function AdminCustomEntry() {
         ))}
 
         {/* Totals */}
-        <div className="grid grid-cols-[1fr_90px_90px_36px] gap-1 px-2 py-1.5 border-t-2 bg-muted/30 font-semibold text-xs">
+        <div className="grid grid-cols-[1fr_100px_52px_28px] gap-1 px-2 py-1.5 border-t-2 bg-muted/30 font-semibold text-xs">
           <span>{t('rep.total', lang)}</span>
-          <span className="text-right">{formatNumber(totalDebit)}</span>
-          <span className="text-right">{formatNumber(totalCredit)}</span>
+          <div className="text-right">
+            <span className="text-blue-600 dark:text-blue-400">Dr {formatNumber(totalDebit)}</span>
+            <span className="mx-1 text-muted-foreground">|</span>
+            <span className="text-orange-600 dark:text-orange-400">Cr {formatNumber(totalCredit)}</span>
+          </div>
+          <span></span>
           <span></span>
         </div>
       </div>
@@ -254,8 +316,8 @@ export function AdminCustomEntry() {
           <Plus className="w-3.5 h-3.5 mr-1" /> {t('admin.addRow', lang)}
         </Button>
         {!isBalanced && totalDebit > 0 && (
-          <Button size="sm" variant="outline" onClick={autoBalance} className="text-xs h-8">
-            {t('admin.autoBalance', lang)}
+          <Button size="sm" variant="outline" onClick={autoSuggestRemaining} className="text-xs h-8">
+            {lang === 'id' ? 'Isi Saldo' : lang === 'zh' ? '自动平衡' : 'Auto Balance'}
           </Button>
         )}
       </div>

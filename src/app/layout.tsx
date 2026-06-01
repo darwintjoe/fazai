@@ -19,8 +19,11 @@ export const metadata: Metadata = {
   description: "Modern simple accounting PWA with double-entry ledger engine",
   manifest: "/manifest.json",
   icons: {
-    icon: "/logo.svg",
-    apple: "/logo.svg",
+    icon: [
+      { url: "/FAZAI.jpg", sizes: "678x678", type: "image/jpeg" },
+      { url: "/favicon.ico", sizes: "32x32" },
+    ],
+    apple: "/apple-touch-icon.png",
   },
 };
 
@@ -29,7 +32,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#10b981",
+  themeColor: "#DC2626",
 };
 
 export default function RootLayout({

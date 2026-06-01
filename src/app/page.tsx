@@ -38,7 +38,7 @@ export default function Home() {
   if (!mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -79,22 +79,26 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top-right header with user info and logout */}
+      {/* Top header with logo, user info, AI, and logout */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
         <div className="max-w-2xl mx-auto px-4 h-10 flex items-center justify-between">
           <div className="flex items-center gap-2">
+            <img src="/FAZAI.jpg" alt="FAZAI" className="w-6 h-6 rounded-md object-cover" />
             <span className="text-xs text-muted-foreground">{userName}</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300 capitalize">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 capitalize">
               {userRole}
             </span>
           </div>
-          <button
-            onClick={logout}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-500 transition-colors"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            {t('nav.logout', lang)}
-          </button>
+          <div className="flex items-center gap-3">
+            <AiChat mode="button" />
+            <button
+              onClick={logout}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-500 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              {t('nav.logout', lang)}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -112,7 +116,6 @@ export default function Home() {
         </AnimatePresence>
       </main>
       <BottomNav />
-      <AiChat />
     </div>
   );
 }
