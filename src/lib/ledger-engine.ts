@@ -1,3 +1,4 @@
+import Dexie from 'dexie';
 import { db, type Account, type Transaction, type Entry, type AccountMonthlySummary, type ArchivedTransaction } from './fazai-db';
 import { getAccountName } from './i18n';
 import type { Lang } from './i18n';
