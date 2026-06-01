@@ -384,7 +384,7 @@ const en: TranslationKeys = {
   'guide.factoryReset': 'Factory Reset',
   'guide.factoryResetDesc': 'Factory Reset permanently deletes ALL data. A random challenge code must be typed and Admin PIN entered to confirm, preventing accidental resets.',
   'guide.ai': 'AI Assistant',
-  'guide.ai.desc': 'The floating AI chat button lets you ask questions about your finances. The AI can suggest accounts for transactions and help you understand your financial data. It uses your chart of accounts to provide contextual suggestions. All AI interactions are processed securely.',
+  'guide.ai.desc': 'The floating AI chat button lets you record transactions using everyday language! Simply type things like "beli makan 5000", "terima gaji 1 juta", or "lunch 25k" and the AI will parse the amount, category, and type. Review the parsed transaction in the confirmation card, then tap "Confirm & Record" to save it instantly. You can also ask general financial questions — the AI can help with accounting concepts, budget tips, and explaining income/expense categories.',
   'guide.tips': 'Tips & Notes',
   'guide.tips.desc': 'All data is stored locally in your browser — clear your browser data and it\'s gone. Back up regularly using the Export function! Keep your Admin PIN secure — it\'s required for factory reset protection. The app works best in portrait mode on mobile devices. Install as a PWA for the best experience with offline support.',
 };
@@ -568,7 +568,7 @@ const id: TranslationKeys = {
   'guide.factoryReset': 'Reset Pabrik',
   'guide.factoryResetDesc': 'Reset Pabrik menghapus semua data secara permanen. Kode tantangan acak harus diketik dan PIN Admin dimasukkan untuk mengkonfirmasi, mencegah reset yang tidak disengaja.',
   'guide.ai': 'Asisten AI',
-  'guide.ai.desc': 'Tombol obrolan AI mengambang memungkinkan Anda bertanya tentang keuangan Anda. AI dapat menyarankan akun untuk transaksi dan membantu Anda memahami data keuangan Anda. AI menggunakan bagan akun Anda untuk memberikan saran kontekstual. Semua interaksi AI diproses dengan aman.',
+  'guide.ai.desc': 'Tombol obrolan AI mengambang memungkinkan Anda mencatat transaksi menggunakan bahasa sehari-hari! Cukup ketik seperti "beli makan 5000", "terima gaji 1 juta", atau "bayar listrik 300ribu" dan AI akan mengenali jumlah, kategori, dan jenisnya. Periksa transaksi yang dienali di kartu konfirmasi, lalu ketuk "Konfirmasi & Catat" untuk menyimpannya. Anda juga bisa bertanya tentang keuangan — AI dapat membantu konsep akuntansi, tips anggaran, dan menjelaskan kategori pendapatan/pengeluaran.',
   'guide.tips': 'Tips & Catatan',
   'guide.tips.desc': 'Semua data disimpan secara lokal di browser Anda — hapus data browser Anda dan data akan hilang. Cadangkan secara teratur menggunakan fungsi Ekspor! Jaga keamanan PIN Admin Anda — diperlukan untuk perlindungan reset pabrik. Aplikasi ini bekerja paling baik dalam mode potret di perangkat seluler. Instal sebagai PWA untuk pengalaman terbaik dengan dukungan offline.',
 };
@@ -752,7 +752,7 @@ const zh: TranslationKeys = {
   'guide.factoryReset': '恢复出厂设置',
   'guide.factoryResetDesc': '恢复出厂设置将永久删除所有数据。必须输入随机验证码和管理员PIN码才能确认，防止意外重置。',
   'guide.ai': 'AI助手',
-  'guide.ai.desc': '浮动的AI聊天按钮让您可以询问有关财务的问题。AI可以建议交易账户并帮助您理解财务数据。它使用您的科目表提供上下文建议。所有AI交互均安全处理。',
+  'guide.ai.desc': '浮动的AI聊天按钮让您可以用日常语言记录交易！只需输入"买饭50"、"收到工资1万"或"午餐25k"，AI将自动解析金额、类别和类型。在确认卡片中查看解析结果，然后点击"确认并记录"即可保存。您也可以询问一般财务问题——AI可以帮助理解会计概念、提供预算建议和解释收支类别。',
   'guide.tips': '提示与说明',
   'guide.tips.desc': '所有数据存储在浏览器本地——清除浏览器数据即会丢失。请定期使用导出功能备份！保管好您的管理员PIN码——这是恢复出厂设置保护的必要条件。应用在移动设备的竖屏模式下效果最佳。安装为PWA可获得最佳体验和离线支持。',
 };

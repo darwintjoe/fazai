@@ -11,6 +11,9 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
 
+const APP_VERSION = '0.4.0';
+const DB_VERSION = '3';
+
 export function AdminSettings() {
   const { lang, setLang, userId } = useAuthStore();
   const { toast } = useToast();
@@ -123,6 +126,18 @@ export function AdminSettings() {
           >
             {t('admin.changePin', lang)}
           </Button>
+        </div>
+      </Card>
+
+      {/* App Info */}
+      <Card className="p-4 text-center space-y-2">
+        <p className="text-lg font-bold text-red-600 dark:text-red-400">FAZAI</p>
+        <p className="text-xs text-muted-foreground">
+          {lang === 'id' ? 'Akuntansi Berbasis Kas Sederhana' : lang === 'zh' ? '简单收付实现制会计' : 'Simple Cash-Basis Accounting'}
+        </p>
+        <div className="flex justify-center gap-6 text-xs text-muted-foreground pt-1">
+          <span>{lang === 'id' ? 'Versi Aplikasi' : lang === 'zh' ? '应用版本' : 'App Version'} <strong className="text-foreground">{APP_VERSION}</strong></span>
+          <span>{lang === 'id' ? 'Versi DB' : lang === 'zh' ? '数据库版本' : 'DB Version'} <strong className="text-foreground">{DB_VERSION}</strong></span>
         </div>
       </Card>
     </div>
