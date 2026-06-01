@@ -52,3 +52,18 @@ Stage Summary:
 - AI assistant can now access real-time financial data and answer queries like "How much did I spend this month?"
 - New capabilities: balance queries, monthly summaries, comparisons, delete transactions, financial insights
 - Three new files/changes: /api/ai/context/route.ts, /api/ai/chat/route.ts (rewritten), ai-chat.tsx (rewritten)
+
+---
+Task ID: custom-entry-fixes
+Agent: Main Agent
+Task: Fix 3 issues in Admin Custom Transaction form
+
+Work Log:
+- Fix 1: "Add New" account now tracks which row triggered it (addNewForRow state), and after account creation, auto-fills that row's accountId with the new account ID
+- Fix 2: Auto-suggest opposing account — when selecting an expense/income account, automatically fills an empty row with Cash on Hand (or Bank) and sets the opposite Dr/Cr. Also auto-fills remaining balance amount when exactly one row has empty amount
+- Fix 3: Removed the amber "debit and credit must balance" warning row, kept only the green "✓ Balanced" indicator. Also removed the "Auto Balance" button since auto-suggest now handles this
+- Moved "New Account" creation UI inline above the journal rows for better visibility
+- Added auto-focus on the new account input field
+
+Stage Summary:
+- Three fixes applied to admin-custom-entry.tsx, all verified with successful build
