@@ -67,3 +67,25 @@ Work Log:
 
 Stage Summary:
 - Three fixes applied to admin-custom-entry.tsx, all verified with successful build
+---
+Task ID: dexie-fix-and-month-picker
+Agent: Main Agent
+Task: Fix Trial Balance Dexie error + Change PL/CF/Ledger date pickers to month/year only
+
+Work Log:
+- Fixed `Dexie is not defined` error at ledger-engine.ts:193 by replacing `Dexie.minKey`/`Dexie.maxKey` compound index range query with simpler `.where('year').equals(year).filter(s => s.month === month)` approach
+- Removed unused `import Dexie from 'dexie'` from ledger-engine.ts
+- Changed report-viewer.tsx: unified all 5 report types (TB, BS, PL, CF, Ledger) to use the same Month + Year picker
+- Removed fromDate/toDate calendar date pickers (Popover + Calendar) for PL, CF, Ledger
+- Added getPeriodDates() that computes fromDate/toDate from selected month/year: MTD for current month, full month for past months
+- Added "MTD" badge (amber) shown when current month is selected
+- Updated getDateLabel() to show "Month Year (MTD)" format for period reports
+- Removed unused imports: Popover, PopoverContent, PopoverTrigger, Calendar, CalendarIcon
+- Added formatMonthYear, isCurrentMonth imports from @/lib/format
+- Build passes successfully
+
+Stage Summary:
+- Trial Balance no longer crashes with `Dexie is not defined`
+- All 5 report types now use consistent Month + Year picker (no day selection)
+- MTD logic: current month = start of month to now, past months = full month range
+- Cleaner UI with fewer controls, better mobile experience

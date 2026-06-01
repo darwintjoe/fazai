@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useAppStore } from '@/lib/app-store';
 import { t, getAccountName, type Lang, type TranslationKeys } from '@/lib/i18n';
-import { formatNumber, formatDate, startOfMonthFor, endOfMonthFor, MONTH_LABELS } from '@/lib/format';
+import { formatNumber, formatDate, startOfMonthFor, endOfMonthFor, MONTH_LABELS, formatMonthYear, isCurrentMonth } from '@/lib/format';
 import { db, type Account } from '@/lib/fazai-db';
 import {
   generateTrialBalance,
@@ -19,10 +19,8 @@ import {
   type LedgerEntry,
 } from '@/lib/ledger-engine';
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, CalendarIcon, FileDown, FileSpreadsheet } from 'lucide-react';
+import { ArrowLeft, FileDown, FileSpreadsheet } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
 export function ReportViewer() {
@@ -32,10 +30,6 @@ export function ReportViewer() {
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth());
   const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
-  const [fromDate, setFromDate] = useState<Date>(startOfMonthFor(now.getFullYear(), now.getMonth()));
-  const [toDate, setToDate] = useState<Date>(now);
-  const [fromCalOpen, setFromCalOpen] = useState(false);
-  const [toCalOpen, setToCalOpen] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
 
@@ -66,8 +60,18 @@ export function ReportViewer() {
     }
   }, [loadAccounts]);
 
+  // Compute period dates from selected month/year
+  const getPeriodDates = useCallback(() => {
+    const fromDate = startOfMonthFor(selectedYear, selectedMonth);
+    const toDate = isCurrentMonth(selectedYear, selectedMonth)
+      ? new Date() // MTD for current month
+      : endOfMonthFor(selectedYear, selectedMonth); // Full month for past months
+    return { fromDate, toDate };
+  }, [selectedYear, selectedMonth]);
+
   const generateReport = useCallback(async () => {
     const asOfDate = endOfMonthFor(selectedYear, selectedMonth);
+    const { fromDate, toDate } = getPeriodDates();
 
     switch (reportType) {
       case 'trial-balance': {
@@ -98,7 +102,7 @@ export function ReportViewer() {
         break;
       }
     }
-  }, [reportType, fromDate, toDate, selectedMonth, selectedYear, lang, selectedAccountId]);
+  }, [reportType, selectedMonth, selectedYear, lang, selectedAccountId, getPeriodDates]);
 
   const reportLoadRef = useRef(false);
 
@@ -121,10 +125,12 @@ export function ReportViewer() {
 
   // Get date label for export headers
   const getDateLabel = () => {
+    const mtdLabel = isCurrentMonth(selectedYear, selectedMonth) ? ' (MTD)' : '';
+    const monthYear = formatMonthYear(selectedYear, selectedMonth, lang);
     if (reportType === 'balance-sheet' || reportType === 'trial-balance') {
       return formatDate(endOfMonthFor(selectedYear, selectedMonth), lang);
     }
-    return `${formatDate(fromDate, lang)} - ${formatDate(toDate, lang)}`;
+    return `${monthYear}${mtdLabel}`;
   };
 
   const exportPdf = async () => {
@@ -381,49 +387,26 @@ export function ReportViewer() {
         <h2 className="text-xl font-bold">{reportTitle}</h2>
       </div>
 
-      {/* Date Range & Filters */}
+      {/* Month/Year Picker & Filters */}
       <div className="flex flex-col sm:flex-row gap-2">
-        {/* Balance Sheet & Trial Balance: Month-Year Picker */}
-        {(reportType === 'balance-sheet' || reportType === 'trial-balance') && (
-          <div className="flex gap-2 items-center">
-            <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
-              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {MONTH_LABELS.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
-              <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {YEAR_OPTIONS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* P&L, Cash Flow, Ledger: Date Range with MTD default */}
-        {(reportType === 'profit-loss' || reportType === 'cash-flow' || reportType === 'ledger') && (
-          <div className="flex gap-2 flex-1">
-            <Popover open={fromCalOpen} onOpenChange={setFromCalOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="flex-1 justify-start text-left font-normal text-xs">
-                  <CalendarIcon className="mr-1 h-3 w-3" />
-                  {formatDate(fromDate, lang)}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={fromDate} onSelect={(d) => { if (d) { setFromDate(d); setFromCalOpen(false); } }} initialFocus /></PopoverContent>
-            </Popover>
-            <Popover open={toCalOpen} onOpenChange={setToCalOpen}>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="flex-1 justify-start text-left font-normal text-xs">
-                  <CalendarIcon className="mr-1 h-3 w-3" />
-                  {formatDate(toDate, lang)}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={toDate} onSelect={(d) => { if (d) { setToDate(d); setToCalOpen(false); } }} initialFocus /></PopoverContent>
-            </Popover>
-          </div>
-        )}
+        {/* All report types: Month-Year Picker */}
+        <div className="flex gap-2 items-center">
+          <Select value={String(selectedMonth)} onValueChange={(v) => setSelectedMonth(Number(v))}>
+            <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {MONTH_LABELS.map((m, i) => <SelectItem key={i} value={String(i)}>{m}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Select value={String(selectedYear)} onValueChange={(v) => setSelectedYear(Number(v))}>
+            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {YEAR_OPTIONS.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {isCurrentMonth(selectedYear, selectedMonth) && (
+            <span className="text-xs text-amber-600 font-semibold">MTD</span>
+          )}
+        </div>
         {reportType === 'ledger' && (
           <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
             <SelectTrigger className="w-full sm:w-48"><SelectValue placeholder={t('rep.selectAccount', lang)} /></SelectTrigger>

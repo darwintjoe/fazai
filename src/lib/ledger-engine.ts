@@ -1,4 +1,3 @@
-import Dexie from 'dexie';
 import { db, type Account, type Transaction, type Entry, type AccountMonthlySummary, type ArchivedTransaction } from './fazai-db';
 import { getAccountName } from './i18n';
 import type { Lang } from './i18n';
@@ -190,8 +189,8 @@ async function getAccountBalancesOptimized(fromDate: Date, toDate: Date): Promis
     if (isCurrentMonth(year, month)) continue; // Skip current month - use live tx
 
     const summaries = await db.accountMonthlySummaries
-      .where('[accountId+year+month]')
-      .between([Dexie.minKey, year, month], [Dexie.maxKey, year, month])
+      .where('year').equals(year)
+      .filter(s => s.month === month)
       .toArray();
 
     for (const s of summaries) {
