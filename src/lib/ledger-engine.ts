@@ -864,7 +864,7 @@ export async function getDashboardSummary() {
   }
 
   const recentTransactions = transactions
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 10);
 
   return { totalBalance, todayIncome, todayExpense, recentTransactions };

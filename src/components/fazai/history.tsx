@@ -21,7 +21,9 @@ function useHistoryData() {
   const loadedRef = useRef(false);
 
   const loadData = useCallback(async () => {
-    const txs = await db.transactions.orderBy('date').reverse().toArray();
+    const txs = await db.transactions.toArray();
+    // Sort by createdAt descending — most recently added on top
+    txs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     setTransactions(txs);
     const accs = await db.accounts.toArray();
     setAccounts(accs);
