@@ -4,13 +4,12 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuthStore } from '@/lib/auth-store';
 import { t } from '@/lib/i18n';
-import { db, type Account } from '@/lib/fazai-db';
-import { createIncomeTransaction, createExpenseTransaction } from '@/lib/ledger-engine';
+import { db, type Account, type Transaction } from '@/lib/fazai-db';
+import { createIncomeTransaction, createExpenseTransaction, deleteTransaction, getDashboardSummary } from '@/lib/ledger-engine';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-/* ScrollArea removed — plain overflow-y-auto div is more reliable in flex containers */
-import { MessageCircle, X, Send, Bot, User, Check, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Check, ArrowDownLeft, ArrowUpRight, Trash2, TrendingUp, TrendingDown, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 
@@ -23,11 +22,17 @@ interface PendingTransaction {
   opponentAccountId: string;
 }
 
+interface DeleteAction {
+  transactionId: string;
+}
+
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   transaction?: PendingTransaction | null;
+  deleteAction?: DeleteAction | null;
   confirmed?: boolean;
+  deleted?: boolean;
 }
 
 function formatAmount(n: number): string {
@@ -35,7 +40,7 @@ function formatAmount(n: number): string {
 }
 
 interface AiChatProps {
-  /** "button" = small header button, undefined = standalone (no trigger, panel controlled externally) */
+  /** "button" = small header button, undefined = standalone */
   mode?: 'button';
 }
 
@@ -70,6 +75,49 @@ export function AiChat({ mode }: AiChatProps) {
     }
   }, [messages, isOpen]);
 
+  /** Fetch financial context from the database to send to the AI */
+  const fetchFinancialContext = useCallback(async (): Promise<string> => {
+    try {
+      const [allAccounts, recentTx, summaries, dashboardData] = await Promise.all([
+        db.accounts.toArray(),
+        db.transactions.orderBy('date').reverse().limit(20).toArray(),
+        db.accountMonthlySummaries.toArray(),
+        getDashboardSummary(),
+      ]);
+
+      const res = await fetch('/api/ai/context', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accounts: allAccounts.map(a => ({
+            id: a.id, code: a.code, name: a.name,
+            nameId: a.nameId, nameZh: a.nameZh,
+            type: a.type, isActive: a.isActive,
+          })),
+          recentTransactions: recentTx.map(tx => ({
+            id: tx.id, date: tx.date, description: tx.description,
+            counterparty: tx.counterparty, type: tx.type,
+            entries: tx.entries,
+          })),
+          monthlySummaries: summaries.map(s => ({
+            accountId: s.accountId, year: s.year, month: s.month,
+            totalDebit: s.totalDebit, totalCredit: s.totalCredit,
+          })),
+          currentBalance: dashboardData.totalBalance,
+          todayIncome: dashboardData.todayIncome,
+          todayExpense: dashboardData.todayExpense,
+          lang,
+        }),
+      });
+
+      const data = await res.json();
+      return data.context || '';
+    } catch (e) {
+      console.error('Failed to fetch financial context:', e);
+      return '';
+    }
+  }, [lang]);
+
   const getAccountDisplayName = useCallback((accountId: string) => {
     const acc = accounts.find(a => a.id === accountId);
     if (!acc) return accountId;
@@ -82,7 +130,7 @@ export function AiChat({ mode }: AiChatProps) {
     const msg = messages[msgIndex];
     if (!msg?.transaction) return;
 
-    setConfirming(String(msgIndex));
+    setConfirming(`tx-${msgIndex}`);
     try {
       const tx = msg.transaction;
       const userId = user?.id || 'admin-1';
@@ -133,6 +181,37 @@ export function AiChat({ mode }: AiChatProps) {
     }
   };
 
+  const handleConfirmDelete = async (msgIndex: number) => {
+    const msg = messages[msgIndex];
+    if (!msg?.deleteAction) return;
+
+    setConfirming(`del-${msgIndex}`);
+    try {
+      await deleteTransaction(msg.deleteAction.transactionId);
+
+      setMessages(prev => prev.map((m, i) =>
+        i === msgIndex ? { ...m, deleted: true } : m
+      ));
+
+      const successMsg = lang === 'id'
+        ? '✓ Transaksi berhasil dihapus!'
+        : lang === 'zh'
+        ? '✓ 交易已成功删除！'
+        : '✓ Transaction deleted successfully!';
+
+      toast({ title: successMsg });
+    } catch (err) {
+      const errorMsg = lang === 'id'
+        ? 'Gagal menghapus transaksi.'
+        : lang === 'zh'
+        ? '删除交易失败。'
+        : 'Failed to delete transaction.';
+      toast({ title: errorMsg, variant: 'destructive' });
+    } finally {
+      setConfirming(null);
+    }
+  };
+
   const handleSend = async () => {
     if (!input.trim() || loading) return;
 
@@ -142,6 +221,9 @@ export function AiChat({ mode }: AiChatProps) {
     setLoading(true);
 
     try {
+      // Fetch fresh financial context with each message
+      const financialContext = await fetchFinancialContext();
+
       const accountsPayload = accounts.map(a => ({
         id: a.id,
         name: a.name,
@@ -158,6 +240,7 @@ export function AiChat({ mode }: AiChatProps) {
           message: userMessage,
           lang,
           accounts: accountsPayload,
+          financialContext,
         }),
       });
       const data = await res.json();
@@ -166,12 +249,14 @@ export function AiChat({ mode }: AiChatProps) {
         role: 'assistant',
         content: data.response || 'Sorry, I could not process that.',
         transaction: data.transaction || null,
+        deleteAction: data.deleteAction || null,
       }]);
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
         content: 'Sorry, something went wrong.',
         transaction: null,
+        deleteAction: null,
       }]);
     } finally {
       setLoading(false);
@@ -179,6 +264,48 @@ export function AiChat({ mode }: AiChatProps) {
   };
 
   const closePanel = useCallback(() => setIsOpen(false), []);
+
+  /** Render assistant message with simple markdown-like formatting */
+  const renderAssistantContent = (content: string) => {
+    // Split by newlines and render
+    const lines = content.split('\n');
+    return lines.map((line, i) => {
+      // Bold text **text**
+      const parts = line.split(/(\*\*[^*]+\*\*)/g);
+      const rendered = parts.map((part, j) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return <strong key={j}>{part.slice(2, -2)}</strong>;
+        }
+        return <span key={j}>{part}</span>;
+      });
+
+      // Bullet points
+      if (line.trim().startsWith('- ') || line.trim().startsWith('• ') || line.trim().startsWith('* ')) {
+        return (
+          <div key={i} className="flex gap-1.5 ml-1">
+            <span className="text-red-400 shrink-0">•</span>
+            <span>{rendered}</span>
+          </div>
+        );
+      }
+
+      // Numbered items (1. 2. etc.)
+      if (/^\d+[\.\)]\s/.test(line.trim())) {
+        return (
+          <div key={i} className="ml-1">
+            {rendered}
+          </div>
+        );
+      }
+
+      // Empty line = paragraph break
+      if (line.trim() === '') {
+        return <div key={i} className="h-2" />;
+      }
+
+      return <div key={i}>{rendered}</div>;
+    });
+  };
 
   const panelContent = (
     <>
@@ -207,42 +334,84 @@ export function AiChat({ mode }: AiChatProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-16 right-2 sm:right-4 z-50 w-[calc(100%-16px)] sm:w-96 max-h-[70vh] bg-card border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-16 right-2 sm:right-4 z-50 w-[calc(100%-16px)] sm:w-96 max-h-[75vh] bg-card border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-red-600 to-red-700 text-white rounded-t-2xl">
+            <div className="flex items-center justify-between p-3 border-b bg-gradient-to-r from-red-600 to-red-700 text-white rounded-t-2xl shrink-0">
               <div className="flex items-center gap-2">
                 <Bot className="w-5 h-5" />
                 <span className="font-semibold text-sm">{t('ai.title', lang)}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-white/20">
+                  {lang === 'id' ? 'Cerdas' : lang === 'zh' ? '智能' : 'Smart'}
+                </span>
               </div>
               <button onClick={closePanel} className="p-1 hover:bg-white/20 rounded-lg">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Messages — plain div with overflow-y-auto for reliable scrolling in flex layout */}
+            {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 min-h-0">
               {messages.length === 0 && (
-                <div className="text-center text-muted-foreground text-sm py-8">
-                  <p className="mb-2">💡</p>
-                  <p className="font-medium">
-                    {lang === 'id' ? 'Ketik transaksi dengan bahasa sehari-hari!' : lang === 'zh' ? '用日常语言记录交易！' : 'Record transactions in everyday language!'}
+                <div className="text-center text-muted-foreground text-sm py-6">
+                  <div className="flex justify-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
+                      <MessageCircle className="w-5 h-5 text-red-500" />
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                      <BarChart3 className="w-5 h-5 text-amber-500" />
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
+                      <TrendingUp className="w-5 h-5 text-blue-500" />
+                    </div>
+                  </div>
+                  <p className="font-semibold text-foreground mb-2">
+                    {lang === 'id' ? 'Asisten Keuangan Cerdas' : lang === 'zh' ? '智能财务助手' : 'Smart Financial Assistant'}
                   </p>
-                  <p className="text-xs mt-2">
-                    {lang === 'id'
-                      ? 'Contoh: "beli makan 5000", "terima gaji 1 juta"'
-                      : lang === 'zh'
-                      ? '例如："买饭50"、"收到工资1万"'
-                      : 'e.g., "lunch 25k", "got salary 5000"'
-                    }
-                  </p>
+                  <div className="space-y-1.5 text-xs">
+                    <p>
+                      {lang === 'id'
+                        ? '📊 "Berapa total pengeluaran bulan ini?"'
+                        : lang === 'zh'
+                        ? '📊 "这个月总共花了多少？"'
+                        : '📊 "How much did I spend this month?"'}
+                    </p>
+                    <p>
+                      {lang === 'id'
+                        ? '💰 "Berapa saldo saya sekarang?"'
+                        : lang === 'zh'
+                        ? '💰 "我现在余额多少？"'
+                        : '💰 "What\'s my balance?"'}
+                    </p>
+                    <p>
+                      {lang === 'id'
+                        ? '📈 "Bandingkan dengan bulan lalu"'
+                        : lang === 'zh'
+                        ? '📈 "跟上月对比"'
+                        : '📈 "Compare with last month"'}
+                    </p>
+                    <p>
+                      {lang === 'id'
+                        ? '🗑️ "Hapus transaksi terakhir"'
+                        : lang === 'zh'
+                        ? '🗑️ "删除最后一笔交易"'
+                        : '🗑️ "Delete my last transaction"'}
+                    </p>
+                    <p>
+                      {lang === 'id'
+                        ? '💡 "Beli makan 5000"'
+                        : lang === 'zh'
+                        ? '💡 "买饭50"'
+                        : '💡 "lunch 25k"'}
+                    </p>
+                  </div>
                 </div>
               )}
               <div className="flex flex-col gap-3">
                 {messages.map((msg, idx) => (
                   <div key={idx} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {msg.role === 'assistant' && (
-                      <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center shrink-0 mt-0.5">
                         <Bot className="w-3 h-3 text-red-600 dark:text-red-400" />
                       </div>
                     )}
@@ -252,7 +421,7 @@ export function AiChat({ mode }: AiChatProps) {
                           ? 'bg-red-600 text-white'
                           : 'bg-muted'
                       }`}>
-                        {msg.content}
+                        {msg.role === 'user' ? msg.content : renderAssistantContent(msg.content)}
                       </div>
 
                       {/* Transaction confirmation card */}
@@ -318,9 +487,9 @@ export function AiChat({ mode }: AiChatProps) {
                               size="sm"
                               className="w-full mt-3 bg-red-600 hover:bg-red-700 text-white h-8 text-xs"
                               onClick={() => handleConfirmTransaction(idx)}
-                              disabled={confirming === String(idx)}
+                              disabled={confirming === `tx-${idx}`}
                             >
-                              {confirming === String(idx) ? (
+                              {confirming === `tx-${idx}` ? (
                                 <span className="flex items-center gap-1">
                                   <span className="animate-spin">⏳</span>
                                   {lang === 'id' ? 'Menyimpan...' : lang === 'zh' ? '保存中...' : 'Saving...'}
@@ -335,9 +504,66 @@ export function AiChat({ mode }: AiChatProps) {
                           )}
                         </Card>
                       )}
+
+                      {/* Delete confirmation card */}
+                      {msg.role === 'assistant' && msg.deleteAction && (
+                        <Card className={`mt-2 p-3 border-2 ${
+                          msg.deleted
+                            ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/30'
+                            : 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30'
+                        }`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Trash2 className="w-4 h-4 text-red-500" />
+                            <span className="text-xs font-semibold">
+                              {msg.deleted
+                                ? (lang === 'id' ? 'Transaksi Dihapus' : lang === 'zh' ? '交易已删除' : 'Transaction Deleted')
+                                : (lang === 'id' ? 'Konfirmasi Hapus' : lang === 'zh' ? '确认删除' : 'Confirm Deletion')
+                              }
+                            </span>
+                            {msg.deleted && (
+                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs font-semibold">
+                                <Check className="w-3 h-3" />
+                                {lang === 'id' ? 'Selesai' : lang === 'zh' ? '完成' : 'Done'}
+                              </div>
+                            )}
+                          </div>
+
+                          {!msg.deleted && (
+                            <p className="text-xs text-muted-foreground mb-2">
+                              {lang === 'id'
+                                ? 'Transaksi ini akan dihapus secara permanen.'
+                                : lang === 'zh'
+                                ? '此交易将被永久删除。'
+                                : 'This transaction will be permanently deleted.'}
+                            </p>
+                          )}
+
+                          {!msg.deleted && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="w-full h-8 text-xs"
+                              onClick={() => handleConfirmDelete(idx)}
+                              disabled={confirming === `del-${idx}`}
+                            >
+                              {confirming === `del-${idx}` ? (
+                                <span className="flex items-center gap-1">
+                                  <span className="animate-spin">⏳</span>
+                                  {lang === 'id' ? 'Menghapus...' : lang === 'zh' ? '删除中...' : 'Deleting...'}
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  {lang === 'id' ? 'Ya, Hapus' : lang === 'zh' ? '确认删除' : 'Yes, Delete'}
+                                </span>
+                              )}
+                            </Button>
+                          )}
+                        </Card>
+                      )}
                     </div>
                     {msg.role === 'user' && (
-                      <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center shrink-0">
+                      <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center shrink-0 mt-0.5">
                         <User className="w-3 h-3 text-red-600 dark:text-red-400" />
                       </div>
                     )}
@@ -348,7 +574,8 @@ export function AiChat({ mode }: AiChatProps) {
                     <div className="w-6 h-6 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center shrink-0">
                       <Bot className="w-3 h-3 text-red-600 dark:text-red-400" />
                     </div>
-                    <div className="bg-muted px-3 py-2 rounded-xl text-sm text-muted-foreground">
+                    <div className="bg-muted px-3 py-2 rounded-xl text-sm text-muted-foreground flex items-center gap-2">
+                      <span className="animate-spin">⏳</span>
                       {t('ai.thinking', lang)}
                     </div>
                   </div>
@@ -359,15 +586,15 @@ export function AiChat({ mode }: AiChatProps) {
             </div>
 
             {/* Input */}
-            <div className="p-3 border-t">
+            <div className="p-3 border-t shrink-0">
               <div className="flex gap-2">
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   placeholder={
-                    lang === 'id' ? 'Ketik: "beli makan 5000"...'
-                    : lang === 'zh' ? '输入："买饭50"...'
-                    : 'Type: "lunch 25k"...'
+                    lang === 'id' ? 'Ketik: "berapa saldo saya?" atau "beli makan 5000"...'
+                    : lang === 'zh' ? '输入："我余额多少？" 或 "买饭50"...'
+                    : 'Type: "what\'s my balance?" or "lunch 25k"...'
                   }
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                   className="text-sm"

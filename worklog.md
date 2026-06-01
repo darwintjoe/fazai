@@ -28,3 +28,27 @@ Stage Summary:
 - Zero green/emerald/teal references remain in src/components/fazai/ and src/app/
 - Build passes successfully
 - Color theme now aligned: Red=Income/Active/Primary, White/Gray=Expense, Black=Text, Gold/Amber=Accent/Confirmed
+
+---
+Task ID: ai-supercharge
+Agent: Main Agent
+Task: Supercharge AI assistant with financial data access, query capabilities, delete action, and insights
+
+Work Log:
+- Created /api/ai/context endpoint that formats client-side Dexie data into LLM-friendly financial context
+- Rewrote /api/ai/chat with enhanced system prompt supporting 5 capabilities: transaction recording, financial queries, delete transactions, financial insights, general financial knowledge
+- Updated system prompt to include real-time financial data in context and instruct AI to use it for answering queries
+- Added new action types: "transaction" (record), "delete" (remove transaction), null (informational response)
+- Updated ai-chat.tsx client to fetch fresh financial context (accounts, recent tx, monthly summaries, dashboard data) before each message
+- Added delete-transaction flow with confirmation card and API call
+- Added rich text rendering for assistant messages (bold, bullet points, numbered lists, paragraph breaks)
+- Updated empty state with example prompts for all new capabilities
+- Added "Smart" badge to header
+- Updated input placeholder to show both query and transaction examples
+- Increased max-h to 75vh for more room
+- Build verified passing
+
+Stage Summary:
+- AI assistant can now access real-time financial data and answer queries like "How much did I spend this month?"
+- New capabilities: balance queries, monthly summaries, comparisons, delete transactions, financial insights
+- Three new files/changes: /api/ai/context/route.ts, /api/ai/chat/route.ts (rewritten), ai-chat.tsx (rewritten)

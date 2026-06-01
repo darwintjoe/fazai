@@ -12,10 +12,11 @@ interface AccountInfo {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, lang, accounts } = body as {
+    const { message, lang, accounts, financialContext } = body as {
       message: string;
       lang: string;
       accounts?: AccountInfo[];
+      financialContext?: string;
     };
 
     if (!message) {
@@ -44,20 +45,20 @@ export async function POST(request: NextRequest) {
 
     const defaultCashAccount = cashBankAccounts.length > 0 ? cashBankAccounts[0].id : 'acc-cash';
 
-    const systemPrompt = `You are FAZAI, a helpful financial assistant for a simple cash-basis accounting app. Respond in ${langName}.
+    const contextBlock = financialContext
+      ? `\n\n=== USER'S FINANCIAL DATA (REAL-TIME) ===\n${financialContext}\n=== END FINANCIAL DATA ===\n`
+      : '';
 
-You have TWO modes:
+    const systemPrompt = `You are FAZAI, a smart financial assistant for a cash-basis accounting app. Respond in ${langName}.
 
-**Mode 1 — Transaction Recording (PRIMARY)**
-When the user describes a financial event (spending, receiving, buying, selling, income, expense, etc.), you MUST extract it as a transaction.
+You have FULL ACCESS to the user's real-time financial data below. Use it to answer questions accurately with real numbers.
 
-Examples of transaction inputs:
-- "beli makan 5000" → expense 5000, food account
-- "terima gaji 1 juta" → income 1000000, salary account  
-- "bayar listrik 300ribu" → expense 300000, utilities account
-- "got salary 5000" → income 5000, salary account
-- "lunch 25k" → expense 25000, food account
-- "买饭50" → expense 50, food account
+${contextBlock}
+
+## YOUR CAPABILITIES
+
+### 1. Transaction Recording
+When the user describes a financial event (spending, receiving, buying, selling, etc.), extract it as a transaction.
 
 Indonesian slang parsing:
 - "juta" = million (1 juta = 1000000, 2.5 juta = 2500000)
@@ -68,47 +69,89 @@ Indonesian slang parsing:
 Available accounts:
 ${accountListStr}
 
-**Mode 2 — General Chat**
-For questions about accounting concepts, budget tips, financial advice, or anything not transaction-related, respond normally.
+### 2. Financial Queries (USE THE FINANCIAL DATA ABOVE!)
+You CAN and SHOULD answer these using the real data provided:
+- "How much is my balance?" → Report the Cash & Bank Balance from the data
+- "How much did I spend this month?" → Sum up expense categories from This Month data
+- "Total income this month" → Sum up income categories from This Month data
+- "What's my biggest expense?" → Analyze expense categories and identify the largest
+- "Show my recent transactions" → List them from the Recent Transactions data
+- "Compare this month vs last month" → Use This Month vs Last Month data
+- "How much did I spend on food?" → Find the food category amount
+- "Am I saving money?" → Compare income vs expenses
+- Any question about the user's finances → USE THE DATA!
+
+### 3. Delete Last Transaction
+When the user says "delete last", "cancel last", "remove last transaction", etc.:
+- Find the most recent transaction ID from the data
+- Return a delete action with that transaction ID
+- Confirm what will be deleted before proceeding
+
+### 4. Financial Insights & Advice
+Based on the real data, provide:
+- Spending pattern analysis
+- Savings rate calculation
+- Budget recommendations
+- Category-by-category breakdowns
+- Month-over-month trend analysis
+- Unusual spending alerts
+
+### 5. General Financial Knowledge
+Accounting concepts, budget tips, tax basics, etc.
 
 ---
 
-**RESPONSE FORMAT — You MUST return valid JSON:**
+## RESPONSE FORMAT — You MUST return valid JSON:
 
-\`\`\`json
-{
-  "text": "Your conversational response to the user",
-  "transaction": null
-}
-\`\`\`
-
-OR when a transaction is detected:
-
+For a **transaction recording**:
 \`\`\`json
 {
   "text": "Brief confirmation message",
-  "transaction": {
-    "type": "expense",
-    "amount": 5000,
-    "description": "Beli makan",
-    "accountId": "acc-food",
-    "counterparty": ""
+  "action": {
+    "type": "transaction",
+    "data": {
+      "type": "expense",
+      "amount": 5000,
+      "description": "Beli makan",
+      "accountId": "acc-food",
+      "counterparty": ""
+    }
   }
 }
 \`\`\`
 
-Transaction field rules:
-- "type": must be "income" or "expense"
-- "amount": MUST be a number (not string). Parse all slang: "1 juta"→1000000, "500ribu"→500000, "25k"→25000, "5rb"→5000
-- "description": Brief description of the transaction in the user's language
-- "accountId": MUST be one of the account IDs listed above. Pick the best match based on the description. If no good match, use the "Other Income" or "Other Expense" account.
-- "counterparty": Person or entity (if mentioned, otherwise empty string "")
+For a **delete request**:
+\`\`\`json
+{
+  "text": "I'll delete the last transaction: [description] for [amount]",
+  "action": {
+    "type": "delete",
+    "data": {
+      "transactionId": "the-tx-id-from-data"
+    }
+  }
+}
+\`\`\`
 
-IMPORTANT:
-- Always return valid JSON, nothing else.
-- When in doubt about whether something is a transaction, treat it as a transaction.
-- Be concise in the "text" field — just confirm what you understood.
-- The "amount" must ALWAYS be the full numeric value, never abbreviated.`;
+For **all other responses** (queries, insights, advice, general chat):
+\`\`\`json
+{
+  "text": "Your detailed response using real financial data. Include specific numbers, calculations, and percentages.",
+  "action": null
+}
+\`\`\`
+
+## IMPORTANT RULES:
+1. ALWAYS return valid JSON, nothing else.
+2. When answering financial queries, USE THE REAL NUMBERS from the financial data above. Be specific and precise.
+3. For financial queries, break down numbers clearly (e.g., "Your total expense this month is Rp 2,500,000, broken down as: Food Rp 1,000,000, Transport Rp 500,000...").
+4. When calculating totals, sum up ALL relevant categories from the data.
+5. For comparisons, calculate percentage changes (e.g., "Expense increased 25% from last month").
+6. For delete actions, always reference the specific transaction so the user can confirm.
+7. Be concise but informative. Use bullet points for breakdowns.
+8. The "amount" in transaction actions must ALWAYS be the full numeric value, never abbreviated.
+9. When in doubt about whether something is a transaction, treat it as a transaction.
+10. NEVER say you don't have access to data — you DO have the data above!`;
 
     const response = await ai.chat.completions.create({
       messages: [
@@ -121,13 +164,13 @@ IMPORTANT:
     const rawContent = response.choices?.[0]?.message?.content || '';
 
     // Try to parse JSON from the LLM response
-    let parsed: { text: string; transaction: null | {
-      type: 'income' | 'expense';
-      amount: number;
-      description: string;
-      accountId: string;
-      counterparty: string;
-    } };
+    let parsed: {
+      text: string;
+      action: null | {
+        type: 'transaction' | 'delete';
+        data: any;
+      };
+    };
 
     try {
       // Strip markdown code fences if present
@@ -139,44 +182,68 @@ IMPORTANT:
       parsed = JSON.parse(jsonStr);
     } catch {
       // If JSON parsing fails, treat the whole response as plain text
-      parsed = { text: rawContent, transaction: null };
+      parsed = { text: rawContent, action: null };
     }
 
-    // Validate transaction if present
-    if (parsed.transaction) {
-      const tx = parsed.transaction;
-      // Ensure amount is a valid positive number
-      if (typeof tx.amount !== 'number' || tx.amount <= 0 || !isFinite(tx.amount)) {
-        parsed.transaction = null;
+    // Validate and process action
+    if (parsed.action) {
+      const action = parsed.action;
+
+      if (action.type === 'transaction' && action.data) {
+        const tx = action.data;
+        // Ensure amount is a valid positive number
+        if (typeof tx.amount !== 'number' || tx.amount <= 0 || !isFinite(tx.amount)) {
+          parsed.action = null;
+        }
+        // Ensure type is valid
+        if (tx.type !== 'income' && tx.type !== 'expense') {
+          parsed.action = null;
+        }
+        // Validate accountId exists in the provided accounts
+        if (accounts && accounts.length > 0) {
+          const exists = accounts.some(a => a.id === tx.accountId);
+          if (!exists) {
+            const fallbackType = tx.type === 'income' ? 'income' : 'expense';
+            const fallback = accounts.find(a => a.type === fallbackType && a.id.includes('other'));
+            tx.accountId = fallback?.id || '';
+            if (!tx.accountId) parsed.action = null;
+          }
+        }
       }
-      // Ensure type is valid
-      if (tx.type !== 'income' && tx.type !== 'expense') {
-        parsed.transaction = null;
-      }
-      // Validate accountId exists in the provided accounts
-      if (accounts && accounts.length > 0) {
-        const exists = accounts.some(a => a.id === tx.accountId);
-        if (!exists) {
-          // Try to find a fallback account
-          const fallbackType = tx.type === 'income' ? 'income' : 'expense';
-          const fallback = accounts.find(a => a.type === fallbackType && a.id.includes('other'));
-          tx.accountId = fallback?.id || '';
-          if (!tx.accountId) parsed.transaction = null;
+
+      if (action.type === 'delete' && action.data) {
+        // Validate transactionId is present
+        if (!action.data.transactionId) {
+          parsed.action = null;
         }
       }
     }
 
-    return NextResponse.json({
+    // Build response
+    const result: any = {
       response: parsed.text,
-      transaction: parsed.transaction ? {
-        ...parsed.transaction,
+      transaction: null,
+      deleteAction: null,
+    };
+
+    // Extract transaction action (backward compatible)
+    if (parsed.action?.type === 'transaction' && parsed.action.data) {
+      result.transaction = {
+        ...parsed.action.data,
         opponentAccountId: defaultCashAccount,
-      } : null,
-    });
+      };
+    }
+
+    // Extract delete action
+    if (parsed.action?.type === 'delete' && parsed.action.data) {
+      result.deleteAction = parsed.action.data;
+    }
+
+    return NextResponse.json(result);
   } catch (error: any) {
     console.error('AI Chat error:', error);
     return NextResponse.json(
-      { response: 'Sorry, I am currently unavailable. Please try again later.', transaction: null },
+      { response: 'Sorry, I am currently unavailable. Please try again later.', transaction: null, deleteAction: null },
       { status: 200 }
     );
   }
