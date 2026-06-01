@@ -6,7 +6,7 @@ import { useAppStore } from '@/lib/app-store';
 import { t, type TranslationKeys } from '@/lib/i18n';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, BookOpen, Lightbulb, BarChart3, Users, Shield, Database, Bot, Wallet, LayoutDashboard, Rocket } from 'lucide-react';
+import { ArrowLeft, BookOpen, Lightbulb, BarChart3, Users, Shield, Database, Bot, Wallet, LayoutDashboard, Rocket, ArrowRightLeft } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface GuideSection {
@@ -87,6 +87,20 @@ const guideSections: GuideSection[] = [
     titleKey: 'guide.ai',
     descKey: 'guide.ai.desc',
     icon: Bot,
+  },
+  {
+    id: 'migration',
+    titleKey: 'guide.migration',
+    descKey: 'guide.migration.desc',
+    icon: ArrowRightLeft,
+    subSections: [
+      { titleKey: 'guide.migration.step1', descKey: 'guide.migration.step1.desc' },
+      { titleKey: 'guide.migration.step2', descKey: 'guide.migration.step2.desc' },
+      { titleKey: 'guide.migration.step3', descKey: 'guide.migration.step3.desc' },
+      { titleKey: 'guide.migration.step4', descKey: 'guide.migration.step4.desc' },
+      { titleKey: 'guide.migration.step5', descKey: 'guide.migration.step5.desc' },
+      { titleKey: 'guide.migration.step6', descKey: 'guide.migration.step6.desc' },
+    ],
   },
   {
     id: 'tips',

@@ -203,6 +203,22 @@ export type TranslationKeys = {
   'guide.ai.desc': string;
   'guide.tips': string;
   'guide.tips.desc': string;
+
+  // Migration guide
+  'guide.migration': string;
+  'guide.migration.desc': string;
+  'guide.migration.step1': string;
+  'guide.migration.step1.desc': string;
+  'guide.migration.step2': string;
+  'guide.migration.step2.desc': string;
+  'guide.migration.step3': string;
+  'guide.migration.step3.desc': string;
+  'guide.migration.step4': string;
+  'guide.migration.step4.desc': string;
+  'guide.migration.step5': string;
+  'guide.migration.step5.desc': string;
+  'guide.migration.step6': string;
+  'guide.migration.step6.desc': string;
 };
 
 const en: TranslationKeys = {
@@ -387,6 +403,20 @@ const en: TranslationKeys = {
   'guide.ai.desc': 'The floating AI chat button lets you record transactions using everyday language! Simply type things like "beli makan 5000", "terima gaji 1 juta", or "lunch 25k" and the AI will parse the amount, category, and type. Review the parsed transaction in the confirmation card, then tap "Confirm & Record" to save it instantly. You can also ask general financial questions — the AI can help with accounting concepts, budget tips, and explaining income/expense categories.',
   'guide.tips': 'Tips & Notes',
   'guide.tips.desc': 'All data is stored locally in your browser — clear your browser data and it\'s gone. Back up regularly using the Export function! Keep your Admin PIN secure — it\'s required for factory reset protection. The app works best in portrait mode on mobile devices. Install as a PWA for the best experience with offline support.',
+  'guide.migration': 'Migrating from Existing Balance Sheet',
+  'guide.migration.desc': 'Follow these practical steps to set up FAZAI from your existing balance sheet when migrating your company or organization accounting to FAZAI.',
+  'guide.migration.step1': '1. Prepare Your Balance Sheet',
+  'guide.migration.step1.desc': 'Gather your most recent balance sheet document as reference. This will be your source of truth for entering opening balances and account structures into FAZAI.',
+  'guide.migration.step2': '2. Login as Admin',
+  'guide.migration.step2.desc': 'Use the Admin PIN (default: 000000) to access the Admin Panel. Only Admin users can manage accounts and set opening balances.',
+  'guide.migration.step3': '3. Add All Accounts',
+  'guide.migration.step3.desc': 'Go to the Accounts section in Admin Panel. Add all accounts following your latest balance sheet. For each account, select the correct account type (Asset, Cash/Bank, Liability, Equity, Income, or Expense) and enter the current balance as the opening balance.',
+  'guide.migration.step4': '4. Review All Accounts',
+  'guide.migration.step4.desc': "Double-check each account's type and opening balance. You may disable any unused pre-created accounts by toggling them off. Make sure every account is categorized correctly.",
+  'guide.migration.step5': '5. Verify Balance Sheet Report',
+  'guide.migration.step5.desc': 'Go to Reports → Balance Sheet. Verify that all figures match your original balance sheet. The total assets should equal liabilities plus equity. If the numbers don\'t match, review your account entries for errors.',
+  'guide.migration.step6': '6. Ready to Use!',
+  'guide.migration.step6.desc': 'FAZAI is ready! Start recording your daily income and expenses. All transactions from this point forward will be tracked automatically in the double-entry ledger.',
 };
 
 const id: TranslationKeys = {
@@ -571,6 +601,20 @@ const id: TranslationKeys = {
   'guide.ai.desc': 'Tombol obrolan AI mengambang memungkinkan Anda mencatat transaksi menggunakan bahasa sehari-hari! Cukup ketik seperti "beli makan 5000", "terima gaji 1 juta", atau "bayar listrik 300ribu" dan AI akan mengenali jumlah, kategori, dan jenisnya. Periksa transaksi yang dienali di kartu konfirmasi, lalu ketuk "Konfirmasi & Catat" untuk menyimpannya. Anda juga bisa bertanya tentang keuangan — AI dapat membantu konsep akuntansi, tips anggaran, dan menjelaskan kategori pendapatan/pengeluaran.',
   'guide.tips': 'Tips & Catatan',
   'guide.tips.desc': 'Semua data disimpan secara lokal di browser Anda — hapus data browser Anda dan data akan hilang. Cadangkan secara teratur menggunakan fungsi Ekspor! Jaga keamanan PIN Admin Anda — diperlukan untuk perlindungan reset pabrik. Aplikasi ini bekerja paling baik dalam mode potret di perangkat seluler. Instal sebagai PWA untuk pengalaman terbaik dengan dukungan offline.',
+  'guide.migration': 'Migrasi dari Neraca yang Ada',
+  'guide.migration.desc': 'Ikuti langkah-langkah praktis ini untuk menyiapkan FAZAI dari neraca yang ada saat memigrasikan akuntansi perusahaan atau organisasi Anda ke FAZAI.',
+  'guide.migration.step1': '1. Siapkan Neraca Anda',
+  'guide.migration.step1.desc': 'Kumpulkan dokumen neraca terbaru Anda sebagai referensi. Ini akan menjadi sumber kebenaran untuk memasukkan saldo awal dan struktur akun ke FAZAI.',
+  'guide.migration.step2': '2. Login sebagai Admin',
+  'guide.migration.step2.desc': 'Gunakan PIN Admin (default: 000000) untuk mengakses Panel Admin. Hanya pengguna Admin yang dapat mengelola akun dan mengatur saldo awal.',
+  'guide.migration.step3': '3. Tambahkan Semua Akun',
+  'guide.migration.step3.desc': 'Buka bagian Akun di Panel Admin. Tambahkan semua akun sesuai neraca terbaru Anda. Untuk setiap akun, pilih jenis akun yang benar (Aset, Kas/Bank, Kewajiban, Modal, Pendapatan, atau Pengeluaran) dan masukkan saldo saat ini sebagai saldo awal.',
+  'guide.migration.step4': '4. Periksa Semua Akun',
+  'guide.migration.step4.desc': 'Periksa kembali jenis dan saldo awal setiap akun. Anda dapat menonaktifkan akun bawaan yang tidak digunakan dengan mematikannya. Pastikan setiap akun dikategorikan dengan benar.',
+  'guide.migration.step5': '5. Verifikasi Laporan Neraca',
+  'guide.migration.step5.desc': 'Buka Laporan → Neraca. Verifikasi bahwa semua angka sesuai dengan neraca asli Anda. Total aset harus sama dengan kewajiban ditambah modal. Jika angka tidak cocok, periksa kembali entri akun Anda.',
+  'guide.migration.step6': '6. Siap Digunakan!',
+  'guide.migration.step6.desc': 'FAZAI siap digunakan! Mulai catat pendapatan dan pengeluaran harian Anda. Semua transaksi dari titik ini akan dilacak secara otomatis dalam buku besar entri ganda.',
 };
 
 const zh: TranslationKeys = {
@@ -755,6 +799,20 @@ const zh: TranslationKeys = {
   'guide.ai.desc': '浮动的AI聊天按钮让您可以用日常语言记录交易！只需输入"买饭50"、"收到工资1万"或"午餐25k"，AI将自动解析金额、类别和类型。在确认卡片中查看解析结果，然后点击"确认并记录"即可保存。您也可以询问一般财务问题——AI可以帮助理解会计概念、提供预算建议和解释收支类别。',
   'guide.tips': '提示与说明',
   'guide.tips.desc': '所有数据存储在浏览器本地——清除浏览器数据即会丢失。请定期使用导出功能备份！保管好您的管理员PIN码——这是恢复出厂设置保护的必要条件。应用在移动设备的竖屏模式下效果最佳。安装为PWA可获得最佳体验和离线支持。',
+  'guide.migration': '从现有资产负债表迁移',
+  'guide.migration.desc': '当公司或组织将会计迁移到 FAZAI 时，请按照以下实用步骤从现有资产负债表设置 FAZAI。',
+  'guide.migration.step1': '1. 准备资产负债表',
+  'guide.migration.step1.desc': '收集您最近的资产负债表文件作为参考。这将是向 FAZAI 录入期初余额和账户结构的依据。',
+  'guide.migration.step2': '2. 以管理员身份登录',
+  'guide.migration.step2.desc': '使用管理员 PIN 码（默认：000000）访问管理面板。只有管理员用户才能管理账户和设置期初余额。',
+  'guide.migration.step3': '3. 添加所有账户',
+  'guide.migration.step3.desc': '前往管理面板的账户部分。按照最新资产负债表添加所有账户。为每个账户选择正确的账户类型（资产、现金/银行、负债、权益、收入或支出），并输入当前余额作为期初余额。',
+  'guide.migration.step4': '4. 核对所有账户',
+  'guide.migration.step4.desc': '仔细核对每个账户的类型和期初余额。您可以关闭任何未使用的预创建账户。确保每个账户的分类正确无误。',
+  'guide.migration.step5': '5. 验证资产负债表报表',
+  'guide.migration.step5.desc': '前往报表 → 资产负债表。验证所有数据是否与原始资产负债表一致。总资产应等于负债加权益。如果数字不符，请检查账户录入是否有误。',
+  'guide.migration.step6': '6. 准备就绪！',
+  'guide.migration.step6.desc': 'FAZAI 已准备就绪！开始记录您的日常收入和支出。从现在起，所有交易将在复式记账系统中自动追踪。',
 };
 
 const translations: Record<Lang, TranslationKeys> = { en, id, zh };
