@@ -131,6 +131,7 @@ export function AdminSettings() {
 
       {/* App Info */}
       <Card className="p-4 text-center space-y-2">
+        <img src="/FAZAI.jpg" alt="FAZAI" className="w-12 h-12 rounded-xl mx-auto object-cover shadow" />
         <p className="text-lg font-bold text-red-600 dark:text-red-400">FAZAI</p>
         <p className="text-xs text-muted-foreground">
           {lang === 'id' ? 'Akuntansi Berbasis Kas Sederhana' : lang === 'zh' ? '简单收付实现制会计' : 'Simple Cash-Basis Accounting'}
