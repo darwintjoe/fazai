@@ -77,19 +77,16 @@ if [ -d "public" ]; then
     cp -r public "$BUILD_DIR/next-service-dist/"
 fi
 
-# 将测试环境数据库复制到构建产物中，生产环境直接使用这份数据库
+# FAZAI uses Dexie.js (IndexedDB, client-side) — no server-side database needed
+# Legacy Prisma/db references have been removed
 if [ -f "./db/custom.db" ]; then
-    echo "🗄️  复制测试环境数据库到构建产物..."
+    echo "🗄️  复制数据库到构建产物..."
     mkdir -p "$BUILD_DIR/db"
     cp -r ./db/. "$BUILD_DIR/db/"
-
-    echo "🗄️  同步构建产物中的数据库结构..."
-    DATABASE_URL="file:$BUILD_DIR/db/custom.db" bun run db:push
-    echo "✅ 构建产物数据库已准备完成"
+    echo "✅ 数据库已复制"
     ls -lah "$BUILD_DIR/db"
 else
-    echo "❌ 未找到测试环境数据库文件 ./db/custom.db，无法继续构建生产包"
-    exit 1
+    echo "ℹ️  未找到 ./db/custom.db — FAZAI 使用 Dexie.js (IndexedDB)，无需服务端数据库"
 fi
 
 # 复制 Caddyfile（如果存在）
