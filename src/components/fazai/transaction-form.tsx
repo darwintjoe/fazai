@@ -163,6 +163,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
         });
       }
       toast({ title: t('common.success', lang) });
+      useAppStore.getState().bumpTxVersion();
       navigate('dashboard');
     } catch {
       toast({ title: t('common.error', lang), variant: 'destructive' });

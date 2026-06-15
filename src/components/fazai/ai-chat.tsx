@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuthStore } from '@/lib/auth-store';
+import { useAppStore } from '@/lib/app-store';
 import { t } from '@/lib/i18n';
 import { db, type Account } from '@/lib/fazai-db';
 import { createIncomeTransaction, createExpenseTransaction, deleteTransaction, getDashboardSummary } from '@/lib/ledger-engine';
@@ -139,6 +140,11 @@ export function AiChat({ mode }: AiChatProps) {
     return accounts.filter(a => a.type === type && a.parentId);
   }, [accounts]);
 
+  /** Get cash/bank accounts for the opponent account dropdown */
+  const getCashBankAccounts = useCallback(() => {
+    return accounts.filter(a => (a.type === 'cashBank' || a.type === 'asset') && a.parentId && a.isActive);
+  }, [accounts]);
+
   /** Handle account change in the transaction card */
   const handleAccountChange = useCallback((msgIndex: number, newAccountId: string) => {
     setMessages(prev => prev.map((m, i) => {
@@ -148,6 +154,20 @@ export function AiChat({ mode }: AiChatProps) {
         transaction: {
           ...m.transaction,
           accountId: newAccountId,
+        },
+      };
+    }));
+  }, []);
+
+  /** Handle opponent account change in the transaction card */
+  const handleOpponentAccountChange = useCallback((msgIndex: number, newAccountId: string) => {
+    setMessages(prev => prev.map((m, i) => {
+      if (i !== msgIndex || !m.transaction) return m;
+      return {
+        ...m,
+        transaction: {
+          ...m.transaction,
+          opponentAccountId: newAccountId,
         },
       };
     }));
@@ -189,6 +209,9 @@ export function AiChat({ mode }: AiChatProps) {
         i === msgIndex ? { ...m, confirmed: true } : m
       ));
 
+      // Notify dashboard & other components to refresh
+      useAppStore.getState().bumpTxVersion();
+
       const successMsg = lang === 'id'
         ? '✓ Transaksi berhasil dicatat!'
         : lang === 'zh'
@@ -219,6 +242,9 @@ export function AiChat({ mode }: AiChatProps) {
       setMessages(prev => prev.map((m, i) =>
         i === msgIndex ? { ...m, deleted: true } : m
       ));
+
+      // Notify dashboard & other components to refresh
+      useAppStore.getState().bumpTxVersion();
 
       const successMsg = lang === 'id'
         ? '✓ Transaksi berhasil dihapus!'
@@ -551,6 +577,32 @@ export function AiChat({ mode }: AiChatProps) {
                                   </SelectTrigger>
                                   <SelectContent>
                                     {getAccountsByType(msg.transaction.type).map(acc => (
+                                      <SelectItem key={acc.id} value={acc.id} className="text-xs">
+                                        {getAccountDisplayName(acc.id)}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            </div>
+
+                            {/* Opponent Account (Cash/Bank) — editable dropdown before confirmation */}
+                            <div className="flex justify-between items-center gap-2">
+                              <span className="text-muted-foreground text-xs shrink-0">
+                                {t('form.opponentAccount', lang)}
+                              </span>
+                              {msg.confirmed ? (
+                                <span className="font-medium text-xs">{getAccountDisplayName(msg.transaction.opponentAccountId)}</span>
+                              ) : (
+                                <Select
+                                  value={msg.transaction.opponentAccountId}
+                                  onValueChange={(value) => handleOpponentAccountChange(idx, value)}
+                                >
+                                  <SelectTrigger className="h-7 text-xs border-amber-300 dark:border-amber-700 bg-white dark:bg-card w-auto min-w-[140px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {getCashBankAccounts().map(acc => (
                                       <SelectItem key={acc.id} value={acc.id} className="text-xs">
                                         {getAccountDisplayName(acc.id)}
                                       </SelectItem>

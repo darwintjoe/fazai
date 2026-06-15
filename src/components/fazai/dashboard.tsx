@@ -47,8 +47,15 @@ function useDashboardData(lang: Lang) {
 
 export function Dashboard() {
   const { lang } = useAuthStore();
-  const { navigate } = useAppStore();
-  const { balance, todayIncome, todayExpense, recentTx, accounts } = useDashboardData(lang);
+  const { navigate, txVersion } = useAppStore();
+  const { balance, todayIncome, todayExpense, recentTx, accounts, refresh } = useDashboardData(lang);
+
+  // Re-fetch data when txVersion changes (transaction created/deleted elsewhere)
+  useEffect(() => {
+    if (txVersion > 0) {
+      refresh();
+    }
+  }, [txVersion, refresh]);
 
   return (
     <div className="flex flex-col gap-4 pb-20">

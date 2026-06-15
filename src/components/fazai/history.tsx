@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
+import { useAppStore } from '@/lib/app-store';
 import { t, getAccountName } from '@/lib/i18n';
 import { formatNumber, formatDate } from '@/lib/format';
 import { db, type Transaction, type Account } from '@/lib/fazai-db';
@@ -69,6 +70,7 @@ export function History() {
     setDeleteConfirm(null);
     setSelectedTx(null);
     toast({ title: t('common.success', lang) });
+    useAppStore.getState().bumpTxVersion();
     loadData();
   };
 
