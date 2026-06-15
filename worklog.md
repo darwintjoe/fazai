@@ -156,3 +156,25 @@ Stage Summary:
 - Tests: 27 passing
 - Dependencies: 26 deps + 13 devDeps (was 40+20 = 60, now 39)
 - Bundle: Removed ~11MB+ of unused packages (prisma, sharp, mdxeditor, etc.)
+
+---
+Task ID: deploy-fix
+Agent: Main
+Task: Fix deployed site error 500 — platform deployment was failing
+
+Work Log:
+- Investigated error 500 on fazai.space-z.ai — platform showing "deploy failed" page
+- Verified local build works fine (Next.js compiles successfully)
+- Verified local production server serves pages correctly (200 response)
+- Tested browser interaction — PIN login, dashboard, AI chat all work
+- Discovered root cause: `.zscripts/build.sh` was checking for `./db/custom.db` and running `bun run db:push` (Prisma), but FAZAI now uses Dexie.js (IndexedDB) — no server-side database
+- The build script would exit with error 1 when db/custom.db was missing: "❌ 未找到测试环境数据库文件 ./db/custom.db，无法继续构建生产包"
+- Fixed `.zscripts/build.sh`: replaced hard failure with informational message when db/custom.db is missing
+- Fixed `.zscripts/start.sh`: removed DATABASE_URL dependency and db file check that would crash startup
+- Pushed fix to GitHub (commit 8ccd0b7)
+- Tested clean clone build simulation — build.sh completes successfully
+
+Stage Summary:
+- Root cause: Prisma/database dependency in deploy scripts was outdated since project migrated to Dexie.js
+- Fix: Made db/custom.db optional in build.sh, removed DATABASE_URL check in start.sh
+- Deployment needs to be re-triggered on the platform for the fix to take effect
