@@ -1,7 +1,0 @@
-# FAZAI Caddyfile — NOT USED by default in start.sh
-# FAZAI runs Next.js directly without Caddy reverse proxy
-# Kept for reference only — start.sh uses `exec node/bun server.js` directly
-
-:8080 {
-        reverse_proxy localhost:3000
-}

@@ -1,47 +1,41 @@
 #!/bin/sh
 
-# FAZAI start script — runs Next.js standalone server
-# No Caddy reverse proxy needed (FAZAI is a client-side IndexedDB app)
+# FAZAI Start Script — minimal, robust startup
+# FAZAI is a client-side IndexedDB app — no database, no Caddy needed
 
-# 获取脚本所在目录
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-BUILD_DIR="$SCRIPT_DIR"
 
 echo "🚀 Starting FAZAI..."
-echo ""
+echo "📁 Script dir: $SCRIPT_DIR"
 
-# 切换到构建目录
-cd "$BUILD_DIR" || exit 1
+cd "$SCRIPT_DIR" || { echo "❌ Cannot cd to script dir"; exit 1; }
 
-# FAZAI uses Dexie.js (IndexedDB, client-side) — no server-side database needed
-
-# 启动 Next.js 服务器
-if [ -f "./next-service-dist/server.js" ]; then
-    cd next-service-dist/ || exit 1
-
-    # 设置环境变量
-    export NODE_ENV=production
-    export PORT="${PORT:-3000}"
-    # Force HOSTNAME to 0.0.0.0 so Next.js listens on all interfaces
-    # (container HOSTNAME might resolve to an inaccessible IP)
-    export HOSTNAME=0.0.0.0
-
-    echo "ℹ️  FAZAI uses Dexie.js (IndexedDB) — no server-side database"
-    echo "ℹ️  Starting Next.js on 0.0.0.0:${PORT}..."
-
-    # Use bun if available, fall back to node
-    RUNNER="bun"
-    if ! command -v bun >/dev/null 2>&1; then
-        echo "ℹ️  bun not found, falling back to node"
-        RUNNER="node"
-    fi
-
-    # Start Next.js as the main foreground process
-    echo "✅ Starting FAZAI with $RUNNER on port $PORT"
-    exec $RUNNER server.js
-else
+# Verify server file exists
+if [ ! -f "./next-service-dist/server.js" ]; then
     echo "❌ Server file not found: ./next-service-dist/server.js"
-    echo "📂 Build directory contents:"
+    echo "📂 Directory contents:"
     ls -la
+    exit 1
+fi
+
+cd next-service-dist || { echo "❌ Cannot cd to next-service-dist"; exit 1; }
+
+# Set environment
+export NODE_ENV=production
+export PORT="${PORT:-3000}"
+export HOSTNAME=0.0.0.0
+
+echo "ℹ️  FAZAI — Dexie.js/IndexedDB (no server DB needed)"
+echo "ℹ️  Starting on ${HOSTNAME}:${PORT}"
+
+# Use node if available (more reliable in containers), fall back to bun
+if command -v node >/dev/null 2>&1; then
+    echo "✅ Starting FAZAI with node on port $PORT"
+    exec node server.js
+elif command -v bun >/dev/null 2>&1; then
+    echo "✅ Starting FAZAI with bun on port $PORT"
+    exec bun server.js
+else
+    echo "❌ Neither node nor bun found"
     exit 1
 fi
