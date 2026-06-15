@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Download, Check } from 'lucide-react';
+import { usePwaInstall } from '@/hooks/use-pwa-install';
 
 const APP_VERSION = '0.4.0';
 const DB_VERSION = '3';
@@ -20,6 +21,7 @@ export function SettingsPage() {
   const { navigate } = useAppStore();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
+  const { isInstallable, isInstalled, promptInstall } = usePwaInstall();
   const [oldPin, setOldPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
@@ -146,6 +148,45 @@ export function SettingsPage() {
           </Button>
         </div>
       </Card>
+
+      {/* PWA Install */}
+      {isInstallable && (
+        <Card className="p-4 cursor-pointer hover:bg-accent/50 transition-colors border-red-200 dark:border-red-800" onClick={promptInstall}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
+              <Download className="w-5 h-5 text-red-600 dark:text-red-400" />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-sm">
+                {lang === 'id' ? 'Instal sebagai Aplikasi' : lang === 'zh' ? '安装为应用' : 'Install as App'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {lang === 'id' ? 'Akses cepat dari layar utama perangkat' : lang === 'zh' ? '添加到主屏幕，离线也可使用' : 'Add to home screen for quick & offline access'}
+              </p>
+            </div>
+            <span className="px-2.5 py-1 text-xs font-semibold bg-red-600 text-white rounded-lg">
+              {lang === 'id' ? 'Instal' : lang === 'zh' ? '安装' : 'Install'}
+            </span>
+          </div>
+        </Card>
+      )}
+      {isInstalled && (
+        <Card className="p-4 border-green-200 dark:border-green-800">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
+              <Check className="w-5 h-5 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <p className="font-medium text-sm text-green-700 dark:text-green-300">
+                {lang === 'id' ? 'FAZAI Terinstal' : lang === 'zh' ? 'FAZAI 已安装' : 'FAZAI Installed'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {lang === 'id' ? 'Aplikasi berjalan dalam mode standalone' : lang === 'zh' ? '应用正在独立模式下运行' : 'App is running in standalone mode'}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* App Info */}
       <Card className="p-4 text-center space-y-2">

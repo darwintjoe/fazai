@@ -7,9 +7,10 @@ import { t, getAccountName, type Lang } from '@/lib/i18n';
 import { formatNumber, formatDate } from '@/lib/format';
 import { getDashboardSummary } from '@/lib/ledger-engine';
 import { db, type Transaction, type Account } from '@/lib/fazai-db';
-import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, ChevronRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, ChevronRight, Download } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
+import { usePwaInstall } from '@/hooks/use-pwa-install';
 
 function useDashboardData(lang: Lang) {
   const [balance, setBalance] = useState(0);
@@ -49,6 +50,7 @@ export function Dashboard() {
   const { lang } = useAuthStore();
   const { navigate, txVersion } = useAppStore();
   const { balance, todayIncome, todayExpense, recentTx, accounts, refresh } = useDashboardData(lang);
+  const { isInstallable, promptInstall } = usePwaInstall();
 
   // Re-fetch data when txVersion changes (transaction created/deleted elsewhere)
   useEffect(() => {
@@ -59,6 +61,32 @@ export function Dashboard() {
 
   return (
     <div className="flex flex-col gap-4 pb-20">
+      {/* PWA Install Banner */}
+      {isInstallable && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-3 p-3 bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border border-red-200 dark:border-red-800 rounded-xl"
+        >
+          <div className="w-9 h-9 rounded-full bg-red-600 flex items-center justify-center shrink-0">
+            <Download className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-red-700 dark:text-red-300">
+              {lang === 'id' ? 'Instal FAZAI' : lang === 'zh' ? '安装 FAZAI' : 'Install FAZAI'}
+            </p>
+            <p className="text-[11px] text-red-600/70 dark:text-red-400/70">
+              {lang === 'id' ? 'Akses cepat dari layar utama' : lang === 'zh' ? '添加到主屏幕快速访问' : 'Add to home screen for quick access'}
+            </p>
+          </div>
+          <button
+            onClick={promptInstall}
+            className="px-3 py-1.5 text-xs font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 active:scale-95 transition-all shrink-0"
+          >
+            {lang === 'id' ? 'Instal' : lang === 'zh' ? '安装' : 'Install'}
+          </button>
+        </motion.div>
+      )}
       {/* Balance Card */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
         <Card className="bg-gradient-to-br from-red-600 to-red-700 text-white p-5 rounded-2xl shadow-lg border-0">
