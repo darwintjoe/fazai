@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=794, height=1123">
+<title>FAZAI Code Review Cover</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  @page {
+    size: 794px 1123px;
+    margin: 0;
+  }
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 794px;
+    height: 1123px;
+    background: #f0efed;
+    overflow: hidden;
+  }
+
+  .cover-container {
+    position: absolute;
+    inset: 0;
+    width: 794px;
+    height: 1123px;
+  }
+
+  /* Layer 0 - Background */
+  .layer-0 {
+    position: absolute;
+    inset: 0;
+    background: #f0efed;
+    z-index: 0;
+  }
+
+  /* Layer 1 - Background decorations */
+  .layer-1 {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    z-index: 1;
+  }
+
+  .year-watermark {
+    position: absolute;
+    right: 20px;
+    top: 15%;
+    font-family: 'Inter', sans-serif;
+    font-size: 180pt;
+    font-weight: 900;
+    color: #c72641;
+    opacity: 0.04;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  /* Layer 2 - Structure */
+  .layer-2 {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    overflow: visible;
+  }
+
+  .top-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 794px;
+    height: 15px;
+    background: #c72641;
+  }
+
+  .right-accent-line {
+    position: absolute;
+    right: 12%;
+    top: 75%;
+    width: 4px;
+    height: 13%;
+    background: #c72641;
+  }
+
+  /* Layer 3 - Content */
+  .layer-3 {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    overflow: visible;
+  }
+
+  .kicker {
+    position: absolute;
+    left: 12%;
+    top: 15%;
+    font-family: 'Inter', sans-serif;
+    font-size: 16pt;
+    font-weight: 400;
+    letter-spacing: 3pt;
+    color: #817e74;
+    text-transform: uppercase;
+    opacity: 0.6;
+  }
+
+  .hero-title {
+    position: absolute;
+    left: 12%;
+    top: 22%;
+    font-family: 'Playfair Display', serif;
+    font-size: 48pt;
+    font-weight: 900;
+    color: #22211f;
+    line-height: 1.15;
+    max-width: 70%;
+  }
+
+  .hero-title-line2 {
+    display: block;
+  }
+
+  .summary {
+    position: absolute;
+    left: 12%;
+    top: 50%;
+    font-family: 'Inter', sans-serif;
+    font-size: 16pt;
+    font-weight: 400;
+    color: #817e74;
+    line-height: 1.6;
+    opacity: 0.85;
+    max-width: 50%;
+  }
+
+  .meta-group {
+    position: absolute;
+    right: 12%;
+    top: 70%;
+    text-align: right;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .meta-date {
+    font-size: 20pt;
+    font-weight: 500;
+    color: #22211f;
+    margin-bottom: 8px;
+  }
+
+  .meta-version {
+    font-size: 16pt;
+    font-weight: 300;
+    color: #817e74;
+  }
+
+  .meta-org {
+    font-size: 14pt;
+    font-weight: 400;
+    color: #817e74;
+    margin-top: 12px;
+    opacity: 0.6;
+  }
+</style>
+</head>
+<body>
+  <div class="cover-container">
+    <!-- Layer 0 -->
+    <div class="layer-0"></div>
+
+    <!-- Layer 1 -->
+    <div class="layer-1">
+      <div class="year-watermark">2026</div>
+    </div>
+
+    <!-- Layer 2 -->
+    <div class="layer-2">
+      <div class="top-bar"></div>
+      <div class="right-accent-line"></div>
+    </div>
+
+    <!-- Layer 3 -->
+    <div class="layer-3">
+      <div class="kicker">Code Review &amp; Health Analysis</div>
+      <div class="hero-title">
+        FAZAI
+        <span class="hero-title-line2">Code Review &amp;</span>
+        <span class="hero-title-line2">Health Analysis</span>
+      </div>
+      <div class="summary">
+        Comprehensive codebase assessment of the FAZAI personal cash-basis accounting PWA application, covering security, build quality, architecture, and maintainability.
+      </div>
+      <div class="meta-group">
+        <div class="meta-date">June 2026</div>
+        <div class="meta-version">App v0.4.0 | DB v3</div>
+        <div class="meta-org">Z.ai</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
