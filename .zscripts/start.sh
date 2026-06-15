@@ -66,20 +66,27 @@ if [ -f "./next-service-dist/server.js" ]; then
     export PORT="${PORT:-3000}"
     export HOSTNAME="${HOSTNAME:-0.0.0.0}"
     
-    echo "ℹ️  FAZAI 使用 Dexie.js (IndexedDB)，无需服务端数据库"
+    echo "ℹ️  FAZAI uses Dexie.js (IndexedDB) — no server-side database needed"
+    
+    # Use bun if available, fall back to node
+    RUNNER="bun"
+    if ! command -v bun >/dev/null 2>&1; then
+        echo "ℹ️  bun not found, falling back to node"
+        RUNNER="node"
+    fi
     
     # 后台启动 Next.js
-    bun server.js &
+    $RUNNER server.js &
     NEXT_PID=$!
     pids="$NEXT_PID"
     
     # 等待一小段时间检查进程是否成功启动
-    sleep 1
+    sleep 2
     if ! kill -0 "$NEXT_PID" 2>/dev/null; then
-        echo "❌ Next.js 服务器启动失败"
+        echo "❌ Next.js 服务器启动失败 (tried: $RUNNER)"
         exit 1
     else
-        echo "✅ Next.js 服务器已启动 (PID: $NEXT_PID, Port: $PORT)"
+        echo "✅ Next.js 服务器已启动 (PID: $NEXT_PID, Port: $PORT, Runner: $RUNNER)"
     fi
     
     cd ../
@@ -110,15 +117,18 @@ else
 fi
 
 # 启动 Caddy（如果存在 Caddyfile）
-echo "🚀 启动 Caddy..."
-
-# Caddy 作为前台进程运行（主进程）
-echo "✅ Caddy 已启动（前台运行）"
-echo ""
-echo "🎉 所有服务已启动！"
-echo ""
-echo "💡 按 Ctrl+C 停止所有服务"
-echo ""
-
-# Caddy 作为主进程运行
-exec caddy run --config Caddyfile --adapter caddyfile
+if [ -f "Caddyfile" ] && command -v caddy >/dev/null 2>&1; then
+    echo "🚀 启动 Caddy..."
+    echo ""
+    echo "🎉 所有服务已启动！"
+    echo ""
+    echo "💡 按 Ctrl+C 停止所有服务"
+    echo ""
+    # Caddy 作为主进程运行
+    exec caddy run --config Caddyfile --adapter caddyfile
+else
+    echo "⚠️  Caddyfile or caddy not found — running without Caddy reverse proxy"
+    echo "✅ Next.js server is running directly on port $PORT"
+    # Keep the script alive by waiting on the Next.js process
+    wait $NEXT_PID
+fi
