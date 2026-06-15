@@ -9,6 +9,132 @@ interface AccountInfo {
   code: string;
 }
 
+// Keyword map shared with /api/ai/suggest for fallback matching
+const keywordMap: Record<string, string> = {
+  // Income keywords
+  'salary': '4-1000', 'gaji': '4-1000', '工资': '4-1000', 'pay': '4-1000', 'wage': '4-1000',
+  'freelance': '4-2000', 'project': '4-2000', 'contract': '4-2000',
+  'sales': '4-3000', 'penjualan': '4-3000', '销售': '4-3000', 'sold': '4-3000', 'sell': '4-3000',
+  'interest': '4-4000', 'bunga': '4-4000', '利息': '4-4000', 'dividend': '4-4000',
+  // Expense keywords
+  'food': '5-1000', 'makan': '5-1000', '吃': '5-1000', 'restaurant': '5-1000', 'grocery': '5-1000',
+  'coffee': '5-1000', 'lunch': '5-1000', 'dinner': '5-1000', 'breakfast': '5-1000',
+  'transport': '5-2000', 'gas': '5-2000', 'fuel': '5-2000', 'taxi': '5-2000', 'uber': '5-2000',
+  '交通': '5-2000', 'bensin': '5-2000', 'parking': '5-2000',
+  'electricity': '5-3000', 'water': '5-3000', 'internet': '5-3000', 'phone': '5-3000',
+  'listrik': '5-3000', 'utilitas': '5-3000', '水费': '5-3000',
+  'rent': '5-4000', 'sewa': '5-4000', '租金': '5-4000', 'apartment': '5-4000',
+  'movie': '5-5000', 'game': '5-5000', 'entertainment': '5-5000', 'hiburan': '5-5000', '娱乐': '5-5000',
+  'doctor': '5-6000', 'medicine': '5-6000', 'hospital': '5-6000', 'health': '5-6000',
+  'kesehatan': '5-6000', '医疗': '5-6000', 'pharmacy': '5-6000',
+  'shopping': '5-7000', 'clothes': '5-7000', 'belanja': '5-7000', '购物': '5-7000',
+  'course': '5-8000', 'school': '5-8000', 'education': '5-8000', 'pendidikan': '5-8000', '教育': '5-8000',
+  'book': '5-8000', 'training': '5-8000',
+};
+
+/** Try keyword-based fallback when AI is unavailable.
+ *  Parses the message for an amount and type hint, then matches keywords. */
+function keywordFallback(message: string, accounts?: AccountInfo[]): {
+  response: string;
+  transaction: null | {
+    type: 'income' | 'expense';
+    amount: number;
+    description: string;
+    accountId: string;
+    counterparty: string;
+    opponentAccountId: string;
+  };
+  deleteAction: null;
+  fallback: boolean;
+} | null {
+  const lower = message.toLowerCase();
+
+  // Try to extract amount from message
+  let amount = 0;
+  let amountStr = '';
+
+  // Indonesian slang: juta, ribu, rb, k
+  const jutaMatch = lower.match(/(\d[\d.,]*)\s*juta/);
+  const ribuMatch = lower.match(/(\d[\d.,]*)\s*(ribu|rb)\b/);
+  const kMatch = lower.match(/(\d[\d.,]*)k\b/);
+  const plainMatch = lower.match(/(?:rp\.?|idr)\s*(\d[\d.,]*)/i);
+  // Match formatted numbers (1.000.000 or 1,000,000) OR plain integers (5000, 100000)
+  const numberMatch = lower.match(/(\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{1,2})?)/) || lower.match(/\b(\d+)\b/);
+
+  if (jutaMatch) {
+    amount = parseFloat(jutaMatch[1].replace(/\./g, '').replace(',', '.')) * 1_000_000;
+    amountStr = jutaMatch[0];
+  } else if (ribuMatch) {
+    amount = parseFloat(ribuMatch[1].replace(/\./g, '').replace(',', '.')) * 1_000;
+    amountStr = ribuMatch[0];
+  } else if (kMatch) {
+    amount = parseFloat(kMatch[1].replace(/\./g, '').replace(',', '.')) * 1_000;
+    amountStr = kMatch[0];
+  } else if (plainMatch) {
+    amount = parseFloat(plainMatch[1].replace(/\./g, '').replace(',', '.'));
+    amountStr = plainMatch[0];
+  } else if (numberMatch) {
+    amount = parseFloat(numberMatch[1].replace(/\./g, '').replace(',', '.'));
+    amountStr = numberMatch[0];
+  }
+
+  if (!amount || amount <= 0 || !isFinite(amount)) return null;
+
+  // Determine transaction type from keywords
+  const expenseHints = ['beli', 'bayar', 'keluar', 'spend', 'buy', 'pay', 'expense', 'cost', '买', '付', '花'];
+  const incomeHints = ['terima', 'masuk', 'dapat', 'receive', 'income', 'salary', 'gaji', '收', '赚'];
+
+  let txType: 'income' | 'expense' = 'expense'; // default to expense
+  let hasTypeHint = false;
+  for (const hint of expenseHints) {
+    if (lower.includes(hint)) { txType = 'expense'; hasTypeHint = true; break; }
+  }
+  if (!hasTypeHint) {
+    for (const hint of incomeHints) {
+      if (lower.includes(hint)) { txType = 'income'; hasTypeHint = true; break; }
+    }
+  }
+
+  // Keyword match for account
+  let matchedCode: string | null = null;
+  for (const [keyword, code] of Object.entries(keywordMap)) {
+    if (lower.includes(keyword)) {
+      if (txType === 'income' && code.startsWith('4')) { matchedCode = code; break; }
+      if (txType === 'expense' && code.startsWith('5')) { matchedCode = code; break; }
+    }
+  }
+
+  // Fallback account code
+  if (!matchedCode) {
+    matchedCode = txType === 'income' ? '4-9000' : '5-9000';
+  }
+
+  // Resolve account ID from code
+  const matchedAccount = accounts?.find(a => a.code === matchedCode);
+  if (!matchedAccount) return null;
+
+  // Build description from message (remove the amount part)
+  const description = message.replace(new RegExp(amountStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), '').trim().substring(0, 100) || message.substring(0, 100);
+
+  // Default cash account
+  const cashBankAccounts = accounts?.filter(a => a.type === 'cashBank' && a.id !== 'acc-cashbank-root') || [];
+  const defaultCashAccount = cashBankAccounts.length > 0 ? cashBankAccounts[0].id : 'acc-cash';
+
+  return {
+    response: `I recorded this using keyword matching (AI is currently offline). Please verify the account is correct before confirming.`,
+    transaction: {
+      type: txType,
+      amount,
+      description,
+      accountId: matchedAccount.id,
+      counterparty: '',
+      opponentAccountId: defaultCashAccount,
+    },
+    deleteAction: null,
+    fallback: true,
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -242,6 +368,13 @@ For **all other responses** (queries, insights, advice, general chat):
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('AI Chat error:', error);
+
+    // Try keyword-based fallback
+    const fallback = keywordFallback(message, accounts);
+    if (fallback) {
+      return NextResponse.json(fallback, { status: 200 });
+    }
+
     return NextResponse.json(
       { response: 'Sorry, I am currently unavailable. Please try again later.', transaction: null, deleteAction: null },
       { status: 200 }

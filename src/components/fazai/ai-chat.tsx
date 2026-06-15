@@ -9,7 +9,14 @@ import { createIncomeTransaction, createExpenseTransaction, deleteTransaction, g
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { MessageCircle, X, Send, Bot, User, Check, ArrowDownLeft, ArrowUpRight, Trash2, TrendingUp, BarChart3 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { MessageCircle, X, Send, Bot, User, Check, ArrowDownLeft, ArrowUpRight, Trash2, TrendingUp, BarChart3, BookOpen, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 
@@ -33,6 +40,7 @@ interface ChatMessage {
   deleteAction?: DeleteAction | null;
   confirmed?: boolean;
   deleted?: boolean;
+  fallback?: boolean;
 }
 
 function formatAmount(n: number): string {
@@ -125,6 +133,25 @@ export function AiChat({ mode }: AiChatProps) {
     if (lang === 'zh' && acc.nameZh) return acc.nameZh;
     return acc.name;
   }, [accounts, lang]);
+
+  /** Get accounts filtered by type for the dropdown */
+  const getAccountsByType = useCallback((type: 'income' | 'expense') => {
+    return accounts.filter(a => a.type === type && a.parentId);
+  }, [accounts]);
+
+  /** Handle account change in the transaction card */
+  const handleAccountChange = useCallback((msgIndex: number, newAccountId: string) => {
+    setMessages(prev => prev.map((m, i) => {
+      if (i !== msgIndex || !m.transaction) return m;
+      return {
+        ...m,
+        transaction: {
+          ...m.transaction,
+          accountId: newAccountId,
+        },
+      };
+    }));
+  }, []);
 
   const handleConfirmTransaction = async (msgIndex: number) => {
     const msg = messages[msgIndex];
@@ -250,6 +277,7 @@ export function AiChat({ mode }: AiChatProps) {
         content: data.response || 'Sorry, I could not process that.',
         transaction: data.transaction || null,
         deleteAction: data.deleteAction || null,
+        fallback: data.fallback || false,
       }]);
     } catch {
       setMessages(prev => [...prev, {
@@ -305,6 +333,37 @@ export function AiChat({ mode }: AiChatProps) {
 
       return <div key={i}>{rendered}</div>;
     });
+  };
+
+  /** Render the ledger entry section showing debit/credit */
+  const renderLedgerEntry = (tx: PendingTransaction) => {
+    const debitAccount = tx.type === 'expense'
+      ? getAccountDisplayName(tx.accountId)       // Expense account debited
+      : getAccountDisplayName(tx.opponentAccountId); // Cash/Bank debited
+    const creditAccount = tx.type === 'income'
+      ? getAccountDisplayName(tx.accountId)        // Income account credited
+      : getAccountDisplayName(tx.opponentAccountId); // Cash/Bank credited
+
+    return (
+      <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-800">
+        <div className="flex items-center gap-1 mb-1.5">
+          <BookOpen className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+          <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wider">
+            {t('ai.ledger', lang)}
+          </span>
+        </div>
+        <div className="space-y-1 font-mono text-[11px]">
+          <div className="flex justify-between items-center">
+            <span className="text-foreground">{debitAccount}</span>
+            <span className="text-green-600 dark:text-green-400 font-semibold">{formatAmount(tx.amount)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-foreground pl-3">{creditAccount}</span>
+            <span className="text-red-600 dark:text-red-400 font-semibold">{formatAmount(tx.amount)}</span>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const panelContent = (
@@ -431,7 +490,7 @@ export function AiChat({ mode }: AiChatProps) {
                             ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30'
                             : 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30'
                         }`}>
-                          <div className="flex items-center gap-2 mb-2">
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
                             {msg.transaction.type === 'income' ? (
                               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 text-xs font-semibold">
                                 <ArrowDownLeft className="w-3 h-3" />
@@ -443,6 +502,12 @@ export function AiChat({ mode }: AiChatProps) {
                                 {lang === 'id' ? 'Pengeluaran' : lang === 'zh' ? '支出' : 'Expense'}
                               </div>
                             )}
+                            {msg.fallback && (
+                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 text-[10px] font-semibold">
+                                <AlertTriangle className="w-3 h-3" />
+                                {t('ai.keywordFallback', lang)}
+                              </div>
+                            )}
                             {msg.confirmed && (
                               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 text-xs font-semibold">
                                 <Check className="w-3 h-3" />
@@ -450,6 +515,14 @@ export function AiChat({ mode }: AiChatProps) {
                               </div>
                             )}
                           </div>
+
+                          {/* Keyword fallback warning */}
+                          {msg.fallback && !msg.confirmed && (
+                            <p className="text-[10px] text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3" />
+                              {t('ai.verifyAccount', lang)}
+                            </p>
+                          )}
 
                           <div className="space-y-1.5 text-sm">
                             <div className="flex justify-between items-center">
@@ -460,12 +533,33 @@ export function AiChat({ mode }: AiChatProps) {
                                 {msg.transaction.type === 'income' ? '+' : '-'} {formatAmount(msg.transaction.amount)}
                               </span>
                             </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground text-xs">
+
+                            {/* Account — editable dropdown before confirmation */}
+                            <div className="flex justify-between items-center gap-2">
+                              <span className="text-muted-foreground text-xs shrink-0">
                                 {lang === 'id' ? 'Akun' : lang === 'zh' ? '账户' : 'Account'}
                               </span>
-                              <span className="font-medium text-xs">{getAccountDisplayName(msg.transaction.accountId)}</span>
+                              {msg.confirmed ? (
+                                <span className="font-medium text-xs">{getAccountDisplayName(msg.transaction.accountId)}</span>
+                              ) : (
+                                <Select
+                                  value={msg.transaction.accountId}
+                                  onValueChange={(value) => handleAccountChange(idx, value)}
+                                >
+                                  <SelectTrigger className="h-7 text-xs border-amber-300 dark:border-amber-700 bg-white dark:bg-card w-auto min-w-[140px]">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {getAccountsByType(msg.transaction.type).map(acc => (
+                                      <SelectItem key={acc.id} value={acc.id} className="text-xs">
+                                        {getAccountDisplayName(acc.id)}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
                             </div>
+
                             <div className="flex justify-between items-center">
                               <span className="text-muted-foreground text-xs">
                                 {lang === 'id' ? 'Keterangan' : lang === 'zh' ? '描述' : 'Description'}
@@ -481,6 +575,9 @@ export function AiChat({ mode }: AiChatProps) {
                               </div>
                             )}
                           </div>
+
+                          {/* Ledger Entry (debit/credit view) */}
+                          {renderLedgerEntry(msg.transaction)}
 
                           {!msg.confirmed && (
                             <Button

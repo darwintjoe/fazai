@@ -155,6 +155,12 @@ export type TranslationKeys = {
   'ai.title': string;
   'ai.placeholder': string;
   'ai.thinking': string;
+  'ai.ledger': string;
+  'ai.debit': string;
+  'ai.credit': string;
+  'ai.changeAccount': string;
+  'ai.keywordFallback': string;
+  'ai.verifyAccount': string;
 
   // Nav
   'nav.home': string;
@@ -349,6 +355,12 @@ const en: TranslationKeys = {
   'ai.title': 'AI Assistant',
   'ai.placeholder': 'Ask about your finances...',
   'ai.thinking': 'Thinking...',
+  'ai.ledger': 'Ledger Entry',
+  'ai.debit': 'Debit',
+  'ai.credit': 'Credit',
+  'ai.changeAccount': 'Change account',
+  'ai.keywordFallback': 'Keyword match',
+  'ai.verifyAccount': 'AI offline — verify account before confirming',
   'nav.home': 'Home',
   'nav.reports': 'Reports',
   'nav.history': 'History',
@@ -535,6 +547,12 @@ const id: TranslationKeys = {
   'ai.title': 'Asisten AI',
   'ai.placeholder': 'Tanya tentang keuangan Anda...',
   'ai.thinking': 'Berpikir...',
+  'ai.ledger': 'Entri Buku Besar',
+  'ai.debit': 'Debit',
+  'ai.credit': 'Kredit',
+  'ai.changeAccount': 'Ubah akun',
+  'ai.keywordFallback': 'Cocokan kata kunci',
+  'ai.verifyAccount': 'AI offline — periksa akun sebelum mengkonfirmasi',
   'nav.home': 'Beranda',
   'nav.reports': 'Laporan',
   'nav.history': 'Riwayat',
@@ -721,6 +739,12 @@ const zh: TranslationKeys = {
   'ai.title': 'AI助手',
   'ai.placeholder': '询问您的财务状况...',
   'ai.thinking': '思考中...',
+  'ai.ledger': '分录',
+  'ai.debit': '借方',
+  'ai.credit': '贷方',
+  'ai.changeAccount': '更改账户',
+  'ai.keywordFallback': '关键词匹配',
+  'ai.verifyAccount': 'AI离线 — 确认前请核对账户',
   'nav.home': '首页',
   'nav.reports': '报表',
   'nav.history': '历史',
