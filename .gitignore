@@ -51,4 +51,6 @@ prompt
 
 server.log
 # Skills directory
-/skills/
+/skills/download/cover.html
+download/generate_body.py
+*.pdf
