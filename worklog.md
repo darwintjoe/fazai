@@ -178,3 +178,27 @@ Stage Summary:
 - Root cause: Prisma/database dependency in deploy scripts was outdated since project migrated to Dexie.js
 - Fix: Made db/custom.db optional in build.sh, removed DATABASE_URL check in start.sh
 - Deployment needs to be re-triggered on the platform for the fix to take effect
+
+---
+Task ID: deploy-fix-2
+Agent: Main
+Task: Fix deployed site error 500 (second occurrence) + implement two feature requests
+
+Work Log:
+- Analyzed uploaded screenshot — deployment platform showing 500 error "Sorry, there was a problem deploying the code"
+- Verified local build works: `bun run build` succeeds, standalone server returns 200 on all routes
+- Verified all API routes work: /api/ai/chat, /api/ai/context, /api/ai/suggest all respond correctly
+- No TypeScript errors in project source files
+- Discovered stale DATABASE_URL in .env file (`DATABASE_URL=file:/home/z/my-project/db/custom.db`) — this gets copied into standalone build and could cause issues in deployed environment
+- Cleaned up .env: removed stale DATABASE_URL, replaced with comment noting Dexie.js usage
+- Made start.sh more robust: added bun/node runner fallback, made Caddy startup optional
+- Bumped version from 0.4.1 to 0.4.2 to trigger redeploy
+- Previous session (commit ce8db48) already implemented the two feature requests:
+  1. Opponent/counter account selector (cash/bank) in AI chat transaction card
+  2. Dashboard auto-refresh using txVersion state in app-store
+
+Stage Summary:
+- Root cause: Stale DATABASE_URL in .env file + potential bun/caddy availability issues in deployed environment
+- Fix: Cleaned .env, made start.sh robust with fallbacks, bumped version to 0.4.2
+- Commit b030e68 pushed to GitHub
+- Two feature requests (opponent account selector + dashboard auto-refresh) already implemented in previous session
