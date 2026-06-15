@@ -136,14 +136,20 @@ function keywordFallback(message: string, accounts?: AccountInfo[]): {
 }
 
 export async function POST(request: NextRequest) {
+  let message = '';
+  let accounts: AccountInfo[] | undefined;
+
   try {
     const body = await request.json();
-    const { message, lang, accounts, financialContext } = body as {
+    const bodyData = body as {
       message: string;
       lang: string;
       accounts?: AccountInfo[];
       financialContext?: string;
     };
+    message = bodyData.message;
+    accounts = bodyData.accounts;
+    const { lang, financialContext } = bodyData;
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
