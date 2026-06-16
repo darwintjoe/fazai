@@ -1,13 +1,22 @@
 import type { NextConfig } from "next";
 
-// STANDALONE=1 (or any truthy value) → produce self-contained .next/standalone
-// build for Docker / VPS / bare-metal Node deployment.
-// Default (no env var) → standard build that works on Vercel / Netlify /
-// Cloudflare Pages / Render / Railway / etc.
-const useStandalone = process.env.STANDALONE === "1" || process.env.STANDALONE === "true";
+// Three build modes:
+//   GHPAGES=1   → static HTML export for GitHub Pages / Netlify / S3 / any static host
+//   STANDALONE=1 → self-contained .next/standalone for Docker / VPS / bare-metal Node
+//   (default)   → standard Next.js build for Vercel / Render / Railway / Cloudflare Pages
+const isGhPages  = process.env.GHPAGES  === "1" || process.env.GHPAGES  === "true";
+const isStandalone = process.env.STANDALONE === "1" || process.env.STANDALONE === "true";
 
 const nextConfig: NextConfig = {
-  ...(useStandalone ? { output: "standalone" } : {}),
+  ...(isStandalone && !isGhPages ? { output: "standalone" } : {}),
+  ...(isGhPages ? {
+    output: "export",
+    // GitHub Pages serves the repo at https://<user>.github.io/<repo>/
+    basePath: "/fazai",
+    assetPrefix: "/fazai/",
+    images: { unoptimized: true },
+    trailingSlash: true,
+  } : {}),
   typescript: {
     ignoreBuildErrors: true,
   },
