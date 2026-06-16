@@ -19,6 +19,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { LogOut } from 'lucide-react';
 import { t } from '@/lib/i18n';
 import { runStartupMaintenance } from '@/lib/ledger-engine';
+import { usePosTracker } from '@/hooks/use-pos-tracker';
 
 const emptySubscribe = () => () => {};
 const getSnapshot = () => true;
@@ -28,6 +29,9 @@ export default function Home() {
   const { isAuthenticated, logout, lang, userName, userRole } = useAuthStore();
   const { currentPage } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, getSnapshot, getServerSnapshot);
+
+  // Start POSTracker on login, stop on logout
+  usePosTracker();
 
   // Run startup maintenance (rollover summaries, archive old tx) when app loads
   React.useEffect(() => {
