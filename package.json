@@ -1,11 +1,13 @@
 {
-  "name": "nextjs_tailwind_shadcn_ts",
-  "version": "0.4.2",
+  "name": "fazai",
+  "version": "0.4.3",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3000 2>&1 | tee dev.log",
-    "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
-    "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "build:standalone": "STANDALONE=1 next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
+    "start": "next start -p 3000",
+    "start:standalone": "NODE_ENV=production bun .next/standalone/server.js",
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -37,6 +39,9 @@
     "xlsx": "^0.18.5",
     "z-ai-web-dev-sdk": "^0.0.17",
     "zustand": "^5.0.6"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

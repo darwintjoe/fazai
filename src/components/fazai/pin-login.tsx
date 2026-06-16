@@ -10,12 +10,25 @@ import { Globe, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { UserGuide } from '@/components/fazai/user-guide';
 
+const DEVICE_ID_KEY = 'pos_device_id_FAZAI';
+
 export function PinLogin() {
   const { login, lang, setLang } = useAuthStore();
   const [pin, setPin] = useState('');
   const [error, setError] = useState(false);
   const [seeding, setSeeding] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const readDeviceId = () => {
+      const id = typeof window !== 'undefined' ? localStorage.getItem(DEVICE_ID_KEY) : null;
+      setDeviceId(id);
+    };
+    readDeviceId();
+    window.addEventListener('storage', readDeviceId);
+    return () => window.removeEventListener('storage', readDeviceId);
+  }, []);
 
   const handlePinSubmit = useCallback(async (pinValue: string) => {
     if (pinValue.length !== 6) return;
@@ -64,7 +77,7 @@ export function PinLogin() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-red-50 to-amber-50 dark:from-gray-900 dark:to-gray-800 p-4">
+    <div className="relative min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-red-50 to-amber-50 dark:from-gray-900 dark:to-gray-800 p-4">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -160,6 +173,14 @@ export function PinLogin() {
 
       {showGuide && (
         <UserGuide overlay onClose={() => setShowGuide(false)} />
+      )}
+
+      {deviceId && (
+        <div className="absolute bottom-3 left-0 right-0 flex justify-center pointer-events-none">
+          <span className="font-mono text-[10px] text-muted-foreground/40 select-all">
+            {deviceId}
+          </span>
+        </div>
       )}
     </div>
   );
