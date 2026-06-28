@@ -30,6 +30,7 @@ self.addEventListener('activate', (event) => {
 });
 
 // Fetch strategy:
+// - Web Share Target POST: intercept shared files, store in cache, redirect
 // - API routes: network first, cache fallback
 // - _next/static/*: stale-while-revalidate (show cached, update in background)
 // - Images/icons: cache first
@@ -38,11 +39,48 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
-  if (request.method !== 'GET') return;
-
   // Skip cross-origin requests
   if (url.origin !== self.location.origin) return;
+
+  // ── Web Share Target POST ──
+  // Must come before the non-GET guard
+  if (request.method === 'POST' && url.pathname.endsWith('/share-target')) {
+    event.respondWith(
+      (async () => {
+        try {
+          const formData = await event.request.formData();
+          const files = formData.getAll('files');
+          const title = formData.get('title') || '';
+          const text = formData.get('text') || '';
+          const sharedUrl = formData.get('url') || '';
+
+          const cache = await caches.open('shared-files');
+
+          // Store shared files (images)
+          for (let i = 0; i < files.length; i++) {
+            const response = new Response(files[i]);
+            await cache.put(`/shared-image-${i}`, response);
+          }
+
+          // Store metadata as a JSON response
+          await cache.put('/shared-meta', new Response(JSON.stringify({ title, text, url: sharedUrl })));
+
+          // Store count so the page knows how many files to read
+          await cache.put('/shared-count', new Response(String(files.length)));
+        } catch (err) {
+          // Even if reading formData fails, redirect to the page
+          console.error('Share target error:', err);
+        }
+
+        // 303 redirect converts POST to GET
+        return Response.redirect('/share-target/', 303);
+      })()
+    );
+    return;
+  }
+
+  // Skip non-GET requests
+  if (request.method !== 'GET') return;
 
   // API routes — network first
   if (url.pathname.startsWith('/api/')) {

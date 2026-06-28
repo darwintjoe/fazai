@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { chatCompletion, type AiProviderConfig, AI_PROVIDERS } from '@/lib/ai-provider';
 
 interface AccountInfo {
   id: string;
@@ -44,7 +45,7 @@ function keywordFallback(message: string, accounts?: AccountInfo[]): {
     counterparty: string;
     opponentAccountId: string;
   };
-  deleteAction: null;
+  editAction: null;
   fallback: boolean;
 } | null {
   const lower = message.toLowerCase();
@@ -130,7 +131,7 @@ function keywordFallback(message: string, accounts?: AccountInfo[]): {
       counterparty: '',
       opponentAccountId: defaultCashAccount,
     },
-    deleteAction: null,
+    editAction: null,
     fallback: true,
   };
 }
@@ -146,17 +147,24 @@ export async function POST(request: NextRequest) {
       lang: string;
       accounts?: AccountInfo[];
       financialContext?: string;
+      aiConfig?: AiProviderConfig;
     };
     message = bodyData.message;
     accounts = bodyData.accounts;
-    const { lang, financialContext } = bodyData;
+    const { lang, financialContext, aiConfig } = bodyData;
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
-    const ZAi = (await import('z-ai-web-dev-sdk')).default;
-    const ai = await ZAi.create();
+    // Check if AI is configured
+    if (!aiConfig?.apiKey) {
+      throw new Error('AI_API_KEY_NOT_SET');
+    }
+
+    // Resolve model from config (use default if empty)
+    const resolvedModel = aiConfig.model || AI_PROVIDERS[aiConfig.provider]?.defaultModel || '';
+    const resolvedEndpoint = aiConfig.endpoint || undefined;
 
     const langName = lang === 'id' ? 'Indonesian' : lang === 'zh' ? 'Chinese' : 'English';
 
@@ -213,11 +221,12 @@ You CAN and SHOULD answer these using the real data provided:
 - "Am I saving money?" → Compare income vs expenses
 - Any question about the user's finances → USE THE DATA!
 
-### 3. Delete Last Transaction
-When the user says "delete last", "cancel last", "remove last transaction", etc.:
-- Find the most recent transaction ID from the data
-- Return a delete action with that transaction ID
-- Confirm what will be deleted before proceeding
+### 3. Edit Transaction Amount
+When the user asks to change/correct/update a transaction's amount (e.g. "change my last transaction to 50k", "update the last one to 50000", "correct last transaction amount to 25k"):
+- Identify the target transaction (default: the most recent one) from the Recent Transactions data and copy its exact "id"
+- Parse the new amount (apply the same Indonesian slang rules: "juta"/"ribu"/"rb"/"k")
+- Return an edit action with the transactionId, the new amount, and the original amount (oldAmount) from the data
+- Deletion is NOT supported — never return a delete action; tell the user to use the History screen if they ask to delete
 
 ### 4. Financial Insights & Advice
 Based on the real data, provide:
@@ -252,14 +261,17 @@ For a **transaction recording**:
 }
 \`\`\`
 
-For a **delete request**:
+For an **edit amount request**:
 \`\`\`json
 {
-  "text": "I'll delete the last transaction: [description] for [amount]",
+  "text": "I'll update [description] from [oldAmount] to [amount]",
   "action": {
-    "type": "delete",
+    "type": "edit",
     "data": {
-      "transactionId": "the-tx-id-from-data"
+      "transactionId": "the-exact-tx-id-from-data",
+      "amount": 50000,
+      "oldAmount": 30000,
+      "description": "the transaction description from data"
     }
   }
 }
@@ -279,27 +291,34 @@ For **all other responses** (queries, insights, advice, general chat):
 3. For financial queries, break down numbers clearly (e.g., "Your total expense this month is Rp 2,500,000, broken down as: Food Rp 1,000,000, Transport Rp 500,000...").
 4. When calculating totals, sum up ALL relevant categories from the data.
 5. For comparisons, calculate percentage changes (e.g., "Expense increased 25% from last month").
-6. For delete actions, always reference the specific transaction so the user can confirm.
+6. For edit actions, always reference the specific transaction and show old → new amount so the user can confirm.
 7. Be concise but informative. Use bullet points for breakdowns.
 8. The "amount" in transaction actions must ALWAYS be the full numeric value, never abbreviated.
 9. When in doubt about whether something is a transaction, treat it as a transaction.
 10. NEVER say you don't have access to data — you DO have the data above!`;
 
-    const response = await ai.chat.completions.create({
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: message },
-      ],
-      temperature: 0.3,
-    });
-
-    const rawContent = response.choices?.[0]?.message?.content || '';
+    const rawContent = await chatCompletion(
+      {
+        provider: aiConfig.provider,
+        model: resolvedModel,
+        apiKey: aiConfig.apiKey,
+        endpoint: resolvedEndpoint,
+      },
+      {
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message },
+        ],
+        temperature: 0.3,
+        maxTokens: 1024,
+      },
+    );
 
     // Try to parse JSON from the LLM response
     let parsed: {
       text: string;
       action: null | {
-        type: 'transaction' | 'delete';
+        type: 'transaction' | 'edit';
         data: any;
       };
     };
@@ -343,9 +362,12 @@ For **all other responses** (queries, insights, advice, general chat):
         }
       }
 
-      if (action.type === 'delete' && action.data) {
-        // Validate transactionId is present
-        if (!action.data.transactionId) {
+      if (action.type === 'edit' && action.data) {
+        // Validate transactionId + positive amount
+        if (!action.data.transactionId ||
+            typeof action.data.amount !== 'number' ||
+            action.data.amount <= 0 ||
+            !isFinite(action.data.amount)) {
           parsed.action = null;
         }
       }
@@ -355,7 +377,7 @@ For **all other responses** (queries, insights, advice, general chat):
     const result: any = {
       response: parsed.text,
       transaction: null,
-      deleteAction: null,
+      editAction: null,
     };
 
     // Extract transaction action (backward compatible)
@@ -366,9 +388,9 @@ For **all other responses** (queries, insights, advice, general chat):
       };
     }
 
-    // Extract delete action
-    if (parsed.action?.type === 'delete' && parsed.action.data) {
-      result.deleteAction = parsed.action.data;
+    // Extract edit action (amount change on an existing transaction)
+    if (parsed.action?.type === 'edit' && parsed.action.data) {
+      result.editAction = parsed.action.data;
     }
 
     return NextResponse.json(result);
@@ -382,7 +404,7 @@ For **all other responses** (queries, insights, advice, general chat):
     }
 
     return NextResponse.json(
-      { response: 'Sorry, I am currently unavailable. Please try again later.', transaction: null, deleteAction: null },
+      { response: 'Sorry, I am currently unavailable. Please try again later.', transaction: null, editAction: null },
       { status: 200 }
     );
   }

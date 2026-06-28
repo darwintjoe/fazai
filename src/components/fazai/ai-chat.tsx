@@ -6,7 +6,8 @@ import { useAuthStore } from '@/lib/auth-store';
 import { useAppStore } from '@/lib/app-store';
 import { t } from '@/lib/i18n';
 import { db, type Account } from '@/lib/fazai-db';
-import { createIncomeTransaction, createExpenseTransaction, deleteTransaction, getDashboardSummary } from '@/lib/ledger-engine';
+import { createIncomeTransaction, createExpenseTransaction, editTransaction, getDashboardSummary } from '@/lib/ledger-engine';
+import { type AiProviderConfig } from '@/lib/ai-provider';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { MessageCircle, X, Send, Bot, User, Check, ArrowDownLeft, ArrowUpRight, Trash2, TrendingUp, BarChart3, BookOpen, AlertTriangle } from 'lucide-react';
+import { MessageCircle, X, Send, Bot, User, Check, ArrowDownLeft, ArrowUpRight, Pencil, TrendingUp, BarChart3, BookOpen, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,17 +31,20 @@ interface PendingTransaction {
   opponentAccountId: string;
 }
 
-interface DeleteAction {
+interface EditAction {
   transactionId: string;
+  amount: number;
+  oldAmount?: number;
+  description?: string;
 }
 
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   transaction?: PendingTransaction | null;
-  deleteAction?: DeleteAction | null;
+  editAction?: EditAction | null;
   confirmed?: boolean;
-  deleted?: boolean;
+  edited?: boolean;
   fallback?: boolean;
 }
 
@@ -61,6 +65,7 @@ export function AiChat({ mode }: AiChatProps) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [aiConfig, setAiConfig] = useState<AiProviderConfig | null>(null);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -74,6 +79,29 @@ export function AiChat({ mode }: AiChatProps) {
   useEffect(() => {
     if (isOpen) {
       db.accounts.filter(a => a.isActive).toArray().then(setAccounts);
+      // Load AI provider config from settings
+      (async () => {
+        try {
+          const [prov, model, key, endpoint] = await Promise.all([
+            db.settings.get('ai-provider'),
+            db.settings.get('ai-model'),
+            db.settings.get('ai-api-key'),
+            db.settings.get('ai-endpoint'),
+          ]);
+          if (prov?.value && key?.value) {
+            setAiConfig({
+              provider: prov.value as AiProviderConfig['provider'],
+              model: model?.value || '',
+              apiKey: key.value,
+              endpoint: endpoint?.value || undefined,
+            });
+          } else {
+            setAiConfig(null);
+          }
+        } catch {
+          setAiConfig(null);
+        }
+      })();
     }
   }, [isOpen]);
 
@@ -231,35 +259,28 @@ export function AiChat({ mode }: AiChatProps) {
     }
   };
 
-  const handleConfirmDelete = async (msgIndex: number) => {
+  const handleConfirmEdit = async (msgIndex: number) => {
     const msg = messages[msgIndex];
-    if (!msg?.deleteAction) return;
+    if (!msg?.editAction) return;
 
-    setConfirming(`del-${msgIndex}`);
+    setConfirming(`edit-${msgIndex}`);
     try {
-      await deleteTransaction(msg.deleteAction.transactionId);
+      const updated = await editTransaction(msg.editAction.transactionId, { amount: msg.editAction.amount });
+      if (!updated) {
+        toast({ title: t('common.error', lang), variant: 'destructive' });
+        return;
+      }
 
       setMessages(prev => prev.map((m, i) =>
-        i === msgIndex ? { ...m, deleted: true } : m
+        i === msgIndex ? { ...m, edited: true } : m
       ));
 
       // Notify dashboard & other components to refresh
       useAppStore.getState().bumpTxVersion();
 
-      const successMsg = lang === 'id'
-        ? '✓ Transaksi berhasil dihapus!'
-        : lang === 'zh'
-        ? '✓ 交易已成功删除！'
-        : '✓ Transaction deleted successfully!';
-
-      toast({ title: successMsg });
+      toast({ title: t('ai.editSuccess', lang) });
     } catch (_err) {
-      const errorMsg = lang === 'id'
-        ? 'Gagal menghapus transaksi.'
-        : lang === 'zh'
-        ? '删除交易失败。'
-        : 'Failed to delete transaction.';
-      toast({ title: errorMsg, variant: 'destructive' });
+      toast({ title: t('common.error', lang), variant: 'destructive' });
     } finally {
       setConfirming(null);
     }
@@ -294,6 +315,7 @@ export function AiChat({ mode }: AiChatProps) {
           lang,
           accounts: accountsPayload,
           financialContext,
+          aiConfig: aiConfig,
         }),
       });
       const data = await res.json();
@@ -302,7 +324,7 @@ export function AiChat({ mode }: AiChatProps) {
         role: 'assistant',
         content: data.response || 'Sorry, I could not process that.',
         transaction: data.transaction || null,
-        deleteAction: data.deleteAction || null,
+        editAction: data.editAction || null,
         fallback: data.fallback || false,
       }]);
     } catch {
@@ -310,7 +332,7 @@ export function AiChat({ mode }: AiChatProps) {
         role: 'assistant',
         content: 'Sorry, something went wrong.',
         transaction: null,
-        deleteAction: null,
+        editAction: null,
       }]);
     } finally {
       setLoading(false);
@@ -438,6 +460,17 @@ export function AiChat({ mode }: AiChatProps) {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 min-h-0">
               {messages.length === 0 && (
+                <>
+                {!aiConfig && (
+                  <div className="mb-3 p-2.5 rounded-lg bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-yellow-700 dark:text-yellow-300">
+                        {t('ai.notConfigured', lang)}
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <div className="text-center text-muted-foreground text-sm py-6">
                   <div className="flex justify-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
@@ -477,10 +510,10 @@ export function AiChat({ mode }: AiChatProps) {
                     </p>
                     <p>
                       {lang === 'id'
-                        ? '🗑️ "Hapus transaksi terakhir"'
+                        ? '✏️ "Ubah transaksi terakhir menjadi 50 ribu"'
                         : lang === 'zh'
-                        ? '🗑️ "删除最后一笔交易"'
-                        : '🗑️ "Delete my last transaction"'}
+                        ? '✏️ "把最后一笔交易改成5万"'
+                        : '✏️ "Change my last transaction to 50k"'}
                     </p>
                     <p>
                       {lang === 'id'
@@ -491,6 +524,7 @@ export function AiChat({ mode }: AiChatProps) {
                     </p>
                   </div>
                 </div>
+                </>
               )}
               <div className="flex flex-col gap-3">
                 {messages.map((msg, idx) => (
@@ -654,22 +688,22 @@ export function AiChat({ mode }: AiChatProps) {
                         </Card>
                       )}
 
-                      {/* Delete confirmation card */}
-                      {msg.role === 'assistant' && msg.deleteAction && (
+                      {/* Edit amount confirmation card */}
+                      {msg.role === 'assistant' && msg.editAction && (
                         <Card className={`mt-2 p-3 border-2 ${
-                          msg.deleted
+                          msg.edited
                             ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/30'
-                            : 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-950/30'
+                            : 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30'
                         }`}>
                           <div className="flex items-center gap-2 mb-2">
-                            <Trash2 className="w-4 h-4 text-red-500" />
+                            <Pencil className="w-4 h-4 text-amber-500" />
                             <span className="text-xs font-semibold">
-                              {msg.deleted
-                                ? (lang === 'id' ? 'Transaksi Dihapus' : lang === 'zh' ? '交易已删除' : 'Transaction Deleted')
-                                : (lang === 'id' ? 'Konfirmasi Hapus' : lang === 'zh' ? '确认删除' : 'Confirm Deletion')
+                              {msg.edited
+                                ? (lang === 'id' ? 'Jumlah Diperbarui' : lang === 'zh' ? '金额已更新' : 'Amount Updated')
+                                : t('ai.editConfirm', lang)
                               }
                             </span>
-                            {msg.deleted && (
+                            {msg.edited && (
                               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 text-xs font-semibold">
                                 <Check className="w-3 h-3" />
                                 {lang === 'id' ? 'Selesai' : lang === 'zh' ? '完成' : 'Done'}
@@ -677,33 +711,45 @@ export function AiChat({ mode }: AiChatProps) {
                             )}
                           </div>
 
-                          {!msg.deleted && (
-                            <p className="text-xs text-muted-foreground mb-2">
-                              {lang === 'id'
-                                ? 'Transaksi ini akan dihapus secara permanen.'
-                                : lang === 'zh'
-                                ? '此交易将被永久删除。'
-                                : 'This transaction will be permanently deleted.'}
+                          {msg.editAction.description && (
+                            <p className="text-xs font-medium mb-1 truncate">
+                              {msg.editAction.description}
                             </p>
                           )}
 
-                          {!msg.deleted && (
+                          <div className="flex items-center gap-2 text-xs mb-2">
+                            {typeof msg.editAction.oldAmount === 'number' && (
+                              <>
+                                <span className="text-muted-foreground line-through">
+                                  {formatAmount(msg.editAction.oldAmount)}
+                                </span>
+                                <span className="text-muted-foreground">
+                                  {t('ai.editTo', lang)}
+                                </span>
+                              </>
+                            )}
+                            <span className="font-bold text-amber-700 dark:text-amber-300">
+                              {formatAmount(msg.editAction.amount)}
+                            </span>
+                          </div>
+
+                          {!msg.edited && (
                             <Button
                               size="sm"
-                              variant="destructive"
-                              className="w-full h-8 text-xs"
-                              onClick={() => handleConfirmDelete(idx)}
-                              disabled={confirming === `del-${idx}`}
+                              variant="outline"
+                              className="w-full h-8 text-xs border-amber-400 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40"
+                              onClick={() => handleConfirmEdit(idx)}
+                              disabled={confirming === `edit-${idx}`}
                             >
-                              {confirming === `del-${idx}` ? (
+                              {confirming === `edit-${idx}` ? (
                                 <span className="flex items-center gap-1">
                                   <span className="animate-spin">⏳</span>
-                                  {lang === 'id' ? 'Menghapus...' : lang === 'zh' ? '删除中...' : 'Deleting...'}
+                                  {lang === 'id' ? 'Memperbarui...' : lang === 'zh' ? '更新中...' : 'Updating...'}
                                 </span>
                               ) : (
                                 <span className="flex items-center gap-1">
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                  {lang === 'id' ? 'Ya, Hapus' : lang === 'zh' ? '确认删除' : 'Yes, Delete'}
+                                  <Check className="w-3.5 h-3.5" />
+                                  {t('ai.editConfirm', lang)}
                                 </span>
                               )}
                             </Button>

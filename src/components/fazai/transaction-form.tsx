@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
-import { useAppStore } from '@/lib/app-store';
+import { useAppStore, type PendingReceipt } from '@/lib/app-store';
 import { t, getAccountName } from '@/lib/i18n';
 import { formatNumber, parseFormattedNumber, today } from '@/lib/format';
 import { db, type Account } from '@/lib/fazai-db';
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { ArrowLeft, CalendarIcon, Search, Plus, Sparkles } from 'lucide-react';
+import { ArrowLeft, CalendarIcon, Search, Plus, Sparkles, Receipt } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { v4 as uuid } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
@@ -43,6 +43,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
   const [newCashBankName, setNewCashBankName] = useState('');
   const [saving, setSaving] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState('');
+  const [fromReceipt, setFromReceipt] = useState(false);
 
   const loadAccounts = useCallback(async () => {
     const accType = isIncome ? 'income' : 'expense';
@@ -59,6 +60,35 @@ export function TransactionForm({ type }: TransactionFormProps) {
   useEffect(() => {
     loadAccounts();
   }, [loadAccounts]);
+
+  // Pre-fill from receipt OCR data
+  useEffect(() => {
+    const pending = useAppStore.getState().pendingReceipt;
+    if (!pending) return;
+
+    // Only consume if type matches
+    if ((isIncome && pending.amount <= 0 && !pending.counterparty && !pending.description) ||
+        (!isIncome && pending.amount <= 0 && !pending.counterparty && !pending.description)) {
+      return;
+    }
+
+    if (pending.amount > 0) setAmount(formatNumber(pending.amount));
+    if (pending.counterparty) setCounterparty(pending.counterparty);
+    if (pending.description) setDescription(pending.description);
+    if (pending.date) {
+      const parsed = new Date(pending.date);
+      if (!isNaN(parsed.getTime())) setDate(parsed);
+    }
+    if (pending.accountId) {
+      setSelectedAccountId(pending.accountId);
+    }
+    if (pending.accountName) {
+      setAiSuggestion(pending.accountName);
+    }
+
+    setFromReceipt(true);
+    useAppStore.getState().clearPendingReceipt();
+  }, [isIncome]);
 
   // Only show filtered accounts when there's a search query
   const filteredAccounts = searchQuery
@@ -204,6 +234,14 @@ export function TransactionForm({ type }: TransactionFormProps) {
       </div>
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4">
+        {/* Receipt pre-fill indicator */}
+        {fromReceipt && (
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 px-3 py-2 rounded-lg text-xs">
+            <Receipt className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>{t('receipt.fromReceipt', lang)}</span>
+            <button onClick={() => setFromReceipt(false)} className="ml-auto hover:text-red-800 dark:hover:text-red-300">✕</button>
+          </div>
+        )}
         {/* Amount */}
         <div>
           <label className="text-sm font-medium text-muted-foreground">{t('form.amount', lang)}</label>

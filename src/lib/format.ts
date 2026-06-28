@@ -23,6 +23,23 @@ export function formatDate(date: Date | string, lang: string = 'en'): string {
   });
 }
 
+export function formatDateTime(date: Date | string, lang: string = 'en'): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const localeMap: Record<string, string> = {
+    en: 'en-US',
+    id: 'id-ID',
+    zh: 'zh-CN',
+  };
+  const locale = localeMap[lang] || 'en-US';
+  return d.toLocaleString(locale, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 export function today(): Date {
   const d = new Date();
   d.setHours(0, 0, 0, 0);

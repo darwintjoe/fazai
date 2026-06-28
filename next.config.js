@@ -1,5 +1,3 @@
-import type { NextConfig } from "next";
-
 // Three build modes:
 //   GHPAGES=1   → static HTML export for GitHub Pages / Netlify / S3 / any static host
 //   STANDALONE=1 → self-contained .next/standalone for Docker / VPS / bare-metal Node
@@ -7,7 +5,8 @@ import type { NextConfig } from "next";
 const isGhPages  = process.env.GHPAGES  === "1" || process.env.GHPAGES  === "true";
 const isStandalone = process.env.STANDALONE === "1" || process.env.STANDALONE === "true";
 
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   ...(isStandalone && !isGhPages ? { output: "standalone" } : {}),
   ...(isGhPages ? {
     output: "export",
@@ -24,4 +23,4 @@ const nextConfig: NextConfig = {
   turbopack: {},
 };
 
-export default nextConfig;
+module.exports = nextConfig;

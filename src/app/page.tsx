@@ -14,6 +14,7 @@ import { BottomNav } from '@/components/fazai/bottom-nav';
 import { AiChat } from '@/components/fazai/ai-chat';
 import { SettingsPage } from '@/components/fazai/settings';
 import { UserGuide } from '@/components/fazai/user-guide';
+import { ReceiptShare } from '@/components/fazai/receipt-share';
 import { ErrorBoundary } from '@/components/fazai/error-boundary';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LogOut } from 'lucide-react';
@@ -37,6 +38,16 @@ export default function Home() {
   React.useEffect(() => {
     if (isAuthenticated) {
       runStartupMaintenance();
+    }
+  }, [isAuthenticated]);
+
+  // Auto-detect share-target URL on mount (from Web Share Target API)
+  React.useEffect(() => {
+    if (isAuthenticated && typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      if (pathname.endsWith('/share-target') || pathname.endsWith('/share-target/')) {
+        useAppStore.getState().navigate('share-target');
+      }
     }
   }, [isAuthenticated]);
 
@@ -84,6 +95,8 @@ export default function Home() {
         return <AdminPanel />;
       case 'settings':
         return <SettingsPage />;
+      case 'share-target':
+        return <ReceiptShare />;
       case 'guide':
         return <UserGuide standalone />;
       default:

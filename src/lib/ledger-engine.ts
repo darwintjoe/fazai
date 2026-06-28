@@ -4,6 +4,11 @@ import type { Lang } from './i18n';
 import { startOfMonthFor, endOfMonthFor, isCurrentMonth } from './format';
 import { v4 as uuid } from 'uuid';
 
+// Round to 2 decimals — avoids floating-point drift when scaling entry amounts
+function round2(n: number): number {
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+}
+
 // ============================================
 // Date Helpers (engine-specific)
 // ============================================
@@ -43,7 +48,8 @@ async function calculateMonthlySummary(accountId: string, year: number, month: n
     db.archivedTransactions.where('date').between(from, to, true, true).toArray(),
   ]);
 
-  const allTx = [...liveTx, ...archivedTx];
+  // Exclude soft-deleted transactions from financial totals
+  const allTx = [...liveTx, ...archivedTx].filter(tx => !tx.isDeleted);
   let totalDebit = 0;
   let totalCredit = 0;
 
@@ -197,6 +203,7 @@ async function getAccountBalancesOptimized(fromDate: Date, toDate: Date): Promis
 
     const liveTx = await db.transactions.where('date').between(effectiveFrom, effectiveTo, true, true).toArray();
     for (const tx of liveTx) {
+      if (tx.isDeleted) continue; // exclude soft-deleted
       for (const entry of tx.entries) {
         addBalance(entry.accountId, entry.debit, entry.credit);
       }
@@ -234,6 +241,7 @@ async function getCumulativeBalances(toDate: Date): Promise<Map<string, { debit:
     const effectiveTo = toDate < new Date() ? toDate : new Date();
     const liveTx = await db.transactions.where('date').between(curFrom, effectiveTo, true, true).toArray();
     for (const tx of liveTx) {
+      if (tx.isDeleted) continue; // exclude soft-deleted
       for (const entry of tx.entries) {
         addBalance(entry.accountId, entry.debit, entry.credit);
       }
@@ -275,6 +283,7 @@ export async function getAccountBalances(fromDate?: Date, toDate?: Date): Promis
 
   const balances = new Map<string, { debit: number; credit: number }>();
   for (const tx of filtered) {
+    if (tx.isDeleted) continue; // exclude soft-deleted
     for (const entry of tx.entries) {
       const existing = balances.get(entry.accountId) || { debit: 0, credit: 0 };
       existing.debit += entry.debit;
@@ -448,18 +457,119 @@ export async function createOpeningBalanceTransaction(params: {
   return transaction;
 }
 
-/** Delete a transaction */
+/** Soft-delete a transaction (keeps the record for audit, excludes it from totals) */
 export async function deleteTransaction(id: string): Promise<void> {
   const tx = await db.transactions.get(id);
-  if (!tx) return;
+  if (!tx || tx.isDeleted) return;
 
-  await db.transactions.delete(id);
+  await db.transactions.update(id, { isDeleted: true, deletedAt: new Date() });
 
-  // Recalculate summaries for affected accounts
+  // Recalculate summaries for affected accounts so totals drop the deleted tx
   const year = new Date(tx.date).getFullYear();
   const month = new Date(tx.date).getMonth();
   const accountIds = [...new Set(tx.entries.map(e => e.accountId))];
   await Promise.all(accountIds.map(aid => recalculateMonthlySummary(aid, year, month)));
+}
+
+/** Edit a transaction (double-entry legs are rebuilt based on its type) */
+export async function editTransaction(
+  id: string,
+  params: {
+    amount: number;
+    counterparty?: string;
+    primaryAccountId?: string;   // income/expense category account
+    opponentAccountId?: string;  // cash/bank account
+    description?: string;
+    date?: Date;
+  },
+): Promise<Transaction | null> {
+  const tx = await db.transactions.get(id);
+  if (!tx || tx.isDeleted) return null;
+
+  const oldDate = new Date(tx.date);
+  const oldYear = oldDate.getFullYear();
+  const oldMonth = oldDate.getMonth();
+  const oldAccountIds = [...new Set(tx.entries.map(e => e.accountId))];
+
+  const {
+    amount,
+    counterparty = tx.counterparty,
+    primaryAccountId,
+    opponentAccountId,
+    description = tx.description,
+    date = tx.date,
+  } = params;
+
+  // Build the new entries. If the caller supplied new accounts (income/expense
+  // edit dialog), rebuild as a simple 2-leg entry. Otherwise (e.g. AI quick-edit
+  // that only changes the amount, or a multi-leg custom entry) preserve the
+  // original entry structure and scale every leg proportionally to the new total.
+  let entries: Transaction['entries'];
+
+  if (primaryAccountId && opponentAccountId && (tx.type === 'income' || tx.type === 'expense')) {
+    // Rebuild 2 legs from the supplied accounts
+    const debitEntry = tx.entries.find(e => e.debit > 0);
+    const creditEntry = tx.entries.find(e => e.credit > 0);
+    let debitAccountId: string;
+    let creditAccountId: string;
+    if (tx.type === 'income') {
+      // debit cash/bank, credit income
+      debitAccountId = opponentAccountId;
+      creditAccountId = primaryAccountId;
+    } else {
+      // debit expense, credit cash/bank
+      debitAccountId = primaryAccountId;
+      creditAccountId = opponentAccountId;
+    }
+    entries = [
+      { id: debitEntry?.id || uuid(), accountId: debitAccountId, debit: amount, credit: 0 },
+      { id: creditEntry?.id || uuid(), accountId: creditAccountId, debit: 0, credit: amount },
+    ];
+  } else {
+    // Preserve structure, scale amounts proportionally to the new total.
+    // Use the original debit sum as the base; if it's zero, fall back to credit sum.
+    const baseTotal = tx.entries.reduce((s, e) => s + e.debit, 0)
+      || tx.entries.reduce((s, e) => s + e.credit, 0);
+    const scale = baseTotal > 0 ? amount / baseTotal : 1;
+    entries = tx.entries.map(e => ({
+      id: e.id,
+      accountId: e.accountId,
+      debit: round2(e.debit * scale),
+      credit: round2(e.credit * scale),
+    }));
+  }
+
+  const updated: Partial<Transaction> = {
+    counterparty,
+    description,
+    date,
+    entries,
+    isEdited: true,
+    editedAt: new Date(),
+  };
+
+  await db.transactions.update(id, updated);
+
+  // Recalculate summaries for the union of old + new months and accounts
+  const newDate = new Date(date);
+  const newYear = newDate.getFullYear();
+  const newMonth = newDate.getMonth();
+  const newAccountIds = [...new Set(entries.map(e => e.accountId))];
+  const accountIds = [...new Set([...oldAccountIds, ...newAccountIds])];
+  const months = new Set<string>();
+  months.add(`${oldYear}-${oldMonth}`);
+  months.add(`${newYear}-${newMonth}`);
+
+  await Promise.all(
+    accountIds.flatMap(aid =>
+      [...months].map(ym => {
+        const [y, m] = ym.split('-').map(Number);
+        return recalculateMonthlySummary(aid, y, m);
+      }),
+    ),
+  );
+
+  return (await db.transactions.get(id)) || null;
 }
 
 // ============================================
@@ -756,8 +866,8 @@ export interface LedgerEntry {
 }
 
 export async function generateLedger(accountId: string, fromDate?: Date, toDate?: Date, _lang: Lang = 'en'): Promise<LedgerEntry[]> {
-  // Get live transactions for this account
-  let transactions = await db.transactions.orderBy('date').toArray();
+  // Get live transactions for this account (exclude soft-deleted)
+  let transactions = (await db.transactions.orderBy('date').toArray()).filter(tx => !tx.isDeleted);
 
   if (fromDate) {
     transactions = transactions.filter(tx => new Date(tx.date) >= fromDate);
@@ -788,7 +898,7 @@ export async function generateLedger(accountId: string, fromDate?: Date, toDate?
     }
     // Reset since we'll recalculate
     runningBalance = 0;
-    const allTx = await db.transactions.orderBy('date').toArray();
+    const allTx = (await db.transactions.orderBy('date').toArray()).filter(tx => !tx.isDeleted);
     for (const tx of allTx) {
       for (const entry of tx.entries) {
         if (entry.accountId === accountId) {
@@ -820,7 +930,9 @@ export async function generateLedger(accountId: string, fromDate?: Date, toDate?
 
 // Dashboard summary
 export async function getDashboardSummary() {
-  const transactions = await db.transactions.toArray();
+  // Exclude soft-deleted from totals; keep a separate view of recent activity
+  const allTransactions = await db.transactions.toArray();
+  const transactions = allTransactions.filter(tx => !tx.isDeleted);
   const accounts = await db.accounts.toArray();
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
