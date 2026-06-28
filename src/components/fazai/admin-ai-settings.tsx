@@ -23,8 +23,9 @@ import { Bot, Eye, EyeOff, Check, X, Loader2, Zap, Settings2 } from 'lucide-reac
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
+/** Providers visible to users in the admin settings dropdown. Groq is hidden (internal-only). */
 const PROVIDER_IDS: AiProviderId[] = [
-  'openai', 'anthropic', 'google', 'groq', 'deepseek', 'qwen', 'kimi', 'zai',
+  'openai', 'anthropic', 'google', 'deepseek', 'qwen', 'kimi', 'zai',
 ];
 
 export function AdminAiSettings() {

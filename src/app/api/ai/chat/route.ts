@@ -159,7 +159,12 @@ export async function POST(request: NextRequest) {
 
     // Check if AI is configured
     if (!aiConfig?.apiKey) {
-      throw new Error('AI_API_KEY_NOT_SET');
+      // Fallback: inject server-side env var for internal providers
+      if (aiConfig?.provider === 'groq' && process.env.GROQ_API_KEY) {
+        aiConfig.apiKey = process.env.GROQ_API_KEY;
+      } else {
+        throw new Error('AI_API_KEY_NOT_SET');
+      }
     }
 
     // Resolve model from config (use default if empty)

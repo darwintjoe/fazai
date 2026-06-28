@@ -25,7 +25,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (!aiConfig?.apiKey) {
-      return NextResponse.json({ error: 'AI_API_KEY_NOT_SET' }, { status: 200 });
+      // Fallback: inject server-side env var for internal providers
+      if (aiConfig?.provider === 'groq' && process.env.GROQ_API_KEY) {
+        aiConfig.apiKey = process.env.GROQ_API_KEY;
+      } else {
+        return NextResponse.json({ error: 'AI_API_KEY_NOT_SET' }, { status: 200 });
+      }
     }
 
     const langName = lang === 'id' ? 'Indonesian' : lang === 'zh' ? 'Chinese' : 'English';
