@@ -73,7 +73,8 @@ self.addEventListener('fetch', (event) => {
         }
 
         // 303 redirect converts POST to GET
-        return Response.redirect('/share-target/', 303);
+        // Use the same pathname the POST came to (respects basePath)
+        return Response.redirect(url.pathname.replace(/\/share-target\/?$/, '/share-target/') || '/share-target/', 303);
       })()
     );
     return;
