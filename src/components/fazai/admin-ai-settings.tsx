@@ -23,9 +23,10 @@ import { Bot, Eye, EyeOff, Check, X, Loader2, Zap, Settings2 } from 'lucide-reac
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
-/** Providers visible to users in the admin settings dropdown. Groq is hidden (internal-only). */
+/** Providers visible to users in the admin settings dropdown. Groq is hidden (internal-only).
+ *  Sorted A-Z by provider name for consistent ordering. */
 const PROVIDER_IDS: AiProviderId[] = [
-  'openai', 'anthropic', 'google', 'deepseek', 'qwen', 'kimi', 'zai',
+  'anthropic', 'deepseek', 'google', 'kimi', 'openai', 'qwen', 'zai',
 ];
 
 export function AdminAiSettings() {
@@ -53,7 +54,12 @@ export function AdminAiSettings() {
 
         if (provSetting?.value) {
           const savedProvider = provSetting.value as AiProviderId;
-          setProvider(savedProvider);
+          // Silently remap hidden providers (e.g. groq) to a visible default
+          if (!PROVIDER_IDS.includes(savedProvider)) {
+            setProvider('openai');
+          } else {
+            setProvider(savedProvider);
+          }
         }
         if (modelSetting?.value) setModel(modelSetting.value);
         if (keySetting?.value) setApiKey(keySetting.value);

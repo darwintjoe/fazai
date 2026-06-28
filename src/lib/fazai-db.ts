@@ -213,7 +213,7 @@ export async function seedDatabase() {
   if (!existingProvider) {
     await db.settings.bulkPut([
       { key: 'ai-provider', value: 'groq' },
-      { key: 'ai-model', value: 'llama-3.3-70b-versatile' },
+      { key: 'ai-model', value: 'llama-3.1-8b-instant' },
       { key: 'ai-api-key', value: '' },
       { key: 'ai-endpoint', value: '' },
     ]);

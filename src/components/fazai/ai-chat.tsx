@@ -96,7 +96,15 @@ export function AiChat({ mode }: AiChatProps) {
               endpoint: endpoint?.value || undefined,
             });
           } else {
-            setAiConfig(null);
+            // Silently fall back to factory-default Groq (internal provider).
+            // The server-side API routes will inject GROQ_API_KEY from env if available,
+            // otherwise keyword parser kicks in automatically.
+            setAiConfig({
+              provider: 'groq',
+              model: model?.value || 'llama-3.1-8b-instant',
+              apiKey: key?.value || '',
+              endpoint: endpoint?.value || undefined,
+            });
           }
         } catch {
           setAiConfig(null);
@@ -461,16 +469,6 @@ export function AiChat({ mode }: AiChatProps) {
             <div className="flex-1 overflow-y-auto p-4 min-h-0">
               {messages.length === 0 && (
                 <>
-                {!aiConfig && (
-                  <div className="mb-3 p-2.5 rounded-lg bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800">
-                    <div className="flex items-start gap-2">
-                      <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 shrink-0 mt-0.5" />
-                      <p className="text-[11px] text-yellow-700 dark:text-yellow-300">
-                        {t('ai.notConfigured', lang)}
-                      </p>
-                    </div>
-                  </div>
-                )}
                 <div className="text-center text-muted-foreground text-sm py-6">
                   <div className="flex justify-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
