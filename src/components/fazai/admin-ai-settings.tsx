@@ -133,6 +133,11 @@ export function AdminAiSettings() {
       await db.settings.put({ key: 'ai-model', value: model || AI_PROVIDERS[provider].defaultModel });
       await db.settings.put({ key: 'ai-api-key', value: apiKey.trim() });
       await db.settings.put({ key: 'ai-endpoint', value: endpoint.trim() });
+      // User override: sync to OCR config as well
+      await db.settings.put({ key: 'ocr-provider', value: provider });
+      await db.settings.put({ key: 'ocr-model', value: model || AI_PROVIDERS[provider].defaultModel });
+      await db.settings.put({ key: 'ocr-api-key', value: apiKey.trim() });
+      await db.settings.put({ key: 'ocr-endpoint', value: endpoint.trim() });
 
       toast({
         title: lang === 'id' ? 'Tersimpan!' : lang === 'zh' ? '已保存！' : 'Saved!',

@@ -81,12 +81,12 @@ export function ReceiptOcr() {
   // Perform OCR via AI API
   const performOcr = useCallback(async (base64: string) => {
     try {
-      // Load AI config from DB (same pattern as ai-chat.tsx)
+      // Load OCR-specific AI config from DB
       const [provSetting, modelSetting, keySetting, endpointSetting] = await Promise.all([
-        db.settings.get('ai-provider'),
-        db.settings.get('ai-model'),
-        db.settings.get('ai-api-key'),
-        db.settings.get('ai-endpoint'),
+        db.settings.get('ocr-provider'),
+        db.settings.get('ocr-model'),
+        db.settings.get('ocr-api-key'),
+        db.settings.get('ocr-endpoint'),
       ]);
       const accounts = await db.accounts.where('isActive').equals(1).toArray();
 

@@ -33,6 +33,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Ensure model resolves to default if empty
+    if (!aiConfig.model) {
+      aiConfig.model = 'qwen-3.6-27b'; // factory default for OCR
+    }
+
     const langName = lang === 'id' ? 'Indonesian' : lang === 'zh' ? 'Chinese' : 'English';
 
     // Build account list for the LLM
