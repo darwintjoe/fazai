@@ -20,12 +20,16 @@ interface AppState {
   txVersion: number;
   /** Pre-filled receipt data from OCR, to be consumed by TransactionForm */
   pendingReceipt: PendingReceipt | null;
+  /** Whether the AI chat panel is open (shared between dashboard card and AiChat component) */
+  isAiChatOpen: boolean;
   navigate: (page: Page) => void;
   setReportType: (type: string) => void;
   setSelectedTransactionId: (id: string | null) => void;
   bumpTxVersion: () => void;
   setPendingReceipt: (data: PendingReceipt | null) => void;
   clearPendingReceipt: () => void;
+  setAiChatOpen: (open: boolean) => void;
+  toggleAiChat: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -35,6 +39,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedTransactionId: null,
   txVersion: 0,
   pendingReceipt: null,
+  isAiChatOpen: false,
   navigate: (page) => {
     const current = get().currentPage;
     set({ previousPage: current, currentPage: page });
@@ -44,4 +49,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   bumpTxVersion: () => set({ txVersion: get().txVersion + 1 }),
   setPendingReceipt: (data) => set({ pendingReceipt: data }),
   clearPendingReceipt: () => set({ pendingReceipt: null }),
+  setAiChatOpen: (open) => set({ isAiChatOpen: open }),
+  toggleAiChat: () => set((s) => ({ isAiChatOpen: !s.isAiChatOpen })),
 }));

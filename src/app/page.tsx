@@ -106,7 +106,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top header with logo, user info, AI, and logout */}
+      {/* AI Chat panel (portaled to body, triggered from dashboard balance card) */}
+      <AiChat />
+
+      {/* Top header with logo, user info, and logout */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
         <div className="max-w-2xl mx-auto px-4 h-10 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -117,7 +120,6 @@ export default function Home() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <AiChat mode="button" />
             <button
               onClick={logout}
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-500 transition-colors"

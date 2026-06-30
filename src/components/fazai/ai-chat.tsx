@@ -52,15 +52,11 @@ function formatAmount(n: number): string {
   return n.toLocaleString('id-ID');
 }
 
-interface AiChatProps {
-  /** "button" = small header button, undefined = standalone */
-  mode?: 'button';
-}
-
-export function AiChat({ mode }: AiChatProps) {
+export function AiChat() {
   const { lang, userId } = useAuthStore();
   const { toast } = useToast();
-  const [isOpen, setIsOpen] = useState(false);
+  const isAiChatOpen = useAppStore(s => s.isAiChatOpen);
+  const setAiChatOpen = useAppStore(s => s.setAiChatOpen);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -77,7 +73,7 @@ export function AiChat({ mode }: AiChatProps) {
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isAiChatOpen) {
       db.accounts.filter(a => a.isActive).toArray().then(setAccounts);
       // Load AI provider config from settings
       (async () => {
@@ -111,14 +107,14 @@ export function AiChat({ mode }: AiChatProps) {
         }
       })();
     }
-  }, [isOpen]);
+  }, [isAiChatOpen]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
-    if (isOpen) {
+    if (isAiChatOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isOpen]);
+  }, [messages, isAiChatOpen]);
 
   /** Fetch financial context from the database to send to the AI */
   const fetchFinancialContext = useCallback(async (): Promise<string> => {
@@ -347,7 +343,7 @@ export function AiChat({ mode }: AiChatProps) {
     }
   };
 
-  const closePanel = useCallback(() => setIsOpen(false), []);
+  const closePanel = useCallback(() => setAiChatOpen(false), [setAiChatOpen]);
 
   /** Render assistant message with simple markdown-like formatting */
   const renderAssistantContent = (content: string) => {
@@ -426,7 +422,7 @@ export function AiChat({ mode }: AiChatProps) {
     <>
       {/* Semi-transparent backdrop — click to close */}
       <AnimatePresence>
-        {isOpen && (
+        {isAiChatOpen && (
           <motion.div
             key="ai-backdrop"
             initial={{ opacity: 0 }}
@@ -441,7 +437,7 @@ export function AiChat({ mode }: AiChatProps) {
 
       {/* Chat Panel */}
       <AnimatePresence>
-        {isOpen && (
+        {isAiChatOpen && (
           <motion.div
             key="ai-chat-panel"
             ref={panelRef}
@@ -811,21 +807,6 @@ export function AiChat({ mode }: AiChatProps) {
 
   return (
     <>
-      {/* Header button trigger — always visible, toggles panel */}
-      {mode === 'button' && (
-        <button
-          onClick={() => setIsOpen(prev => !prev)}
-          className={`flex items-center gap-1.5 text-xs transition-colors ${
-            isOpen
-              ? 'text-red-600'
-              : 'text-muted-foreground hover:text-red-600'
-          }`}
-        >
-          <MessageCircle className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">{t('ai.title', lang)}</span>
-        </button>
-      )}
-
       {/* Portal the panel into document.body to escape the header's backdrop-blur containing block */}
       {mounted && createPortal(panelContent, document.body)}
     </>

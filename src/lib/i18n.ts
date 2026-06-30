@@ -15,6 +15,7 @@ export type TranslationKeys = {
   'dash.expense': string;
   'dash.recentTransactions': string;
   'dash.noTransactions': string;
+  'dash.scanReceipt': string;
 
   // Forms
   'form.amount': string;
@@ -270,6 +271,7 @@ const en: TranslationKeys = {
   'dash.expense': 'Expense',
   'dash.recentTransactions': 'Recent Transactions',
   'dash.noTransactions': 'No transactions yet',
+  'dash.scanReceipt': 'Scan Receipt',
   'form.amount': 'Amount',
   'form.from': 'From',
   'form.to': 'To',
@@ -503,6 +505,7 @@ const id: TranslationKeys = {
   'dash.expense': 'Pengeluaran',
   'dash.recentTransactions': 'Transaksi Terakhir',
   'dash.noTransactions': 'Belum ada transaksi',
+  'dash.scanReceipt': 'Pindai Struk',
   'form.amount': 'Jumlah',
   'form.from': 'Dari',
   'form.to': 'Kepada',
@@ -736,6 +739,7 @@ const zh: TranslationKeys = {
   'dash.expense': '支出',
   'dash.recentTransactions': '最近交易',
   'dash.noTransactions': '暂无交易记录',
+  'dash.scanReceipt': '扫描收据',
   'form.amount': '金额',
   'form.from': '来自',
   'form.to': '付给',

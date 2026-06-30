@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useAppStore } from '@/lib/app-store';
 import { t, getAccountName, type Lang } from '@/lib/i18n';
 import { formatNumber, formatDate } from '@/lib/format';
 import { getDashboardSummary } from '@/lib/ledger-engine';
 import { db, type Transaction, type Account } from '@/lib/fazai-db';
-import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, ChevronRight, Download } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, ChevronRight, Download, Camera, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { usePwaInstall } from '@/hooks/use-pwa-install';
@@ -48,9 +48,10 @@ function useDashboardData(lang: Lang) {
 
 export function Dashboard() {
   const { lang } = useAuthStore();
-  const { navigate, txVersion } = useAppStore();
+  const { navigate, txVersion, toggleAiChat } = useAppStore();
   const { balance, todayIncome, todayExpense, recentTx, accounts, refresh } = useDashboardData(lang);
   const { isInstallable, promptInstall } = usePwaInstall();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Re-fetch data when txVersion changes (transaction created/deleted elsewhere)
   useEffect(() => {
@@ -59,8 +60,41 @@ export function Dashboard() {
     }
   }, [txVersion, refresh]);
 
+  /** Handle camera/gallery file selection — store in Cache API and navigate to OCR */
+  const handleImageSelected = useCallback(async (file: File) => {
+    try {
+      const cache = await caches.open('shared-files');
+      const response = new Response(file);
+      // Store with the same key the service worker uses
+      await cache.put('/shared-image-0', response);
+      // Also store a count metadata entry (ReceiptOcr may expect this)
+      await cache.put('/shared-count', new Response('1'));
+      navigate('share-target');
+    } catch (err) {
+      console.error('Failed to store image for OCR:', err);
+    }
+  }, [navigate]);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageSelected(file);
+    }
+    // Reset input so same file can be selected again
+    e.target.value = '';
+  }, [handleImageSelected]);
+
   return (
     <div className="flex flex-col gap-4 pb-20">
+      {/* Hidden file input for camera/gallery */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
       {/* PWA Install Banner */}
       {isInstallable && (
         <motion.div
@@ -87,48 +121,79 @@ export function Dashboard() {
           </button>
         </motion.div>
       )}
-      {/* Balance Card */}
+
+      {/* Balance Card with embedded AI + Camera side icons */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <Card className="bg-gradient-to-br from-red-600 to-red-700 text-white p-5 rounded-2xl shadow-lg border-0">
-          <p className="text-xs opacity-90">{t('dash.balance', lang)}</p>
-          <p className="text-2xl font-bold mt-1">{formatNumber(balance)}</p>
-          <div className="flex gap-6 mt-3">
-            <div className="flex items-center gap-1.5">
-              <ArrowUpRight className="w-3.5 h-3.5 text-red-200" />
-              <div>
-                <p className="text-[10px] opacity-80">{t('dash.income', lang)}</p>
-                <p className="text-xs font-semibold">{formatNumber(todayIncome)}</p>
+        <Card className="relative bg-gradient-to-br from-red-600 to-red-700 text-white p-5 rounded-2xl shadow-lg border-0 overflow-hidden">
+          {/* Subtle decorative circle for depth */}
+          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/5" />
+          <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-white/5" />
+
+          <div className="relative">
+            <p className="text-xs opacity-90">{t('dash.balance', lang)}</p>
+            <p className="text-3xl font-bold mt-1 tracking-tight">{formatNumber(balance)}</p>
+            <div className="flex gap-6 mt-3">
+              <div className="flex items-center gap-1.5">
+                <ArrowUpRight className="w-3.5 h-3.5 text-red-200" />
+                <div>
+                  <p className="text-[10px] opacity-80">{t('dash.income', lang)}</p>
+                  <p className="text-xs font-semibold">{formatNumber(todayIncome)}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <ArrowDownRight className="w-3.5 h-3.5 text-white/60" />
+                <div>
+                  <p className="text-[10px] opacity-80">{t('dash.expense', lang)}</p>
+                  <p className="text-xs font-semibold">{formatNumber(todayExpense)}</p>
+                </div>
               </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <ArrowDownRight className="w-3.5 h-3.5 text-white/60" />
-              <div>
-                <p className="text-[10px] opacity-80">{t('dash.expense', lang)}</p>
-                <p className="text-xs font-semibold">{formatNumber(todayExpense)}</p>
-              </div>
-            </div>
+          </div>
+
+          {/* Transparent side-menu icons — right side of card */}
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              title={t('dash.scanReceipt', lang)}
+              className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 backdrop-blur-sm flex items-center justify-center transition-all"
+            >
+              <Camera className="w-4 h-4 text-white" />
+            </button>
+            <button
+              onClick={toggleAiChat}
+              title={t('ai.title', lang)}
+              className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 backdrop-blur-sm flex items-center justify-center transition-all"
+            >
+              <MessageCircle className="w-4 h-4 text-white" />
+            </button>
           </div>
         </Card>
       </motion.div>
 
-      {/* Income/Expense Buttons */}
+      {/* Income / Expense — dominant action cards */}
       <div className="grid grid-cols-2 gap-3">
         <motion.button
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.06 }}
           whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileTap={{ scale: 0.97 }}
           onClick={() => navigate('income')}
-          className="flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-red-600 to-red-700 text-white rounded-2xl p-4 shadow-md min-h-[100px] active:scale-95 transition-transform"
+          className="flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-red-600 to-red-700 text-white rounded-2xl p-5 shadow-md min-h-[120px] transition-transform"
         >
-          <TrendingUp className="w-7 h-7" />
+          <TrendingUp className="w-8 h-8" />
           <span className="text-base font-bold">{t('dash.income', lang)}</span>
         </motion.button>
         <motion.button
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
           whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileTap={{ scale: 0.97 }}
           onClick={() => navigate('expense')}
-          className="flex flex-col items-center justify-center gap-1.5 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-200 rounded-2xl p-4 shadow-md min-h-[100px] active:scale-95 transition-transform"
+          className="flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-200 rounded-2xl p-5 shadow-md min-h-[120px] transition-transform"
         >
-          <TrendingDown className="w-7 h-7" />
+          <TrendingDown className="w-8 h-8" />
           <span className="text-base font-bold">{t('dash.expense', lang)}</span>
         </motion.button>
       </div>
