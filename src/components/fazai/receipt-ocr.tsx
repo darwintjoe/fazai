@@ -35,50 +35,7 @@ export function ReceiptOcr() {
   const [ocrResult, setOcrResult] = useState<OcrResult | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Load shared image from Cache API
-  const loadSharedImage = useCallback(async () => {
-    try {
-      const cache = await caches.open('shared-files');
-
-      // Try to find the shared image (could be /shared-image-0, /shared-image, etc.)
-      const keys = await cache.keys();
-      const imageKey = keys.find(k =>
-        k.url.includes('/shared-image-0') || k.url.includes('/shared-image')
-      );
-
-      if (!imageKey) {
-        setStatus('no-image');
-        return;
-      }
-
-      const response = await cache.match(imageKey);
-      if (!response) {
-        setStatus('no-image');
-        return;
-      }
-
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      setImageUrl(objectUrl);
-
-      // Clean up cache entries
-      for (const key of keys) {
-        if (key.url.includes('/shared-image') || key.url.includes('/shared-meta') || key.url.includes('/shared-count')) {
-          await cache.delete(key);
-        }
-      }
-
-      // Convert blob to base64 for API call
-      setStatus('loading-ocr');
-      const base64 = await blobToBase64(blob);
-      await performOcr(base64);
-    } catch (err) {
-      console.error('Error loading shared image:', err);
-      setStatus('no-image');
-    }
-  }, [lang]);
-
-  // Perform OCR via AI API
+  // Perform OCR via AI API (defined before loadSharedImage so it's in scope)
   const performOcr = useCallback(async (base64: string) => {
     try {
       // Load OCR-specific AI config from DB
@@ -88,7 +45,7 @@ export function ReceiptOcr() {
         db.settings.get('ocr-api-key'),
         db.settings.get('ocr-endpoint'),
       ]);
-      const accounts = await db.accounts.where('isActive').equals(1).toArray();
+      const accounts = await db.accounts.filter(a => a.isActive).toArray();
 
       const apiKey = keySetting?.value as string | undefined;
       if (!apiKey) {
@@ -142,6 +99,49 @@ export function ReceiptOcr() {
       setErrorMessage(err.message || 'Network error');
     }
   }, [lang]);
+
+  // Load shared image from Cache API
+  const loadSharedImage = useCallback(async () => {
+    try {
+      const cache = await caches.open('shared-files');
+
+      // Try to find the shared image (could be /shared-image-0, /shared-image, etc.)
+      const keys = await cache.keys();
+      const imageKey = keys.find(k =>
+        k.url.includes('/shared-image-0') || k.url.includes('/shared-image')
+      );
+
+      if (!imageKey) {
+        setStatus('no-image');
+        return;
+      }
+
+      const response = await cache.match(imageKey);
+      if (!response) {
+        setStatus('no-image');
+        return;
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      setImageUrl(objectUrl);
+
+      // Clean up cache entries
+      for (const key of keys) {
+        if (key.url.includes('/shared-image') || key.url.includes('/shared-meta') || key.url.includes('/shared-count')) {
+          await cache.delete(key);
+        }
+      }
+
+      // Convert blob to base64 for API call
+      setStatus('loading-ocr');
+      const base64 = await blobToBase64(blob);
+      await performOcr(base64);
+    } catch (err) {
+      console.error('Error loading shared image:', err);
+      setStatus('no-image');
+    }
+  }, [performOcr]);
 
   useEffect(() => {
     loadSharedImage();
