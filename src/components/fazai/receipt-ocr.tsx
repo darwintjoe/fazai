@@ -183,6 +183,9 @@ export function ReceiptOcr() {
     navigate('dashboard');
   }, [imageUrl, navigate]);
 
+  // Whether to show the image in fullscreen mode (during loading states)
+  const isFullscreenImage = status === 'loading-image' || status === 'loading-ocr';
+
   return (
     <div className="flex flex-col gap-4 pb-20">
       {/* Header */}
@@ -195,20 +198,20 @@ export function ReceiptOcr() {
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4">
 
-        {/* Image Preview */}
+        {/* Image Preview — fullscreen during loading, compact after result */}
         {imageUrl && (
-          <div className="rounded-xl overflow-hidden border bg-card">
+          <div className={`rounded-xl overflow-hidden border bg-card ${isFullscreenImage ? 'flex-1 min-h-[60vh]' : ''}`}>
             <img
               src={imageUrl}
               alt="Shared receipt"
-              className="w-full max-h-64 object-contain bg-muted"
+              className={`w-full object-contain bg-muted ${isFullscreenImage ? 'max-h-[70vh]' : 'max-h-48'}`}
             />
           </div>
         )}
 
         {/* Loading image */}
         {status === 'loading-image' && (
-          <div className="flex flex-col items-center gap-3 py-8">
+          <div className="flex flex-col items-center gap-3 py-4">
             <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
             <p className="text-sm text-muted-foreground">{t('receipt.processing', lang)}</p>
           </div>
@@ -216,7 +219,7 @@ export function ReceiptOcr() {
 
         {/* Loading OCR */}
         {status === 'loading-ocr' && (
-          <div className="flex flex-col items-center gap-3 py-4">
+          <div className="flex flex-col items-center gap-3 py-3">
             <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
             <p className="text-sm text-muted-foreground">{t('receipt.processing', lang)}</p>
             <p className="text-xs text-muted-foreground">AI is reading your receipt...</p>

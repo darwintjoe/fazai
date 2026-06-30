@@ -64,7 +64,14 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderInfo> = {
     name: 'Groq',
     defaultEndpoint: 'https://api.groq.com/openai/v1',
     defaultModel: 'llama-3.3-70b-versatile',
-    models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'],
+    models: [
+      'meta-llama/llama-4-scout-17b-16e-instruct',
+      'qwen/qwen3.6-27b',
+      'llama-3.3-70b-versatile',
+      'llama-3.1-8b-instant',
+      'mixtral-8x7b-32768',
+      'gemma2-9b-it',
+    ],
     openaiCompatible: true,
   },
   deepseek: {

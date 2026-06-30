@@ -139,6 +139,20 @@ export type TranslationKeys = {
   'admin.challengeMismatch': string;
   'admin.wrongPin': string;
   'admin.aiSettings': string;
+  'admin.pos': string;
+  'admin.addPosConn': string;
+  'admin.editPosConn': string;
+  'admin.posReportMethod': string;
+  'admin.posIncomeAccount': string;
+  'admin.posPaymentMap': string;
+  'admin.posImportTitle': string;
+  'admin.posPickFile': string;
+  'admin.posImportDone': string;
+  'admin.posSample': string;
+  'admin.posEmpty': string;
+  'admin.posDeleteConfirm': string;
+  'admin.posDevGuide': string;
+  'admin.posDownloadSample': string;
 
   // Common
   'common.cancel': string;
@@ -372,6 +386,20 @@ const en: TranslationKeys = {
   'admin.challengeMismatch': 'Confirmation code does not match',
   'admin.wrongPin': 'Incorrect Admin PIN',
   'admin.aiSettings': 'AI Settings',
+  'admin.pos': 'POS',
+  'admin.addPosConn': 'Add POS',
+  'admin.editPosConn': 'Edit POS',
+  'admin.posReportMethod': 'Report Method',
+  'admin.posIncomeAccount': 'Income Account',
+  'admin.posPaymentMap': 'Payment Mapping',
+  'admin.posImportTitle': 'Import POS Sales',
+  'admin.posPickFile': 'Select JSON file',
+  'admin.posImportDone': 'Import complete',
+  'admin.posSample': 'Sample',
+  'admin.posEmpty': 'No POS connections yet. Add one to start importing sales.',
+  'admin.posDeleteConfirm': 'Delete this POS connection and all its import history? The recorded transactions stay.',
+  'admin.posDevGuide': 'Dev Guide',
+  'admin.posDownloadSample': 'Download sample file',
   'common.cancel': 'Cancel',
   'common.confirm': 'Confirm',
   'common.delete': 'Delete',
@@ -591,6 +619,20 @@ const id: TranslationKeys = {
   'admin.challengeMismatch': 'Kode konfirmasi tidak cocok',
   'admin.wrongPin': 'PIN Admin salah',
   'admin.aiSettings': 'Pengaturan AI',
+  'admin.pos': 'POS',
+  'admin.addPosConn': 'Tambah POS',
+  'admin.editPosConn': 'Edit POS',
+  'admin.posReportMethod': 'Metode Laporan',
+  'admin.posIncomeAccount': 'Akun Pendapatan',
+  'admin.posPaymentMap': 'Pemetaan Pembayaran',
+  'admin.posImportTitle': 'Impor Penjualan POS',
+  'admin.posPickFile': 'Pilih file JSON',
+  'admin.posImportDone': 'Impor selesai',
+  'admin.posSample': 'Contoh',
+  'admin.posEmpty': 'Belum ada koneksi POS. Tambahkan satu untuk mulai mengimpor penjualan.',
+  'admin.posDeleteConfirm': 'Hapus koneksi POS ini beserta riwayat impornya? Transaksi yang sudah dicatat tetap utuh.',
+  'admin.posDevGuide': 'Panduan Dev',
+  'admin.posDownloadSample': 'Unduh file contoh',
   'common.cancel': 'Batal',
   'common.confirm': 'Konfirmasi',
   'common.delete': 'Hapus',
@@ -810,6 +852,20 @@ const zh: TranslationKeys = {
   'admin.challengeMismatch': '确认代码不匹配',
   'admin.wrongPin': '管理员PIN码错误',
   'admin.aiSettings': 'AI设置',
+  'admin.pos': 'POS',
+  'admin.addPosConn': '添加POS',
+  'admin.editPosConn': '编辑POS',
+  'admin.posReportMethod': '报告方式',
+  'admin.posIncomeAccount': '收入账户',
+  'admin.posPaymentMap': '付款映射',
+  'admin.posImportTitle': '导入POS销售',
+  'admin.posPickFile': '选择JSON文件',
+  'admin.posImportDone': '导入完成',
+  'admin.posSample': '示例',
+  'admin.posEmpty': '暂无POS连接。添加一个即可开始导入销售。',
+  'admin.posDeleteConfirm': '删除此POS连接及其所有导入记录？已记录的交易将保留。',
+  'admin.posDevGuide': '开发指南',
+  'admin.posDownloadSample': '下载示例文件',
   'common.cancel': '取消',
   'common.confirm': '确认',
   'common.delete': '删除',

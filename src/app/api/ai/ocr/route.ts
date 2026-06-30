@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     // Resolve model from preseed defaults if empty
     if (!aiConfig.model) {
-      aiConfig.model = 'qwen-3.6-27b'; // factory default for OCR
+      aiConfig.model = 'qwen/qwen3.6-27b'; // factory default for OCR (Groq vision-capable)
     }
 
     // Resolve endpoint from provider defaults if empty
