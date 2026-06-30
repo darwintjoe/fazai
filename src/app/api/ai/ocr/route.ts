@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { visionCompletion, type AiProviderConfig } from '@/lib/ai-provider';
+import { visionCompletion, type AiProviderConfig, AI_PROVIDERS } from '@/lib/ai-provider';
 
 interface AccountInfo {
   id: string;
@@ -29,13 +29,18 @@ export async function POST(request: NextRequest) {
       if (aiConfig?.provider === 'groq' && process.env.GROQ_API_KEY) {
         aiConfig.apiKey = process.env.GROQ_API_KEY;
       } else {
-        return NextResponse.json({ error: 'AI_API_KEY_NOT_SET' }, { status: 200 });
+        throw new Error('AI_API_KEY_NOT_SET');
       }
     }
 
-    // Ensure model resolves to default if empty
+    // Resolve model from preseed defaults if empty
     if (!aiConfig.model) {
       aiConfig.model = 'qwen-3.6-27b'; // factory default for OCR
+    }
+
+    // Resolve endpoint from provider defaults if empty
+    if (!aiConfig.endpoint) {
+      aiConfig.endpoint = AI_PROVIDERS[aiConfig.provider]?.defaultEndpoint || undefined;
     }
 
     const langName = lang === 'id' ? 'Indonesian' : lang === 'zh' ? 'Chinese' : 'English';
@@ -91,9 +96,9 @@ Return ONLY valid JSON (no markdown, no code fences):
     const rawContent = await visionCompletion(
       {
         provider: aiConfig.provider,
-        model: aiConfig.model || '',
+        model: aiConfig.model,
         apiKey: aiConfig.apiKey,
-        endpoint: aiConfig.endpoint || undefined,
+        endpoint: aiConfig.endpoint,
       },
       {
         systemPrompt,

@@ -48,15 +48,12 @@ export function ReceiptOcr() {
       const accounts = await db.accounts.filter(a => a.isActive).toArray();
 
       const apiKey = keySetting?.value as string | undefined;
-      if (!apiKey) {
-        setStatus('no-ai');
-        return;
-      }
+      const provId = (provSetting?.value as string) || 'groq';
 
       const aiConfig: AiProviderConfig = {
-        provider: ((provSetting?.value as string) || 'openai') as AiProviderId,
+        provider: provId as AiProviderId,
         model: (modelSetting?.value as string) || '',
-        apiKey,
+        apiKey: apiKey || '',  // send empty — server will inject GROQ_API_KEY from env for internal providers
         endpoint: (endpointSetting?.value as string) || undefined,
       };
 
