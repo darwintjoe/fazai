@@ -9,7 +9,7 @@ import { formatNumber } from '@/lib/format';
 import { type AiProviderConfig, type AiProviderId } from '@/lib/ai-provider';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Camera, Loader2, AlertCircle, CheckCircle, Pencil, X } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, AlertCircle, CheckCircle, Pencil, X, ArrowLeftRight, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface OcrResult {
@@ -19,6 +19,8 @@ interface OcrResult {
   description: string;
   accountId: string;
   accountName: string;
+  paymentMethodId: string;
+  paymentMethod: string;
   date: string;
   reference: string;
 }
@@ -27,13 +29,14 @@ type OcrStatus = 'loading-image' | 'loading-ocr' | 'success' | 'error' | 'no-ima
 
 export function ReceiptOcr() {
   const { lang } = useAuthStore();
-  const { navigate, setPendingReceipt } = useAppStore();
+  const { goBack, setPendingReceipt, setAiChatOpen } = useAppStore();
   const { toast } = useToast();
 
   const [status, setStatus] = useState<OcrStatus>('loading-image');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [ocrResult, setOcrResult] = useState<OcrResult | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [txType, setTxType] = useState<'income' | 'expense'>('expense');
 
   // Perform OCR via AI API (defined before loadSharedImage so it's in scope)
   const performOcr = useCallback(async (base64: string) => {
@@ -89,6 +92,7 @@ export function ReceiptOcr() {
       }
 
       setOcrResult(data);
+      setTxType(data.type === 'income' ? 'income' : 'expense');
       setStatus('success');
     } catch (err: any) {
       console.error('OCR error:', err);
@@ -154,12 +158,13 @@ export function ReceiptOcr() {
       description: ocrResult.description,
       accountId: ocrResult.accountId || undefined,
       accountName: ocrResult.accountName || undefined,
+      opponentAccountId: ocrResult.paymentMethodId || undefined,
       date: ocrResult.date || undefined,
     };
 
     setPendingReceipt(receipt);
-    navigate(ocrResult.type === 'income' ? 'income' : 'expense');
-  }, [ocrResult, setPendingReceipt, navigate]);
+    useAppStore.getState().navigate(txType === 'income' ? 'income' : 'expense');
+  }, [ocrResult, txType, setPendingReceipt]);
 
   const handleRetry = useCallback(() => {
     if (imageUrl) {
@@ -180,8 +185,17 @@ export function ReceiptOcr() {
     if (imageUrl) {
       URL.revokeObjectURL(imageUrl);
     }
-    navigate('dashboard');
-  }, [imageUrl, navigate]);
+    goBack();
+  }, [imageUrl, goBack]);
+
+  // Fallback: send to AI assistant
+  const handleAskAi = useCallback(() => {
+    if (imageUrl) {
+      URL.revokeObjectURL(imageUrl);
+    }
+    setAiChatOpen(true);
+    useAppStore.getState().navigate('dashboard');
+  }, [imageUrl, setAiChatOpen]);
 
   // Whether to show the image in fullscreen mode (during loading states)
   const isFullscreenImage = status === 'loading-image' || status === 'loading-ocr';
@@ -258,6 +272,10 @@ export function ReceiptOcr() {
               <Button variant="outline" onClick={handleRetry} size="sm">
                 {t('receipt.retry', lang)}
               </Button>
+              <Button variant="outline" onClick={handleAskAi} size="sm">
+                <MessageSquare className="w-3.5 h-3.5 mr-1" />
+                AI Assistant
+              </Button>
               <Button variant="outline" onClick={handleCancel} size="sm">
                 {t('common.cancel', lang)}
               </Button>
@@ -273,17 +291,40 @@ export function ReceiptOcr() {
               <span className="text-sm font-medium">{t('receipt.extracted', lang)}</span>
             </div>
 
+            {/* Warning when amount is 0 */}
+            {ocrResult.amount <= 0 && (
+              <div className="flex items-center gap-2 p-3 rounded-lg border border-yellow-300 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-700">
+                <AlertCircle className="w-4 h-4 text-yellow-600 shrink-0" />
+                <p className="text-xs text-yellow-700 dark:text-yellow-400">
+                  {lang === 'id' ? 'Jumlah tidak terdeteksi. Anda dapat mencoba lagi atau meminta bantuan asisten AI.'
+                    : lang === 'zh' ? '金额未检测到。您可以重试或请求 AI 助手帮助。'
+                    : 'Amount not detected. You can retry or ask the AI assistant for help.'}
+                </p>
+                <Button variant="outline" size="sm" className="shrink-0 ml-auto" onClick={handleAskAi}>
+                  <MessageSquare className="w-3.5 h-3.5 mr-1" />
+                  AI
+                </Button>
+              </div>
+            )}
+
             <div className="rounded-xl border bg-card p-4 space-y-3">
-              {/* Transaction Type */}
+              {/* Transaction Type — tappable toggle */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">{t('receipt.type', lang)}</span>
-                <span className={`text-sm font-medium px-2 py-0.5 rounded-full ${
-                  ocrResult.type === 'income'
-                    ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                    : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                }`}>
-                  {ocrResult.type === 'income' ? t('dash.income', lang) : t('dash.expense', lang)}
-                </span>
+                <button
+                  onClick={() => setTxType(t => t === 'income' ? 'expense' : 'income')}
+                  className="flex items-center gap-1 text-sm font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer hover:opacity-80"
+                  title={lang === 'id' ? 'Ketuk untuk mengubah tipe' : lang === 'zh' ? '点击切换类型' : 'Tap to toggle type'}
+                >
+                  <ArrowLeftRight className="w-3 h-3 opacity-50" />
+                  <span className={`px-1.5 py-0.5 rounded-full ${
+                    txType === 'income'
+                      ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                      : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                  }`}>
+                    {txType === 'income' ? t('dash.income', lang) : t('dash.expense', lang)}
+                  </span>
+                </button>
               </div>
 
               {/* Amount */}
@@ -309,6 +350,16 @@ export function ReceiptOcr() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">{t('form.account', lang)}</span>
                   <span className="text-sm font-medium">{ocrResult.accountName}</span>
+                </div>
+              )}
+
+              {/* Payment Method */}
+              {ocrResult.paymentMethod && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    {lang === 'id' ? 'Metode Bayar' : lang === 'zh' ? '付款方式' : 'Payment'}
+                  </span>
+                  <span className="text-sm font-medium">{ocrResult.paymentMethod}</span>
                 </div>
               )}
 
@@ -343,7 +394,7 @@ export function ReceiptOcr() {
                 onClick={handleUseData}
                 disabled={ocrResult.amount <= 0}
                 className={`flex-1 h-12 text-base font-semibold ${
-                  ocrResult.type === 'income'
+                  txType === 'income'
                     ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800'
                     : 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700'
                 } text-white`}

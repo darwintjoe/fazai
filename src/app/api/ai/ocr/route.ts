@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
     // Build account list for the LLM
     const incomeAccounts = accounts?.filter(a => a.type === 'income') || [];
     const expenseAccounts = accounts?.filter(a => a.type === 'expense') || [];
+    const cashBankAccounts = accounts?.filter(a => a.type === 'cashBank' && a.id !== 'acc-cashbank-root') || [];
 
     const accountListStr = [
       ...incomeAccounts.map(a => {
@@ -60,10 +61,27 @@ export async function POST(request: NextRequest) {
       }),
     ].join('\n') || '  (no accounts available)';
 
+    const paymentMethodListStr = [
+      ...cashBankAccounts.map(a => {
+        const displayName = lang === 'id' && a.nameId ? a.nameId : lang === 'zh' && a.nameZh ? a.nameZh : a.name;
+        return `  - "${displayName}" (id: "${a.id}")`;
+      }),
+    ].join('\n') || '  - "Cash" (id: "acc-cash")';
+
     const systemPrompt = `You are FAZAI, an expert receipt OCR assistant. You analyze payment receipt images and extract structured transaction data. You must return ONLY a JSON object — no markdown, no explanation, no code fences.
 
 ## USER LANGUAGE
 Respond in ${langName}. But you MUST understand receipt text in ANY language (Indonesian, English, Chinese, etc.).
+
+## CRITICAL RULES
+1. You MUST extract ALL fields. Never leave amount, counterparty, date, or payment method empty if the text is readable.
+2. If text is visible on this receipt, the total amount is ALWAYS present somewhere. Look carefully for TOTAL, TOTAL BAYAR, GRAND TOTAL, JUMLAH, or similar.
+3. First determine if this is INCOME (money received) or EXPENSE (money spent):
+   - EXPENSE: purchase receipts, payment confirmations, QRIS payments, POS receipts, cash payments
+   - INCOME: salary slips, transfer-in confirmations, sales invoices, refund receipts, deposit confirmations
+4. Amount MUST be a plain number — no currency symbols, no dots, no commas, no "k" or "rb" or "juta".
+5. ALWAYS use the TOTAL line amount, never individual item prices.
+6. Return ONLY the JSON object. No explanation, no markdown, no code fences.
 
 ## RECEIPT TYPES & STRUCTURE
 Receipts you will encounter:
@@ -84,6 +102,7 @@ Receipts you will encounter:
 - Shows: sender/beneficiary name, account number, amount, transfer date
 - Key line: "JUMLAH TRANSFER" or "AMOUNT" or "NOMINAL"
 - Reference number usually present
+- Can be income (transfer IN) or expense (transfer OUT)
 
 ### 4. POS / Payment Terminal Receipts
 - Similar to QRIS but from EDC/mPOS machines
@@ -139,6 +158,28 @@ Create a short, natural description based on what you see:
 - If multiple items with a common theme → summarize: "Grocery shopping at [store]"
 - Keep it under 50 characters, in the user's language where possible
 
+## PAYMENT METHOD DETECTION
+You MUST detect how the payment was made (or received). This applies to BOTH income and expense:
+- For EXPENSE: the payment method is where money **leaves from**
+- For INCOME: the payment method is where money **enters into**
+
+Detection rules:
+| Sign on receipt | Payment Method ID | Label |
+|---|---|---|
+| QRIS logo, "QRIS", "QR Payment" | acc-qris | QRIS |
+| "Debit", card digits, EDC/mPOS terminal receipt | acc-bank | Bank |
+| "Kartu Kredit", "Credit Card", "Visa", "Mastercard" | acc-credit-card | Credit Card |
+| "GoPay", "OVO", "DANA", "ShopeePay", "LinkAja" | acc-qris | QRIS |
+| "Tunai", "Cash" | acc-cash | Cash |
+| Bank transfer (transfer confirmation) | acc-bank | Bank |
+| Salary credit to bank account | acc-bank | Bank |
+| No payment method visible | acc-cash | Cash |
+
+Available payment method accounts:
+${paymentMethodListStr}
+
+If unsure, default to "acc-cash" (Cash).
+
 ## ACCOUNT MATCHING — CATEGORY HEURISTICS
 Match the receipt's merchant/category to the BEST account from the AVAILABLE ACCOUNTS list below.
 
@@ -169,16 +210,18 @@ Return ONLY this exact JSON structure (no markdown fences, no extra text):
   "amount": <number — plain integer, e.g. 50000>,
   "counterparty": "<merchant/sender name or empty string>",
   "description": "<brief description in user language>",
-  "accountId": "<exact id from available accounts>",
-  "accountName": "<matched account display name or empty string>",
+  "accountId": "<exact id from available category accounts>",
+  "accountName": "<matched category account display name or empty string>",
+  "paymentMethodId": "<exact id from payment method accounts>",
+  "paymentMethod": "<payment method label, e.g. QRIS, Bank, Cash, Credit Card>",
   "date": "<YYYY-MM-DD or empty string>",
   "reference": "<transaction/reference number or empty string>"
 }
 
 ## EXAMPLES
 
-### Example 1: QRIS Food Receipt
-Receipt shows: "Warung Makan Sederhana", date "15/03/2026", items: Nasi Goreng 25.000, Es Teh 5.000, Total: Rp 30.000
+### Example 1: QRIS Food Expense Receipt
+Receipt shows: "Warung Makan Sederhana", date "15/03/2026", items: Nasi Goreng 25.000, Es Teh 5.000, Total: Rp 30.000, QRIS logo at bottom
 
 {
   "type": "expense",
@@ -187,12 +230,14 @@ Receipt shows: "Warung Makan Sederhana", date "15/03/2026", items: Nasi Goreng 2
   "description": "Makan siang",
   "accountId": "acc-food",
   "accountName": "Food & Beverages",
+  "paymentMethodId": "acc-qris",
+  "paymentMethod": "QRIS",
   "date": "2026-03-15",
   "reference": ""
 }
 
-### Example 2: E-Wallet Fuel Payment
-Receipt shows: "Shell", Pertamax Turbo, Rp 150.500, 28 Feb 2026
+### Example 2: E-Wallet Fuel Expense Payment
+Receipt shows: "Shell", Pertamax Turbo, Rp 150.500, 28 Feb 2026, paid via GoPay
 
 {
   "type": "expense",
@@ -201,16 +246,27 @@ Receipt shows: "Shell", Pertamax Turbo, Rp 150.500, 28 Feb 2026
   "description": "Pertamax Turbo fuel",
   "accountId": "acc-transport",
   "accountName": "Transportation",
+  "paymentMethodId": "acc-qris",
+  "paymentMethod": "QRIS",
   "date": "2026-02-28",
   "reference": ""
 }
 
-## RULES
-1. This is almost always an EXPENSE (payment/purchase). Only set type "income" if the receipt clearly shows money RECEIVED (e.g., salary slip, transfer IN confirmation, sales invoice).
-2. Amount MUST be a plain number — no currency symbols, no dots, no commas, no "k" or "rb" or "juta".
-3. ALWAYS use the TOTAL line amount, never individual item prices.
-4. If the receipt is unclear or partially readable, extract what you can and leave uncertain fields as empty string.
-5. Return ONLY the JSON object. No explanation, no markdown, no code fences.`;
+### Example 3: Bank Transfer Income (salary deposit)
+Receipt shows: "PT Maju Jaya" transfer to account ending 1234, JUMLAH: Rp 8.500.000, date 01/06/2026
+
+{
+  "type": "income",
+  "amount": 8500000,
+  "counterparty": "PT Maju Jaya",
+  "description": "Salary June 2026",
+  "accountId": "acc-salary",
+  "accountName": "Salary",
+  "paymentMethodId": "acc-bank",
+  "paymentMethod": "Bank",
+  "date": "2026-06-01",
+  "reference": ""
+}`;
 
     const rawContent = await visionCompletion(
       {
@@ -234,6 +290,8 @@ Receipt shows: "Shell", Pertamax Turbo, Rp 150.500, 28 Feb 2026
       description?: string;
       accountId?: string;
       accountName?: string;
+      paymentMethodId?: string;
+      paymentMethod?: string;
       date?: string;
       reference?: string;
     };
@@ -249,6 +307,21 @@ Receipt shows: "Shell", Pertamax Turbo, Rp 150.500, 28 Feb 2026
       parsed = {};
     }
 
+    // Validate payment method ID against known cashBank accounts
+    const validPaymentIds = new Set(
+      cashBankAccounts.map(a => a.id)
+    );
+    const paymentMethodId = typeof parsed.paymentMethodId === 'string' && validPaymentIds.has(parsed.paymentMethodId)
+      ? parsed.paymentMethodId
+      : 'acc-cash';
+
+    const paymentMethodName = typeof parsed.paymentMethod === 'string' && parsed.paymentMethod
+      ? parsed.paymentMethod
+      : paymentMethodId === 'acc-qris' ? 'QRIS'
+        : paymentMethodId === 'acc-bank' ? 'Bank'
+          : paymentMethodId === 'acc-credit-card' ? 'Credit Card'
+            : 'Cash';
+
     // Validate extracted data
     const result = {
       type: parsed.type === 'income' ? 'income' : 'expense',
@@ -257,6 +330,8 @@ Receipt shows: "Shell", Pertamax Turbo, Rp 150.500, 28 Feb 2026
       description: typeof parsed.description === 'string' ? parsed.description : '',
       accountId: typeof parsed.accountId === 'string' ? parsed.accountId : '',
       accountName: typeof parsed.accountName === 'string' ? parsed.accountName : '',
+      paymentMethodId,
+      paymentMethod: paymentMethodName,
       date: typeof parsed.date === 'string' ? parsed.date : '',
       reference: typeof parsed.reference === 'string' ? parsed.reference : '',
     };

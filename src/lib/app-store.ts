@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type Page = 'dashboard' | 'income' | 'expense' | 'history' | 'reports' | 'report-viewer' | 'admin' | 'admin-users' | 'admin-accounts' | 'admin-custom' | 'admin-settings' | 'admin-backup' | 'settings' | 'guide' | 'share-target';
+export type Page = 'dashboard' | 'income' | 'expense' | 'history' | 'reports' | 'report-viewer' | 'admin' | 'admin-users' | 'admin-accounts' | 'admin-custom' | 'admin-settings' | 'admin-backup' | 'settings' | 'guide' | 'share-target' | 'statement-import';
 
 export interface PendingReceipt {
   amount: number;
@@ -8,6 +8,7 @@ export interface PendingReceipt {
   description: string;
   accountId?: string;
   accountName?: string;
+  opponentAccountId?: string;
   date?: string; // ISO date string
 }
 
@@ -23,6 +24,7 @@ interface AppState {
   /** Whether the AI chat panel is open (shared between dashboard card and AiChat component) */
   isAiChatOpen: boolean;
   navigate: (page: Page) => void;
+  goBack: () => void;
   setReportType: (type: string) => void;
   setSelectedTransactionId: (id: string | null) => void;
   bumpTxVersion: () => void;
@@ -43,6 +45,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   navigate: (page) => {
     const current = get().currentPage;
     set({ previousPage: current, currentPage: page });
+    history.pushState({ page }, '', '');
+  },
+  goBack: () => {
+    history.back();
   },
   setReportType: (type) => set({ reportType: type }),
   setSelectedTransactionId: (id) => set({ selectedTransactionId: id }),

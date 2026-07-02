@@ -15,6 +15,7 @@ import { AiChat } from '@/components/fazai/ai-chat';
 import { SettingsPage } from '@/components/fazai/settings';
 import { UserGuide } from '@/components/fazai/user-guide';
 import { ReceiptShare } from '@/components/fazai/receipt-share';
+import { StatementImport } from '@/components/fazai/statement-import';
 import { ErrorBoundary } from '@/components/fazai/error-boundary';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LogOut } from 'lucide-react';
@@ -60,6 +61,19 @@ export default function Home() {
     }
   }, []);
 
+  // Browser history integration: listen for back/forward and sync with Zustand
+  React.useEffect(() => {
+    const handlePopState = () => {
+      const prev = useAppStore.getState().previousPage;
+      if (prev) {
+        useAppStore.setState({ currentPage: prev, previousPage: null });
+      }
+    };
+    history.replaceState({ page: currentPage }, '');
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   if (!mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -97,6 +111,8 @@ export default function Home() {
         return <SettingsPage />;
       case 'share-target':
         return <ReceiptShare />;
+      case 'statement-import':
+        return <StatementImport />;
       case 'guide':
         return <UserGuide standalone />;
       default:

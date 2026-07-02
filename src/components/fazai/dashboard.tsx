@@ -7,7 +7,7 @@ import { t, getAccountName, type Lang } from '@/lib/i18n';
 import { formatNumber, formatDate } from '@/lib/format';
 import { getDashboardSummary } from '@/lib/ledger-engine';
 import { db, type Transaction, type Account } from '@/lib/fazai-db';
-import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, ChevronRight, Download, Camera, MessageCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, ChevronRight, Download, Camera, MessageCircle, FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { usePwaInstall } from '@/hooks/use-pwa-install';
@@ -158,6 +158,13 @@ export function Dashboard() {
               className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 backdrop-blur-sm flex items-center justify-center transition-all"
             >
               <Camera className="w-4 h-4 text-white" />
+            </button>
+            <button
+              onClick={() => navigate('statement-import')}
+              title={lang === 'id' ? 'Impor Mutasi Bank' : lang === 'zh' ? '导入银行对账单' : 'Bank Statement Import'}
+              className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 backdrop-blur-sm flex items-center justify-center transition-all"
+            >
+              <FileText className="w-4 h-4 text-white" />
             </button>
             <button
               onClick={toggleAiChat}

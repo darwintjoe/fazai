@@ -85,6 +85,9 @@ export function TransactionForm({ type }: TransactionFormProps) {
     if (pending.accountName) {
       setAiSuggestion(pending.accountName);
     }
+    if (pending.opponentAccountId) {
+      setOpponentAccountId(pending.opponentAccountId);
+    }
 
     setFromReceipt(true);
     useAppStore.getState().clearPendingReceipt();
