@@ -16,6 +16,7 @@ import { SettingsPage } from '@/components/fazai/settings';
 import { UserGuide } from '@/components/fazai/user-guide';
 import { ReceiptShare } from '@/components/fazai/receipt-share';
 import { StatementImport } from '@/components/fazai/statement-import';
+import { OcrDebug } from '@/components/fazai/ocr-debug';
 import { ErrorBoundary } from '@/components/fazai/error-boundary';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LogOut } from 'lucide-react';
@@ -113,6 +114,8 @@ export default function Home() {
         return <ReceiptShare />;
       case 'statement-import':
         return <StatementImport />;
+      case 'ocr-debug':
+        return <OcrDebug />;
       case 'guide':
         return <UserGuide standalone />;
       default:

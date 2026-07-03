@@ -29,6 +29,8 @@ export interface AiProviderInfo {
   name: string;
   defaultEndpoint: string;
   defaultModel: string;
+  /** Optional: separate default model for vision/image tasks (e.g. multimodal model) */
+  defaultVisionModel?: string;
   models: string[];
   /** Whether this provider uses the OpenAI-compatible chat/completions format */
   openaiCompatible: boolean;
@@ -63,7 +65,8 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderInfo> = {
     id: 'groq',
     name: 'Groq',
     defaultEndpoint: 'https://api.groq.com/openai/v1',
-    defaultModel: 'llama-3.3-70b-versatile',
+    defaultModel: 'llama-3.1-8b-instant',
+    defaultVisionModel: 'qwen/qwen3.6-27b',
     models: [
       'meta-llama/llama-4-scout-17b-16e-instruct',
       'qwen/qwen3.6-27b',
@@ -474,7 +477,7 @@ export async function visionCompletion(
 
   const info = AI_PROVIDERS[config.provider];
   const endpoint = getEndpoint(config);
-  const model = config.model || info.defaultModel;
+  const model = config.model || info.defaultVisionModel || info.defaultModel;
   const { systemPrompt, userText, imageBase64 } = options;
 
   if (info.openaiCompatible) {
