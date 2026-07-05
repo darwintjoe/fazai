@@ -36,6 +36,18 @@ export interface AiProviderInfo {
   openaiCompatible: boolean;
 }
 
+/** Console URLs where users can obtain API keys for each provider. */
+export const AI_KEY_URLS: Record<AiProviderId, string> = {
+  openai: 'https://platform.openai.com/api-keys',
+  anthropic: 'https://console.anthropic.com/settings/keys',
+  google: 'https://aistudio.google.com/app/apikey',
+  groq: 'https://console.groq.com/keys',
+  deepseek: 'https://platform.deepseek.com/api_keys',
+  qwen: 'https://dashscope.console.aliyun.com/apiKey',
+  kimi: 'https://platform.moonshot.cn/console/api-keys',
+  zai: 'https://api.z.ai',
+};
+
 export const AI_PROVIDERS: Record<AiProviderId, AiProviderInfo> = {
   openai: {
     id: 'openai',

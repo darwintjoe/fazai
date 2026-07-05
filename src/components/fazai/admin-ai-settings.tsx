@@ -5,6 +5,7 @@ import { useAuthStore } from '@/lib/auth-store';
 import { db } from '@/lib/fazai-db';
 import {
   AI_PROVIDERS,
+  AI_KEY_URLS,
   type AiProviderId,
   type AiProviderConfig,
   testConnection,
@@ -19,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Bot, Eye, EyeOff, Check, X, Loader2, Zap, Settings2 } from 'lucide-react';
+import { Bot, Eye, EyeOff, Check, X, Loader2, Zap, Settings2, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
@@ -242,8 +243,21 @@ export function AdminAiSettings() {
 
         {/* API Key */}
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">
+          <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
             API Key
+            <a
+              href={AI_KEY_URLS[provider]}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-0.5 text-red-600 dark:text-red-400 hover:underline text-[10px] font-normal"
+            >
+              {lang === 'id'
+                ? 'Dapatkan API Key'
+                : lang === 'zh'
+                ? '获取 API 密钥'
+                : 'Get API Key'}
+              <ExternalLink className="w-2.5 h-2.5" />
+            </a>
           </label>
           <div className="relative">
             <Input
