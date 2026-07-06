@@ -116,9 +116,10 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderInfo> = {
   zai: {
     id: 'zai',
     name: 'Z.Ai',
-    defaultEndpoint: 'https://api.z.ai/v1',
-    defaultModel: 'z-ai-default',
-    models: ['z-ai-default'],
+    defaultEndpoint: 'https://api.z.ai/api/paas/v4/',
+    defaultModel: 'GLM-4.5-Flash',
+    defaultVisionModel: 'GLM-4.6V-Flash',
+    models: ['GLM-4.5-Flash', 'GLM-4.7-Flash', 'GLM-4.6V-Flash'],
     openaiCompatible: true,
   },
 };
