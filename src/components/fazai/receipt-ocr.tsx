@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useAppStore, type PendingReceipt } from '@/lib/app-store';
 import { t } from '@/lib/i18n';
@@ -9,7 +9,7 @@ import { formatNumber } from '@/lib/format';
 import { type AiProviderConfig, type AiProviderId } from '@/lib/ai-provider';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Camera, Loader2, AlertCircle, CheckCircle, Pencil, X, ArrowLeftRight, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, AlertCircle, CheckCircle, Pencil, X, ArrowLeftRight, MessageSquare, ImagePlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface OcrResult {
@@ -37,6 +37,7 @@ export function ReceiptOcr() {
   const [ocrResult, setOcrResult] = useState<OcrResult | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [txType, setTxType] = useState<'income' | 'expense'>('expense');
+  const galleryInputRef = useRef<HTMLInputElement>(null);
 
   // Perform OCR via AI API (defined before loadSharedImage so it's in scope)
   const performOcr = useCallback(async (base64: string) => {
@@ -188,6 +189,30 @@ export function ReceiptOcr() {
     goBack();
   }, [imageUrl, goBack]);
 
+  // Pick from gallery — process file directly without Cache API round-trip
+  const handleGalleryChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    // Revoke previous image URL
+    if (imageUrl) {
+      URL.revokeObjectURL(imageUrl);
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    setImageUrl(objectUrl);
+    setOcrResult(null);
+    setErrorMessage('');
+    setStatus('loading-ocr');
+
+    const base64Promise = blobToBase64(file);
+    base64Promise.then(base64 => performOcr(base64)).catch(() => {
+      setStatus('error');
+      setErrorMessage('Failed to read image');
+    });
+  }, [imageUrl, performOcr]);
+
   // Fallback: send to AI assistant
   const handleAskAi = useCallback(() => {
     if (imageUrl) {
@@ -208,6 +233,14 @@ export function ReceiptOcr() {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <h2 className="text-xl font-bold text-red-600">{t('receipt.title', lang)}</h2>
+        {/* Hidden gallery input — no capture attr opens file picker/gallery */}
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleGalleryChange}
+          className="hidden"
+        />
       </div>
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4">
@@ -245,9 +278,15 @@ export function ReceiptOcr() {
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <Camera className="w-10 h-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">{t('receipt.noImage', lang)}</p>
-            <Button variant="outline" onClick={handleCancel} className="mt-2">
-              {t('common.back', lang)}
-            </Button>
+            <div className="flex gap-2 mt-2">
+              <Button variant="outline" onClick={() => galleryInputRef.current?.click()}>
+                <ImagePlus className="w-3.5 h-3.5 mr-1" />
+                {t('receipt.pickGallery', lang)}
+              </Button>
+              <Button variant="outline" onClick={handleCancel}>
+                {t('common.back', lang)}
+              </Button>
+            </div>
           </div>
         )}
 
@@ -271,6 +310,10 @@ export function ReceiptOcr() {
             <div className="flex gap-2 mt-2">
               <Button variant="outline" onClick={handleRetry} size="sm">
                 {t('receipt.retry', lang)}
+              </Button>
+              <Button variant="outline" onClick={() => galleryInputRef.current?.click()} size="sm">
+                <ImagePlus className="w-3.5 h-3.5 mr-1" />
+                {t('receipt.pickGallery', lang)}
               </Button>
               <Button variant="outline" onClick={handleAskAi} size="sm">
                 <MessageSquare className="w-3.5 h-3.5 mr-1" />

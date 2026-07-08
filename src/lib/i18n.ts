@@ -257,6 +257,7 @@ export type TranslationKeys = {
   'receipt.retry': string;
   'receipt.type': string;
   'receipt.reference': string;
+  'receipt.pickGallery': string;
 };
 
 const en: TranslationKeys = {
@@ -491,6 +492,7 @@ const en: TranslationKeys = {
   'receipt.retry': 'Retry',
   'receipt.type': 'Type',
   'receipt.reference': 'Reference',
+  'receipt.pickGallery': 'Pick from Gallery',
 };
 
 const id: TranslationKeys = {
@@ -725,6 +727,7 @@ const id: TranslationKeys = {
   'receipt.retry': 'Coba Lagi',
   'receipt.type': 'Jenis',
   'receipt.reference': 'Referensi',
+  'receipt.pickGallery': 'Pilih dari Galeri',
 };
 
 const zh: TranslationKeys = {
@@ -959,6 +962,7 @@ const zh: TranslationKeys = {
   'receipt.retry': '重试',
   'receipt.type': '类型',
   'receipt.reference': '参考号',
+  'receipt.pickGallery': '从相册选择',
 };
 
 const translations: Record<Lang, TranslationKeys> = { en, id, zh };
