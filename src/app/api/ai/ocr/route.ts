@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
 
     if (!aiConfig?.apiKey) {
       // Fallback: inject server-side env var for internal providers
-      if (aiConfig?.provider === 'groq' && process.env.GROQ_API_KEY) {
-        aiConfig.apiKey = process.env.GROQ_API_KEY;
+      if (aiConfig?.provider === 'zai' && process.env.ZAI_API_KEY) {
+        aiConfig.apiKey = process.env.ZAI_API_KEY;
       } else {
         throw new Error('AI_API_KEY_NOT_SET');
       }
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     // Resolve model from preseed defaults if empty
     if (!aiConfig.model) {
-      aiConfig.model = 'qwen/qwen3.6-27b'; // factory default for OCR (Groq vision-capable)
+      aiConfig.model = 'GLM-4.6V-Flash'; // factory default for OCR (Z.AI vision-capable)
     }
 
     // Resolve endpoint from provider defaults if empty

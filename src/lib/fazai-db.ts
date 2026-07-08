@@ -285,8 +285,8 @@ export async function seedDatabase() {
   const existingProvider = await db.settings.get('ai-provider');
   if (!existingProvider) {
     await db.settings.bulkPut([
-      { key: 'ai-provider', value: 'groq' },
-      { key: 'ai-model', value: 'llama-3.1-8b-instant' },
+      { key: 'ai-provider', value: 'zai' },
+      { key: 'ai-model', value: 'GLM-4.7-Flash' },
       { key: 'ai-api-key', value: '' },
       { key: 'ai-endpoint', value: '' },
     ]);
@@ -296,8 +296,8 @@ export async function seedDatabase() {
   const existingOcrProvider = await db.settings.get('ocr-provider');
   if (!existingOcrProvider) {
     await db.settings.bulkPut([
-      { key: 'ocr-provider', value: 'groq' },
-      { key: 'ocr-model', value: 'qwen/qwen3.6-27b' },
+      { key: 'ocr-provider', value: 'zai' },
+      { key: 'ocr-model', value: 'GLM-4.6V-Flash' },
       { key: 'ocr-api-key', value: '' },
       { key: 'ocr-endpoint', value: '' },
     ]);

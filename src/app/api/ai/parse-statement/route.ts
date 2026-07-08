@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
 
     if (!aiConfig?.apiKey) {
       // Fallback: inject server-side env var for internal providers
-      if (aiConfig?.provider === 'groq' && process.env.GROQ_API_KEY) {
-        aiConfig.apiKey = process.env.GROQ_API_KEY;
+      if (aiConfig?.provider === 'zai' && process.env.ZAI_API_KEY) {
+        aiConfig.apiKey = process.env.ZAI_API_KEY;
       } else {
         throw new Error('AI_API_KEY_NOT_SET');
       }

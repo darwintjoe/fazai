@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (!aiConfig?.apiKey) {
-      if (aiConfig?.provider === 'groq' && process.env.GROQ_API_KEY) {
-        aiConfig.apiKey = process.env.GROQ_API_KEY;
+      if (aiConfig?.provider === 'zai' && process.env.ZAI_API_KEY) {
+        aiConfig.apiKey = process.env.ZAI_API_KEY;
       } else {
         throw new Error('AI_API_KEY_NOT_SET');
       }
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     // Resolve model — same logic as ocr route
     if (!aiConfig.model) {
-      aiConfig.model = 'qwen/qwen3.6-27b';
+      aiConfig.model = 'GLM-4.6V-Flash';
     }
     if (!aiConfig.endpoint) {
       aiConfig.endpoint = AI_PROVIDERS[aiConfig.provider]?.defaultEndpoint || undefined;
