@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { chatCompletion, type AiProviderConfig, AI_PROVIDERS } from '@/lib/ai-provider';
 import {
-  extractAmountFromText,
-  detectTransactionType,
+  extractAmountSmart,
+  extractFromTo,
+  detectTransactionFailed,
   matchAccountFromText,
   detectPaymentMethod,
   extractCounterparty,
@@ -13,8 +14,9 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { text, lang, accounts, aiConfig } = body as {
+    const { text, blocks, lang, accounts, aiConfig } = body as {
       text: string;
+      blocks?: Array<{ text: string; fontSize: number; y: number }>;
       lang: string;
       accounts?: AccountInfo[];
       aiConfig?: AiProviderConfig;
@@ -22,6 +24,11 @@ export async function POST(request: NextRequest) {
 
     if (!text) {
       return NextResponse.json({ error: 'Text is required' }, { status: 400 });
+    }
+
+    // Check for failed transaction — reject immediately
+    if (detectTransactionFailed(text)) {
+      return NextResponse.json({ failed: true });
     }
 
     const langName = lang === 'id' ? 'Indonesian' : lang === 'zh' ? 'Chinese' : 'English';
@@ -71,36 +78,60 @@ Respond in ${langName}. But you MUST understand receipt text in ANY language (In
 3. First determine if this is INCOME (money received) or EXPENSE (money spent):
    - EXPENSE: purchase receipts, payment confirmations, QRIS payments, POS receipts, cash payments
    - INCOME: salary slips, transfer-in confirmations, sales invoices, refund receipts, deposit confirmations
-4. Amount MUST be a plain number — no currency symbols, no dots, no commas, no "k" or "rb" or "juta".
-5. ALWAYS use the TOTAL line amount, never individual item prices.
-6. Return ONLY the JSON object. No explanation, no markdown, no code fences.
+4. Look for DARI/KE (From/To) labels to determine direction: DARI = sender, KE = receiver
+5. Amount MUST be a plain number — no currency symbols, no dots, no commas.
+6. ALWAYS use the TOTAL line amount, never individual item prices.
+7. Skip "Transaksi Berhasil" / "Transaction Success" headers — they are NOT descriptions.
+8. Return ONLY the JSON object. No explanation, no markdown, no code fences.
 
 ## AMOUNT EXTRACTION RULES
-Indonesian number formatting uses PERIOD as thousands separator and COMMA as decimal:
-- "Rp 50.000" → 50000
-- "Rp 1.250.000" → 1250000
-- "Rp50.000,00" → 50000 (strip the ,00 decimal)
-- "IDR 25.000" → 25000
-Rules:
-1. ALWAYS use the TOTAL / TOTAL BAYAR / GRAND TOTAL line
-2. Strip ALL currency symbols (Rp, IDR, $, ¥) and formatting characters
-3. Remove thousand separators (periods in Indonesian format)
-4. Ignore decimal cents after comma (,00 is common)
-5. Return ONLY a plain number
+Auto-detect thousand separator:
+- "Rp 50.000" or "50.000" → 50000 (dot = thousand separator)
+- "Rp 1,000" or "1,000" → 1000 (comma = thousand separator)
+- "1.000,00" → 1000 (dot = thousand, comma = decimal → strip decimal)
+- "1,000.00" → 1000 (comma = thousand, dot = decimal → strip decimal)
+- Strip currency symbols (Rp, IDR, $, ¥) and all separators.
+- Return ONLY a plain integer.
+
+Prioritize amount sources:
+1. Lines with TOTAL, TOTAL BAYAR, GRAND TOTAL, JUMLAH, NOMINAL — prefer the LAST one found
+2. The number with the LARGEST font size (bold = likely total)
+3. The largest number in the bottom portion of the receipt
+4. The largest number anywhere on the receipt
 
 ## DATE EXTRACTION RULES
 Common formats: dd/mm/yyyy, dd-mm-yyyy, dd MMM yyyy, yyyy-mm-dd
 Convert ALL formats to YYYY-MM-DD. In Indonesia dd/mm/yyyy is standard so prefer day-first.
 
+## FROM / TO (DIRECTION) DETECTION
+Look for these labels to determine transaction direction:
+- "DARI:" or "DARI" = From (sender)
+- "KE:" or "KE" = To (receiver)
+- "Pengirim" = Sender
+- "Penerima" = Receiver
+- "Transfer ke" = Transfer to
+- "Transfer dari" = Transfer from
+
+Direction rules:
+- If KE = you/your account → income (money coming IN)
+- If DARI = you/your account → expense (money going OUT, you are paying)
+- QRIS receipts → always expense
+- Salary/Transfer-in confirmations → always income
+
 ## COUNTERPARTY / MERCHANT EXTRACTION
 - For QRIS/POS receipts: merchant/store name (usually the largest text at the top)
-- For bank transfers: beneficiary/payee name
-- For e-wallet: merchant name
-- For income receipts: sender/source name
+- For bank transfers: the beneficiary/payee name
+- For e-wallet: the merchant name
+- For income receipts: the sender/source name
+- SKIP "Transaksi Berhasil", "Transaksi Gagal" headers — they are NOT merchant names
 - If no name is found, use empty string ""
 
 ## DESCRIPTION GENERATION
-Create a short, natural description based on what you see. Keep it under 50 characters, in the user's language.
+Create a short, natural description based on what you see. Skip headers like "Transaksi Berhasil".
+- If merchant is "Starbucks" → "Starbucks coffee"
+- If receipt shows "Pertamax" → "Pertamax fuel"
+- If bank transfer → "Transfer to [name]"
+- Keep it under 50 characters, in the user's language.
 
 ## PAYMENT METHOD DETECTION
 | Sign in text | Payment Method ID | Label |
@@ -214,12 +245,16 @@ Return ONLY this exact JSON structure (no markdown fences, no extra text):
     }
 
     // Local regex fallback (no AI available)
-    const amountResult = extractAmountFromText(text);
-    const txType = detectTransactionType(text) || 'expense';
-    const matchedAccount = accounts ? matchAccountFromText(text, accounts, txType) : null;
-    const opponentId = detectPaymentMethod(text);
+    const amountResult = extractAmountSmart(text, blocks || []);
+    const amount = amountResult?.amount || 0;
+    const fromTo = extractFromTo(text);
     const counterparty = extractCounterparty(text);
     const date = extractDate(text);
+
+    // Determine transaction type from from/to direction or receipt patterns
+    const txType = fromTo.direction || (text.toLowerCase().includes('qris') ? 'expense' : 'expense');
+    const matchedAccount = accounts ? matchAccountFromText(text, accounts, txType) : null;
+    const opponentId = detectPaymentMethod(text);
 
     // Get opponent account display name
     const opponentAcc = cashBankAccounts.find(a => a.id === opponentId);
@@ -235,7 +270,7 @@ Return ONLY this exact JSON structure (no markdown fences, no extra text):
         ? (lang === 'id' && matchedAccount.nameId ? matchedAccount.nameId : lang === 'zh' && matchedAccount.nameZh ? matchedAccount.nameZh : matchedAccount.name)
         : '',
       suggestedOpponentAccountId: opponentId,
-      amount: amountResult?.amount || 0,
+      amount,
       date,
       counterparty,
       description: counterparty || '',

@@ -10,9 +10,9 @@ import { type AiProviderConfig, type AiProviderId } from '@/lib/ai-provider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Camera, Loader2, AlertCircle, TrendingUp, TrendingDown, X, ImagePlus, Search } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, AlertCircle, TrendingUp, TrendingDown, X, ImagePlus, Search, XCircle } from 'lucide-react';
 
-type OcrStatus = 'loading-image' | 'scanning' | 'parsing' | 'success' | 'error' | 'no-image';
+type OcrStatus = 'loading-image' | 'scanning' | 'parsing' | 'success' | 'error' | 'failed' | 'no-image';
 
 interface OcrParseResult {
   text: string;
@@ -113,7 +113,7 @@ export function ReceiptOcr() {
       // Tier 1: Local OCR
       setStatus('scanning');
       const ocrModule = await import('@/lib/ocr-engine');
-      const rawText = await ocrModule.recognizeReceipt(blob, lang);
+      const { text: rawText, blocks } = await ocrModule.recognizeReceiptWithBlocks(blob, lang);
 
       if (!rawText || rawText.length < 5) {
         setStatus('error');
@@ -145,6 +145,7 @@ export function ReceiptOcr() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: rawText,
+          blocks,
           lang,
           accounts: accounts.map(a => ({
             id: a.id,
@@ -159,6 +160,12 @@ export function ReceiptOcr() {
       });
 
       const data = await res.json();
+
+      // Check for failed transaction rejection
+      if (data.failed === true) {
+        setStatus('failed');
+        return;
+      }
 
       if (!res.ok || data.error) {
         // If AI parsing completely fails, show error (fields will be empty for manual fill)
@@ -393,6 +400,27 @@ export function ReceiptOcr() {
             <p className="text-sm text-muted-foreground">{t('receipt.error', lang)}</p>
             <p className="text-xs text-muted-foreground">{errorMessage}</p>
             <div className="flex gap-2 mt-2">
+              <Button variant="outline" onClick={handleRetry} size="sm">
+                {t('receipt.retry', lang)}
+              </Button>
+              <Button variant="outline" onClick={() => galleryInputRef.current?.click()} size="sm">
+                <ImagePlus className="w-3.5 h-3.5 mr-1" />
+                {t('receipt.pickGallery', lang)}
+              </Button>
+              <Button variant="outline" onClick={handleCancel} size="sm">
+                {t('common.cancel', lang)}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Failed Transaction — auto-rejected */}
+        {status === 'failed' && (
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <XCircle className="w-10 h-10 text-red-500" />
+            <p className="text-sm font-semibold text-red-600">{t('receipt.transactionFailed', lang)}</p>
+            <p className="text-xs text-muted-foreground">{t('receipt.transactionFailedHint', lang)}</p>
+            <div className="flex gap-2 mt-3">
               <Button variant="outline" onClick={handleRetry} size="sm">
                 {t('receipt.retry', lang)}
               </Button>

@@ -9,6 +9,13 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+export interface OcrBlock {
+  text: string;
+  fontSize: number; // estimated from bounding box height
+  y: number;        // vertical position from top (pixels)
+  x: number;        // horizontal position from left (pixels)
+}
+
 type TesseractWorker = any;
 let _worker: TesseractWorker | null = null;
 let _currentLangs: string[] = [];
@@ -144,6 +151,91 @@ function preprocessImage(source: File | Blob): Promise<Blob> {
 
     img.src = url;
   });
+}
+
+/**
+ * Recognize text from a receipt image with block-level data (font size, position).
+ * Uses Tesseract word-level bounding boxes grouped into lines.
+ *
+ * @param image - The image file or blob
+ * @param lang  - User language code ('en', 'id', 'zh')
+ * @returns Raw text and array of text blocks with estimated font sizes and positions
+ */
+export async function recognizeReceiptWithBlocks(
+  image: File | Blob,
+  lang: string = 'en',
+): Promise<{ text: string; blocks: OcrBlock[] }> {
+  const langs = getOcrLanguages(lang);
+  const worker = await getWorker(langs);
+
+  const preprocessed = await preprocessImage(image);
+
+  const { data } = await worker.recognize(preprocessed);
+  const text = (data?.text || '').trim();
+  const blocks = groupWordsIntoBlocks(data?.words || [], data?.blocks || []);
+
+  console.log(`[OCR] Extracted ${text.length} characters, ${blocks.length} blocks`);
+  return { text, blocks };
+}
+
+/**
+ * Group Tesseract word-level data into lines (blocks) with estimated font sizes.
+ */
+function groupWordsIntoBlocks(words: any[], blocks: any[]): OcrBlock[] {
+  if (!words || words.length === 0) return [];
+
+  // Group words by baseline (words on the same line have similar baseline Y)
+  const LINES_TOLERANCE = 5; // pixels tolerance for same-line grouping
+  const lines = new Map<number, any[]>();
+
+  for (const word of words) {
+    if (!word.text || !word.bbox) continue;
+    const baseline = word.bbox.y1; // bottom of word bounding box
+    let matchedKey: number | null = null;
+
+    for (const key of lines.keys()) {
+      if (Math.abs(key - baseline) < LINES_TOLERANCE) {
+        matchedKey = key;
+        break;
+      }
+    }
+
+    if (matchedKey !== null) {
+      lines.get(matchedKey)!.push(word);
+    } else {
+      lines.set(baseline, [word]);
+    }
+  }
+
+  // Convert grouped words into OcrBlocks
+  const result: OcrBlock[] = [];
+  for (const [baseline, lineWords] of lines) {
+    // Sort words left-to-right by x position
+    lineWords.sort((a: any, b: any) => a.bbox.x0 - b.bbox.x0);
+
+    const lineText = lineWords.map((w: any) => w.text).join(' ').trim();
+    if (!lineText) continue;
+
+    // Font size = height of the tallest word in the line
+    const maxWordHeight = lineWords.reduce((max: number, w: any) => {
+      const h = w.bbox.y1 - w.bbox.y0;
+      return Math.max(max, h);
+    }, 0);
+
+    // Position = average x of first word, y = baseline
+    const avgX = lineWords[0].bbox.x0;
+
+    result.push({
+      text: lineText,
+      fontSize: maxWordHeight,
+      y: baseline,
+      x: avgX,
+    });
+  }
+
+  // Sort by Y position (top to bottom)
+  result.sort((a, b) => a.y - b.y);
+  return result;
 }
 
 /**

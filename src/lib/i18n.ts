@@ -263,6 +263,8 @@ export type TranslationKeys = {
   'receipt.type': string;
   'receipt.reference': string;
   'receipt.pickGallery': string;
+  'receipt.transactionFailed': string;
+  'receipt.transactionFailedHint': string;
 };
 
 const en: TranslationKeys = {
@@ -503,6 +505,8 @@ const en: TranslationKeys = {
   'receipt.reference': 'Reference',
   'receipt.pickGallery': 'Pick from Gallery',
   'receipt.payWith': 'Pay with',
+  'receipt.transactionFailed': 'This receipt shows "Transaction Failed"',
+  'receipt.transactionFailedHint': 'The payment did not go through. No transaction was recorded.',
 };
 
 const id: TranslationKeys = {
@@ -743,6 +747,8 @@ const id: TranslationKeys = {
   'receipt.reference': 'Referensi',
   'receipt.pickGallery': 'Pilih dari Galeri',
   'receipt.payWith': 'Bayar dengan',
+  'receipt.transactionFailed': 'Struk ini menunjukkan "Transaksi Gagal"',
+  'receipt.transactionFailedHint': 'Pembayaran tidak berhasil. Tidak ada transaksi yang tercatat.',
 };
 
 const zh: TranslationKeys = {
@@ -983,6 +989,8 @@ const zh: TranslationKeys = {
   'receipt.reference': '参考号',
   'receipt.pickGallery': '从相册选择',
   'receipt.payWith': '支付方式',
+  'receipt.transactionFailed': '此收据显示"交易失败"',
+  'receipt.transactionFailedHint': '支付未成功。未记录任何交易。',
 };
 
 const translations: Record<Lang, TranslationKeys> = { en, id, zh };

@@ -138,7 +138,8 @@ export function extractCounterparty(text: string): string {
   const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 2);
 
   // Skip lines that look like totals, dates, or payment info
-  const skipPatterns = /^(total|subtotal|tax|ppn|service|grand|jumlah|rp\.?|idr|date|tanggal|no\.?|ref|trx|payment|bayar|tunai|cash|qris|debit|credit|saldo|balance|\d{1,2}[\/\-]\d{1,2}[\/\-])/i;
+  // Also skip "Transaksi Berhasil" / "Transaksi Gagal" confirmation headers
+  const skipPatterns = /^(total|subtotal|tax|ppn|service|grand|jumlah|rp\.?|idr|date|tanggal|no\.?|ref|trx|payment|bayar|tunai|cash|qris|debit|credit|saldo|balance|transaksi berhasil|transaksi gagal|transaction success|transaction failed|pembayaran berhasil|pembayaran gagal|payment success|payment failed|\d{1,2}[\/\-]\d{1,2}[\/\-])/i;
 
   for (const line of lines) {
     // Skip very long lines (likely item lists)
@@ -197,4 +198,237 @@ export function extractDate(text: string): string {
   }
 
   return '';
+}
+
+// ── Smart amount extraction (4 cascading strategies) ──
+
+/** Total keyword patterns found on Indonesian receipts */
+const TOTAL_KEYWORDS = /\b(total\b|total bayar|total pembayaran|grand total|jumlah|nominal|total tagihan)\b/i;
+
+/**
+ * Parse a monetary string into a plain integer.
+ * Auto-detects thousand separator (dot or comma) and strips decimals.
+ *
+ * Rules:
+ * - "1.000.000" → 1000000 (dot = thousand separator)
+ * - "1,000,000" → 1000000 (comma = thousand separator)
+ * - "1.000,00"  → 1000     (dot = thousand, comma = decimal → strip decimal)
+ * - "1,000.00"  → 1000     (comma = thousand, dot = decimal → strip decimal)
+ * - "50000"     → 50000    (no separator)
+ * - "Rp 50.000" → 50000    (strip currency prefix)
+ */
+export function parseSmartAmount(str: string): number {
+  // Strip currency symbols and whitespace
+  let cleaned = str.replace(/[RpRpIDRidr$¥€£\s]/g, '').trim();
+  if (!cleaned) return 0;
+
+  // Detect separator pattern
+  const hasDotThousands = /\d\.\d{3}/.test(cleaned);     // e.g., 1.000
+  const hasCommaThousands = /\d,\d{3}/.test(cleaned);    // e.g., 1,000
+  const hasDotDecimal = /\.\d{2}$/.test(cleaned);         // e.g., ,00
+  const hasCommaDecimal = /,\d{2}$/.test(cleaned);         // e.g., .00
+
+  if (hasDotThousands && hasCommaDecimal) {
+    // Indonesian format: 1.000,00 → strip ,00
+    cleaned = cleaned.replace(/,\d{2}$/, '');
+    cleaned = cleaned.replace(/\./g, '');
+  } else if (hasCommaThousands && hasDotDecimal) {
+    // Western format: 1,000.00 → strip .00
+    cleaned = cleaned.replace(/\.\d{2}$/, '');
+    cleaned = cleaned.replace(/,/g, '');
+  } else if (hasDotThousands) {
+    // Indonesian format no decimal: 1.000.000
+    cleaned = cleaned.replace(/\./g, '');
+  } else if (hasCommaThousands) {
+    // Western format no decimal: 1,000,000
+    cleaned = cleaned.replace(/,/g, '');
+  }
+
+  const parsed = parseFloat(cleaned);
+  return (isNaN(parsed) || parsed <= 0 || !isFinite(parsed)) ? 0 : parsed;
+}
+
+/**
+ * Extract all monetary amounts from a line of text.
+ * Returns { amount, rawStr } pairs sorted by amount descending.
+ */
+function extractAmountsFromLine(line: string): Array<{ amount: number; rawStr: string }> {
+  const results: Array<{ amount: number; rawStr: string }> = [];
+
+  // Pattern: Rp/IDR prefix + formatted number (possibly with decimal)
+  const rpMatches = line.matchAll(/(?:Rp\.?|IDR)\s*(\d[\d.,]*)/gi);
+  for (const m of rpMatches) {
+    const amount = parseSmartAmount(m[0]);
+    if (amount > 0) results.push({ amount, rawStr: m[0] });
+  }
+
+  // Pattern: standalone formatted number (not a date, not a phone, not a time)
+  // Look for numbers with thousand separators (3+ digits between separators)
+  const numMatches = line.matchAll(/(\d{1,3}(?:[.,]\d{3})+(?:[.,]\d{1,2})?)/g);
+  for (const m of numMatches) {
+    // Skip if looks like a date (dd/mm or dd-mm with 1-2 digit first group)
+    if (/^\d{1,2}[.,]\d{1,2}[.,]/.test(m[1])) continue;
+    const amount = parseSmartAmount(m[1]);
+    if (amount > 0) results.push({ amount, rawStr: m[1] });
+  }
+
+  // Pattern: plain large numbers (>= 1000) without separators
+  const plainMatches = line.matchAll(/\b(\d{4,})\b/g);
+  for (const m of plainMatches) {
+    // Skip transaction IDs, phone numbers, account numbers (usually 8-16 digits with no separators)
+    if (m[1].length > 15) continue;
+    const amount = parseInt(m[1], 10);
+    if (amount >= 1000) results.push({ amount, rawStr: m[1] });
+  }
+
+  return results.sort((a, b) => b.amount - a.amount);
+}
+
+/**
+ * Smart amount extraction using 4 cascading strategies.
+ * Requires both raw text and block data (for font size and position).
+ */
+export function extractAmountSmart(
+  text: string,
+  blocks: Array<{ text: string; fontSize: number; y: number }>,
+): { amount: number; rawStr: string } | null {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+  // Strategy 1: Total keyword lines
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i];
+    if (TOTAL_KEYWORDS.test(line)) {
+      const amounts = extractAmountsFromLine(line);
+      if (amounts.length > 0) {
+        return { amount: amounts[0].amount, rawStr: amounts[0].rawStr };
+      }
+    }
+  }
+
+  // Strategy 2: Largest font-size number
+  if (blocks.length > 0) {
+    const maxFontSize = Math.max(...blocks.filter(b => /\d/.test(b.text)).map(b => b.fontSize));
+    const largeFontThreshold = maxFontSize * 0.8;
+    const largeFontAmounts: Array<{ amount: number; rawStr: string; y: number }> = [];
+
+    for (const block of blocks) {
+      if (block.fontSize < largeFontThreshold) continue;
+      const amounts = extractAmountsFromLine(block.text);
+      if (amounts.length > 0) {
+        largeFontAmounts.push({ ...amounts[0], y: block.y });
+      }
+    }
+
+    if (largeFontAmounts.length > 0) {
+      largeFontAmounts.sort((a, b) => b.y - a.y);
+      return { amount: largeFontAmounts[0].amount, rawStr: largeFontAmounts[0].rawStr };
+    }
+  }
+
+  // Strategy 3: Bottom 30% position — largest number
+  if (blocks.length > 0) {
+    const maxY = Math.max(...blocks.map(b => b.y));
+    const bottomThreshold = maxY * 0.7;
+
+    const bottomAmounts: Array<{ amount: number; rawStr: string }> = [];
+    for (const block of blocks) {
+      if (block.y < bottomThreshold) continue;
+      const amounts = extractAmountsFromLine(block.text);
+      if (amounts.length > 0) {
+        bottomAmounts.push(amounts[0]);
+      }
+    }
+
+    if (bottomAmounts.length > 0) {
+      bottomAmounts.sort((a, b) => b.amount - a.amount);
+      return { amount: bottomAmounts[0].amount, rawStr: bottomAmounts[0].rawStr };
+    }
+  }
+
+  // Strategy 4: Largest number anywhere on receipt
+  const allAmounts: Array<{ amount: number; rawStr: string }> = [];
+  for (const line of lines) {
+    const amounts = extractAmountsFromLine(line);
+    allAmounts.push(...amounts);
+  }
+
+  if (allAmounts.length > 0) {
+    allAmounts.sort((a, b) => b.amount - a.amount);
+    return { amount: allAmounts[0].amount, rawStr: allAmounts[0].rawStr };
+  }
+
+  return null;
+}
+
+// ── Transaction failed detection ──
+
+/**
+ * Detect if receipt shows a failed transaction.
+ */
+export function detectTransactionFailed(text: string): boolean {
+  const lower = text.toLowerCase();
+  return lower.includes('transaksi gagal') ||
+         lower.includes('transaction failed') ||
+         lower.includes('pembayaran gagal') ||
+         lower.includes('payment failed') ||
+         lower.includes('transfer gagal') ||
+         lower.includes('transfer failed');
+}
+
+// ── From/To (direction) detection ──
+
+export interface FromToResult {
+  direction: 'income' | 'expense' | null;
+  from: string;
+  to: string;
+}
+
+/**
+ * Extract from/to (origin/destination) from receipt text.
+ */
+export function extractFromTo(text: string): FromToResult {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  let from = '';
+  let to = '';
+  let direction: 'income' | 'expense' | null = null;
+
+  const fromLabels = [
+    /\b(?:dari|from|pengirim|sender)\s*[:.]?\s*(.+)/i,
+    /\b(?:transfer dari|transfer from)\s*[:.]?\s*(.+)/i,
+  ];
+
+  const toLabels = [
+    /\b(?:ke|to|penerima|receiver|beneficiary)\s*[:.]?\s*(.+)/i,
+    /\b(?:transfer ke|transfer to)\s*[:.]?\s*(.+)/i,
+  ];
+
+  for (const line of lines) {
+    for (const re of fromLabels) {
+      const m = line.match(re);
+      if (m && !from) from = m[1].trim().substring(0, 50);
+    }
+    for (const re of toLabels) {
+      const m = line.match(re);
+      if (m && !to) to = m[1].trim().substring(0, 50);
+    }
+  }
+
+  if (from && to) {
+    const lower = text.toLowerCase();
+    if (lower.includes('qris') || lower.includes('pembayaran') || lower.includes('payment') ||
+        lower.includes('beli') || lower.includes('bayar') || lower.includes('purchase')) {
+      direction = 'expense';
+    } else if (lower.includes('terima') || lower.includes('receive') || lower.includes('deposit') ||
+               lower.includes('refund') || lower.includes('salary') || lower.includes('gaji')) {
+      direction = 'income';
+    } else {
+      direction = 'expense';
+    }
+  } else if (from && !to) {
+    direction = 'income';
+  } else if (!from && to) {
+    direction = 'expense';
+  }
+
+  return { direction, from, to };
 }
