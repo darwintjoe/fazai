@@ -29,8 +29,6 @@ export interface AiProviderInfo {
   name: string;
   defaultEndpoint: string;
   defaultModel: string;
-  /** Optional: separate default model for vision/image tasks (e.g. multimodal model) */
-  defaultVisionModel?: string;
   models: string[];
   /** Whether this provider uses the OpenAI-compatible chat/completions format */
   openaiCompatible: boolean;
@@ -78,7 +76,6 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderInfo> = {
     name: 'Groq',
     defaultEndpoint: 'https://api.groq.com/openai/v1',
     defaultModel: 'llama-3.1-8b-instant',
-    defaultVisionModel: 'qwen/qwen3.6-27b',
     models: [
       'meta-llama/llama-4-scout-17b-16e-instruct',
       'qwen/qwen3.6-27b',
@@ -118,8 +115,7 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderInfo> = {
     name: 'Z.Ai',
     defaultEndpoint: 'https://api.z.ai/api/paas/v4/',
     defaultModel: 'GLM-4.5-Flash',
-    defaultVisionModel: 'GLM-4.6V-Flash',
-    models: ['GLM-4.5-Flash', 'GLM-4.7-Flash', 'GLM-4.6V-Flash'],
+    models: ['GLM-4.5-Flash', 'GLM-4.7-Flash'],
     openaiCompatible: true,
   },
 };
@@ -133,21 +129,9 @@ export function getEndpoint(config: AiProviderConfig): string {
   return config.endpoint?.trim() || info.defaultEndpoint;
 }
 
-interface ChatMessageContent {
-  type: 'text';
-  text: string;
-}
-
-interface ChatMessageImageContent {
-  type: 'image_url';
-  image_url: { url: string };
-}
-
-type ChatContentPart = ChatMessageContent | ChatMessageImageContent;
-
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string | ChatContentPart[];
+  content: string;
 }
 
 interface ChatCompletionOptions {
@@ -187,10 +171,6 @@ export async function chatCompletion(
 }
 
 // ── OpenAI-compatible (OpenAI, Groq, DeepSeek, Qwen, Kimi, Z.Ai) ──
-
-function isImageContent(content: string | ChatContentPart[]): content is ChatContentPart[] {
-  return Array.isArray(content);
-}
 
 async function callOpenAICompatible(
   endpoint: string,
@@ -321,191 +301,6 @@ async function callGoogle(
 
   const data = await res.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-}
-
-// ── OpenAI-compatible Vision ──
-
-async function callOpenAICompatibleVision(
-  endpoint: string,
-  apiKey: string,
-  model: string,
-  systemPrompt: string,
-  userText: string,
-  imageBase64: string,
-): Promise<string> {
-  const url = `${endpoint.replace(/\/+$/, '')}/chat/completions`;
-
-  const dataUrl = imageBase64.startsWith('data:')
-    ? imageBase64
-    : `data:image/jpeg;base64,${imageBase64}`;
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: userText },
-            { type: 'image_url', image_url: { url: dataUrl } },
-          ],
-        },
-      ],
-      max_tokens: 1024,
-      temperature: 0,
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text().catch(() => '');
-    throw new Error(`AI Vision API error (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
-  return data.choices?.[0]?.message?.content || '';
-}
-
-// ── Anthropic Vision ──
-
-async function callAnthropicVision(
-  endpoint: string,
-  apiKey: string,
-  model: string,
-  systemPrompt: string,
-  userText: string,
-  imageBase64: string,
-): Promise<string> {
-  const url = `${endpoint.replace(/\/+$/, '')}/messages`;
-
-  // Strip data URI prefix if present
-  const rawBase64 = imageBase64.replace(/^data:[^;]+;base64,/, '');
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      system: systemPrompt,
-      max_tokens: 1024,
-      temperature: 0,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: {
-              type: 'base64',
-              media_type: 'image/jpeg',
-              data: rawBase64,
-            },
-          },
-          {
-            type: 'text',
-            text: userText,
-          },
-        ],
-      }],
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text().catch(() => '');
-    throw new Error(`Anthropic Vision API error (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
-  return data.content?.[0]?.text || '';
-}
-
-// ── Google Gemini Vision ──
-
-async function callGoogleVision(
-  endpoint: string,
-  apiKey: string,
-  model: string,
-  systemPrompt: string,
-  userText: string,
-  imageBase64: string,
-): Promise<string> {
-  const url = `${endpoint.replace(/\/+$/, '')}/models/${model}:generateContent?key=${apiKey}`;
-
-  // Strip data URI prefix if present
-  const rawBase64 = imageBase64.replace(/^data:[^;]+;base64,/, '');
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      systemInstruction: {
-        parts: [{ text: systemPrompt }],
-      },
-      contents: [{
-        role: 'user',
-        parts: [
-          { inlineData: { mimeType: 'image/jpeg', data: rawBase64 } },
-          { text: userText },
-        ],
-      }],
-      generationConfig: {
-        temperature: 0,
-        maxOutputTokens: 1024,
-      },
-    }),
-  });
-
-  if (!res.ok) {
-    const errText = await res.text().catch(() => '');
-    throw new Error(`Google Vision API error (${res.status}): ${errText}`);
-  }
-
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-}
-
-/**
- * Send a vision request (text + image) to the configured AI provider.
- * Returns the assistant's text content.
- */
-export async function visionCompletion(
-  config: AiProviderConfig,
-  options: {
-    systemPrompt: string;
-    userText: string;
-    imageBase64: string;
-  },
-): Promise<string> {
-  if (!config.apiKey) {
-    throw new Error('AI_API_KEY_NOT_SET');
-  }
-
-  const info = AI_PROVIDERS[config.provider];
-  const endpoint = getEndpoint(config);
-  const model = config.model || info.defaultVisionModel || info.defaultModel;
-  const { systemPrompt, userText, imageBase64 } = options;
-
-  if (info.openaiCompatible) {
-    return callOpenAICompatibleVision(endpoint, config.apiKey, model, systemPrompt, userText, imageBase64);
-  }
-
-  if (config.provider === 'anthropic') {
-    return callAnthropicVision(endpoint, config.apiKey, model, systemPrompt, userText, imageBase64);
-  }
-
-  if (config.provider === 'google') {
-    return callGoogleVision(endpoint, config.apiKey, model, systemPrompt, userText, imageBase64);
-  }
-
-  throw new Error(`Unsupported provider for vision: ${config.provider}`);
 }
 
 /**

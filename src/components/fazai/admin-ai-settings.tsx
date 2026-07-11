@@ -134,11 +134,6 @@ export function AdminAiSettings() {
       await db.settings.put({ key: 'ai-model', value: model || AI_PROVIDERS[provider].defaultModel });
       await db.settings.put({ key: 'ai-api-key', value: apiKey.trim() });
       await db.settings.put({ key: 'ai-endpoint', value: endpoint.trim() });
-      // Sync provider/key/endpoint to OCR config (model stays independent per task)
-      await db.settings.put({ key: 'ocr-provider', value: provider });
-      // ocr-model is NOT synced — OCR uses its own factory-seeded vision model
-      await db.settings.put({ key: 'ocr-api-key', value: apiKey.trim() });
-      await db.settings.put({ key: 'ocr-endpoint', value: endpoint.trim() });
 
       toast({
         title: lang === 'id' ? 'Tersimpan!' : lang === 'zh' ? '已保存！' : 'Saved!',

@@ -248,6 +248,8 @@ export type TranslationKeys = {
   // Receipt / Share Target
   'receipt.title': string;
   'receipt.processing': string;
+  'receipt.scanning': string;
+  'receipt.parsing': string;
   'receipt.extracted': string;
   'receipt.noImage': string;
   'receipt.aiNotConfigured': string;
@@ -255,6 +257,9 @@ export type TranslationKeys = {
   'receipt.record': string;
   'receipt.error': string;
   'receipt.retry': string;
+  'receipt.scanFailed': string;
+  'receipt.parseFailed': string;
+  'receipt.payWith': string;
   'receipt.type': string;
   'receipt.reference': string;
   'receipt.pickGallery': string;
@@ -483,6 +488,8 @@ const en: TranslationKeys = {
   'guide.migration.desc': 'Follow these steps to set up FAZAI from your existing balance sheet:\n\n1. Prepare your latest balance sheet — gather your most recent balance sheet document as reference.\n\n2. Login as Admin — use the Admin PIN (default: 000000) to access the Admin Panel.\n\n3. Go to Accounts section — add all accounts following your latest balance sheet. For each account, select the correct account type (Asset, Cash/Bank, Liability, Equity, Income, or Expense) and enter the current balance.\n\n4. Review all accounts — double-check each account\'s type and balance. You may disable any unused pre-created accounts by toggling them off.\n\n5. Go to Reports → Balance Sheet — verify that all figures match your original balance sheet. The total assets should equal liabilities plus equity.\n\n6. That\'s all — FAZAI is ready to use! Start recording your daily income and expenses.',
   'receipt.title': 'Receipt Scanner',
   'receipt.processing': 'Reading receipt...',
+  'receipt.scanning': 'Scanning receipt...',
+  'receipt.parsing': 'Processing receipt data...',
   'receipt.extracted': 'Extracted from receipt',
   'receipt.noImage': 'No image received. Please share an image to scan.',
   'receipt.aiNotConfigured': 'AI is not configured. Please go to Admin → AI Settings to set up an API key first.',
@@ -490,9 +497,12 @@ const en: TranslationKeys = {
   'receipt.record': 'Record Transaction',
   'receipt.error': 'Failed to read receipt',
   'receipt.retry': 'Retry',
+  'receipt.scanFailed': 'Could not read text from receipt. Try a clearer photo.',
+  'receipt.parseFailed': 'Could not parse receipt data. You can fill in the details manually.',
   'receipt.type': 'Type',
   'receipt.reference': 'Reference',
   'receipt.pickGallery': 'Pick from Gallery',
+  'receipt.payWith': 'Pay with',
 };
 
 const id: TranslationKeys = {
@@ -718,6 +728,8 @@ const id: TranslationKeys = {
   'guide.migration.desc': 'Ikuti langkah-langkah berikut untuk menyiapkan FAZAI dari neraca yang ada:\n\n1. Siapkan neraca terbaru Anda — kumpulkan dokumen neraca terbaru sebagai referensi.\n\n2. Login sebagai Admin — gunakan PIN Admin (default: 000000) untuk mengakses Panel Admin.\n\n3. Buka bagian Akun — tambahkan semua akun sesuai neraca terbaru Anda. Untuk setiap akun, pilih jenis akun yang benar (Aset, Kas/Bank, Kewajiban, Modal, Pendapatan, atau Pengeluaran) dan masukkan saldo saat ini.\n\n4. Periksa semua akun — periksa kembali jenis dan saldo setiap akun. Anda dapat menonaktifkan akun bawaan yang tidak digunakan.\n\n5. Buka Laporan → Neraca — verifikasi bahwa semua angka sesuai dengan neraca asli Anda. Total aset harus sama dengan kewajiban ditambah modal.\n\n6. Selesai — FAZAI siap digunakan! Mulai catat pendapatan dan pengeluaran harian Anda.',
   'receipt.title': 'Pemindai Struk',
   'receipt.processing': 'Membaca struk...',
+  'receipt.scanning': 'Memindai struk...',
+  'receipt.parsing': 'Memproses data struk...',
   'receipt.extracted': 'Diekstrak dari struk',
   'receipt.noImage': 'Tidak ada gambar diterima. Silakan bagikan gambar untuk dipindai.',
   'receipt.aiNotConfigured': 'AI belum dikonfigurasi. Silakan buka Admin → Pengaturan AI untuk mengatur API key terlebih dahulu.',
@@ -725,9 +737,12 @@ const id: TranslationKeys = {
   'receipt.record': 'Catat Transaksi',
   'receipt.error': 'Gagal membaca struk',
   'receipt.retry': 'Coba Lagi',
+  'receipt.scanFailed': 'Tidak dapat membaca teks dari struk. Coba foto yang lebih jelas.',
+  'receipt.parseFailed': 'Tidak dapat memproses data struk. Anda dapat mengisi detail secara manual.',
   'receipt.type': 'Jenis',
   'receipt.reference': 'Referensi',
   'receipt.pickGallery': 'Pilih dari Galeri',
+  'receipt.payWith': 'Bayar dengan',
 };
 
 const zh: TranslationKeys = {
@@ -953,6 +968,8 @@ const zh: TranslationKeys = {
   'guide.migration.desc': '按照以下步骤从现有资产负债表设置 FAZAI：\n\n1. 准备最新资产负债表 — 收集最近的资产负债表文件作为参考。\n\n2. 以管理员身份登录 — 使用管理员 PIN 码（默认：000000）访问管理面板。\n\n3. 前往账户部分 — 按照最新资产负债表添加所有账户。为每个账户选择正确的账户类型（资产、现金/银行、负债、权益、收入或支出）并输入当前余额。\n\n4. 核对所有账户 — 仔细核对每个账户的类型和余额。您可以关闭任何未使用的预创建账户。\n\n5. 前往报表 → 资产负债表 — 验证所有数据是否与原始资产负债表一致。总资产应等于负债加权益。\n\n6. 完成 — FAZAI 已准备就绪！开始记录日常收入和支出。',
   'receipt.title': '收据扫描',
   'receipt.processing': '正在读取收据...',
+  'receipt.scanning': '正在扫描收据...',
+  'receipt.parsing': '正在处理收据数据...',
   'receipt.extracted': '从收据提取',
   'receipt.noImage': '未收到图片。请分享图片进行扫描。',
   'receipt.aiNotConfigured': 'AI未配置。请前往管理→AI设置配置API密钥。',
@@ -960,9 +977,12 @@ const zh: TranslationKeys = {
   'receipt.record': '记录交易',
   'receipt.error': '读取收据失败',
   'receipt.retry': '重试',
+  'receipt.scanFailed': '无法读取收据文字。请尝试更清晰的照片。',
+  'receipt.parseFailed': '无法处理收据数据。您可以手动填写详细信息。',
   'receipt.type': '类型',
   'receipt.reference': '参考号',
   'receipt.pickGallery': '从相册选择',
+  'receipt.payWith': '支付方式',
 };
 
 const translations: Record<Lang, TranslationKeys> = { en, id, zh };

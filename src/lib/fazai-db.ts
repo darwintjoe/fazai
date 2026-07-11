@@ -291,17 +291,6 @@ export async function seedDatabase() {
       { key: 'ai-endpoint', value: '' },
     ]);
   }
-
-  // Seed OCR provider defaults (separate from chat — uses vision-capable model)
-  const existingOcrProvider = await db.settings.get('ocr-provider');
-  if (!existingOcrProvider) {
-    await db.settings.bulkPut([
-      { key: 'ocr-provider', value: 'zai' },
-      { key: 'ocr-model', value: 'GLM-4.6V-Flash' },
-      { key: 'ocr-api-key', value: '' },
-      { key: 'ocr-endpoint', value: '' },
-    ]);
-  }
 }
 
 export async function exportAllData() {

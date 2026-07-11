@@ -3,69 +3,148 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useAppStore, type PendingReceipt } from '@/lib/app-store';
-import { t } from '@/lib/i18n';
-import { db } from '@/lib/fazai-db';
-import { formatNumber } from '@/lib/format';
+import { t, getAccountName } from '@/lib/i18n';
+import { db, type Account } from '@/lib/fazai-db';
+import { formatNumber, parseFormattedNumber } from '@/lib/format';
 import { type AiProviderConfig, type AiProviderId } from '@/lib/ai-provider';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Camera, Loader2, AlertCircle, CheckCircle, Pencil, X, ArrowLeftRight, MessageSquare, ImagePlus } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { ArrowLeft, Camera, Loader2, AlertCircle, TrendingUp, TrendingDown, X, ImagePlus, Search } from 'lucide-react';
 
-interface OcrResult {
-  type: 'income' | 'expense';
+type OcrStatus = 'loading-image' | 'scanning' | 'parsing' | 'success' | 'error' | 'no-image';
+
+interface OcrParseResult {
+  text: string;
+  suggestedType: 'income' | 'expense';
+  suggestedAccountId: string;
+  suggestedAccountName: string;
+  suggestedOpponentAccountId: string;
   amount: number;
+  date: string;
   counterparty: string;
   description: string;
-  accountId: string;
-  accountName: string;
-  paymentMethodId: string;
   paymentMethod: string;
-  date: string;
-  reference: string;
+  source: 'ai' | 'local';
 }
-
-type OcrStatus = 'loading-image' | 'loading-ocr' | 'success' | 'error' | 'no-image' | 'no-ai';
 
 export function ReceiptOcr() {
   const { lang } = useAuthStore();
   const { goBack, setPendingReceipt, setAiChatOpen } = useAppStore();
-  const { toast } = useToast();
 
   const [status, setStatus] = useState<OcrStatus>('loading-image');
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [ocrResult, setOcrResult] = useState<OcrResult | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
-  const [txType, setTxType] = useState<'income' | 'expense'>('expense');
+  const [imageBlob, setImageBlob] = useState<Blob | null>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
 
-  // Perform OCR via AI API (defined before loadSharedImage so it's in scope)
-  const performOcr = useCallback(async (base64: string) => {
+  // Parsed result
+  const [parseResult, setParseResult] = useState<OcrParseResult | null>(null);
+
+  // User-editable fields (pre-filled by AI/local suggestions)
+  const [txType, setTxType] = useState<'income' | 'expense'>('expense');
+  const [amount, setAmount] = useState('');
+  const [counterparty, setCounterparty] = useState('');
+  const [description, setDescription] = useState('');
+  const [dateStr, setDateStr] = useState('');
+
+  // Account & opponent account state
+  const [categoryAccounts, setCategoryAccounts] = useState<Account[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [opponentAccounts, setOpponentAccounts] = useState<Account[]>([]);
+  const [opponentAccountId, setOpponentAccountId] = useState('acc-cash');
+  const [accountSearchQuery, setAccountSearchQuery] = useState('');
+  const [parseSource, setParseSource] = useState<'ai' | 'local' | ''>('');
+
+  // Load accounts for the selected transaction type
+  const loadAccountsForType = useCallback(async (type: 'income' | 'expense') => {
+    const accs = await db.accounts.where('type').equals(type).toArray();
+    setCategoryAccounts(accs.filter(a => a.parentId && a.isActive));
+
+    const cashAccs = await db.accounts.where('type').equals('asset').toArray();
+    const cashBankAccs = await db.accounts.where('type').equals('cashBank').toArray();
+    setOpponentAccounts([...cashAccs, ...cashBankAccs].filter(a => a.parentId && a.isActive));
+  }, []);
+
+  // Load initial accounts (expense by default)
+  useEffect(() => {
+    loadAccountsForType('expense');
+  }, [loadAccountsForType]);
+
+  // Apply parsed result to form fields
+  const applyParseResult = useCallback((result: OcrParseResult) => {
+    setParseResult(result);
+    setParseSource(result.source);
+
+    // Set type and load matching accounts
+    const type = result.suggestedType === 'income' ? 'income' : 'expense';
+    setTxType(type);
+    loadAccountsForType(type);
+
+    // Pre-fill fields
+    if (result.amount > 0) setAmount(formatNumber(result.amount));
+    if (result.counterparty) setCounterparty(result.counterparty);
+    if (result.description) setDescription(result.description);
+    if (result.date) setDateStr(result.date);
+    setSelectedAccountId(result.suggestedAccountId || '');
+    setOpponentAccountId(result.suggestedOpponentAccountId || 'acc-cash');
+  }, [loadAccountsForType]);
+
+  // Handle type toggle — reload accounts for new type
+  const handleTypeToggle = useCallback((newType: 'income' | 'expense') => {
+    setTxType(newType);
+    loadAccountsForType(newType);
+    // Reset category account when switching type
+    setSelectedAccountId('');
+    setAccountSearchQuery('');
+  }, [loadAccountsForType]);
+
+  // Handle amount input
+  const handleAmountChange = useCallback((value: string) => {
+    const parsed = parseFormattedNumber(value);
+    if (!isNaN(parsed) || value === '') {
+      setAmount(value === '' ? '' : formatNumber(parsed));
+    }
+  }, []);
+
+  // Perform the full OCR pipeline: local OCR → AI parse → local fallback
+  const processReceipt = useCallback(async (blob: Blob) => {
     try {
-      // Load OCR-specific AI config from DB
+      // Tier 1: Local OCR
+      setStatus('scanning');
+      const ocrModule = await import('@/lib/ocr-engine');
+      const rawText = await ocrModule.recognizeReceipt(blob, lang);
+
+      if (!rawText || rawText.length < 5) {
+        setStatus('error');
+        setErrorMessage(t('receipt.scanFailed', lang));
+        return;
+      }
+
+      // Tier 2: AI text parsing (or local fallback)
+      setStatus('parsing');
+
+      // Load AI config from chat settings
       const [provSetting, modelSetting, keySetting, endpointSetting] = await Promise.all([
-        db.settings.get('ocr-provider'),
-        db.settings.get('ocr-model'),
-        db.settings.get('ocr-api-key'),
-        db.settings.get('ocr-endpoint'),
+        db.settings.get('ai-provider'),
+        db.settings.get('ai-model'),
+        db.settings.get('ai-api-key'),
+        db.settings.get('ai-endpoint'),
       ]);
       const accounts = await db.accounts.filter(a => a.isActive).toArray();
 
-      const apiKey = keySetting?.value as string | undefined;
-      const provId = (provSetting?.value as string) || 'groq';
-
       const aiConfig: AiProviderConfig = {
-        provider: provId as AiProviderId,
+        provider: (provSetting?.value as string || 'zai') as AiProviderId,
         model: (modelSetting?.value as string) || '',
-        apiKey: apiKey || '',  // send empty — server will inject GROQ_API_KEY from env for internal providers
+        apiKey: (keySetting?.value as string) || '',
         endpoint: (endpointSetting?.value as string) || undefined,
       };
 
-      const res = await fetch('/api/ai/ocr', {
+      const res = await fetch('/api/ai/parse-receipt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          image: base64,
+          text: rawText,
           lang,
           accounts: accounts.map(a => ({
             id: a.id,
@@ -81,33 +160,39 @@ export function ReceiptOcr() {
 
       const data = await res.json();
 
-      if (data.error === 'AI_API_KEY_NOT_SET') {
-        setStatus('no-ai');
-        return;
-      }
-
       if (!res.ok || data.error) {
-        setStatus('error');
-        setErrorMessage(data.message || data.error || 'OCR failed');
+        // If AI parsing completely fails, show error (fields will be empty for manual fill)
+        setStatus('success');
+        applyParseResult({
+          text: '',
+          suggestedType: 'expense',
+          suggestedAccountId: '',
+          suggestedAccountName: '',
+          suggestedOpponentAccountId: 'acc-cash',
+          amount: 0,
+          date: '',
+          counterparty: '',
+          description: '',
+          paymentMethod: '',
+          source: 'local',
+        });
         return;
       }
 
-      setOcrResult(data);
-      setTxType(data.type === 'income' ? 'income' : 'expense');
       setStatus('success');
+      applyParseResult(data);
     } catch (err: any) {
-      console.error('OCR error:', err);
+      console.error('Receipt processing error:', err);
       setStatus('error');
-      setErrorMessage(err.message || 'Network error');
+      setErrorMessage(err.message || 'Processing failed');
     }
-  }, [lang]);
+  }, [lang, applyParseResult]);
 
   // Load shared image from Cache API
   const loadSharedImage = useCallback(async () => {
     try {
       const cache = await caches.open('shared-files');
 
-      // Try to find the shared image (could be /shared-image-0, /shared-image, etc.)
       const keys = await cache.keys();
       const imageKey = keys.find(k =>
         k.url.includes('/shared-image-0') || k.url.includes('/shared-image')
@@ -127,6 +212,7 @@ export function ReceiptOcr() {
       const blob = await response.blob();
       const objectUrl = URL.createObjectURL(blob);
       setImageUrl(objectUrl);
+      setImageBlob(blob);
 
       // Clean up cache entries
       for (const key of keys) {
@@ -135,52 +221,37 @@ export function ReceiptOcr() {
         }
       }
 
-      // Convert blob to base64 for API call
-      setStatus('loading-ocr');
-      const base64 = await blobToBase64(blob);
-      await performOcr(base64);
+      await processReceipt(blob);
     } catch (err) {
       console.error('Error loading shared image:', err);
       setStatus('no-image');
     }
-  }, [performOcr]);
+  }, [processReceipt]);
 
   useEffect(() => {
     loadSharedImage();
   }, [loadSharedImage]);
 
   // Navigate to transaction form with pre-filled data
-  const handleUseData = useCallback(() => {
-    if (!ocrResult) return;
+  const handleRecord = useCallback(() => {
+    const numAmount = parseFormattedNumber(amount);
+    if (numAmount <= 0 || !selectedAccountId) return;
 
     const receipt: PendingReceipt = {
-      amount: ocrResult.amount,
-      counterparty: ocrResult.counterparty,
-      description: ocrResult.description,
-      accountId: ocrResult.accountId || undefined,
-      accountName: ocrResult.accountName || undefined,
-      opponentAccountId: ocrResult.paymentMethodId || undefined,
-      date: ocrResult.date || undefined,
+      amount: numAmount,
+      counterparty,
+      description,
+      accountId: selectedAccountId || undefined,
+      accountName: selectedAccountId
+        ? getAccountName(categoryAccounts.find(a => a.id === selectedAccountId)!, lang)
+        : undefined,
+      opponentAccountId: opponentAccountId || undefined,
+      date: dateStr || undefined,
     };
 
     setPendingReceipt(receipt);
     useAppStore.getState().navigate(txType === 'income' ? 'income' : 'expense');
-  }, [ocrResult, txType, setPendingReceipt]);
-
-  const handleRetry = useCallback(() => {
-    if (imageUrl) {
-      // Re-fetch the image as base64
-      setStatus('loading-ocr');
-      fetch(imageUrl)
-        .then(r => r.blob())
-        .then(blob => blobToBase64(blob))
-        .then(base64 => performOcr(base64))
-        .catch(() => {
-          setStatus('error');
-          setErrorMessage('Failed to reload image');
-        });
-    }
-  }, [imageUrl, performOcr]);
+  }, [amount, counterparty, description, selectedAccountId, categoryAccounts, opponentAccountId, dateStr, txType, lang, setPendingReceipt]);
 
   const handleCancel = useCallback(() => {
     if (imageUrl) {
@@ -189,29 +260,43 @@ export function ReceiptOcr() {
     goBack();
   }, [imageUrl, goBack]);
 
-  // Pick from gallery — process file directly without Cache API round-trip
+  const handleRetry = useCallback(() => {
+    if (!imageBlob) return;
+    setAmount('');
+    setCounterparty('');
+    setDescription('');
+    setDateStr('');
+    setSelectedAccountId('');
+    setAccountSearchQuery('');
+    setParseResult(null);
+    setParseSource('');
+    processReceipt(imageBlob);
+  }, [imageBlob, processReceipt]);
+
+  // Pick from gallery
   const handleGalleryChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
 
-    // Revoke previous image URL
     if (imageUrl) {
       URL.revokeObjectURL(imageUrl);
     }
 
     const objectUrl = URL.createObjectURL(file);
     setImageUrl(objectUrl);
-    setOcrResult(null);
-    setErrorMessage('');
-    setStatus('loading-ocr');
+    setImageBlob(file);
+    setAmount('');
+    setCounterparty('');
+    setDescription('');
+    setDateStr('');
+    setSelectedAccountId('');
+    setAccountSearchQuery('');
+    setParseResult(null);
+    setParseSource('');
 
-    const base64Promise = blobToBase64(file);
-    base64Promise.then(base64 => performOcr(base64)).catch(() => {
-      setStatus('error');
-      setErrorMessage('Failed to read image');
-    });
-  }, [imageUrl, performOcr]);
+    processReceipt(file);
+  }, [imageUrl, processReceipt]);
 
   // Fallback: send to AI assistant
   const handleAskAi = useCallback(() => {
@@ -222,8 +307,15 @@ export function ReceiptOcr() {
     useAppStore.getState().navigate('dashboard');
   }, [imageUrl, setAiChatOpen]);
 
-  // Whether to show the image in fullscreen mode (during loading states)
-  const isFullscreenImage = status === 'loading-image' || status === 'loading-ocr';
+  // Filtered accounts for dropdown
+  const filteredAccounts = accountSearchQuery
+    ? categoryAccounts.filter(a => getAccountName(a, lang).toLowerCase().includes(accountSearchQuery.toLowerCase()))
+    : [];
+
+  const numAmount = parseFormattedNumber(amount);
+  const canRecord = numAmount > 0 && selectedAccountId && opponentAccountId;
+
+  const isFullscreenImage = status === 'loading-image' || status === 'scanning' || status === 'parsing';
 
   return (
     <div className="flex flex-col gap-4 pb-20">
@@ -233,7 +325,6 @@ export function ReceiptOcr() {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <h2 className="text-xl font-bold text-red-600">{t('receipt.title', lang)}</h2>
-        {/* Hidden gallery input — no capture attr opens file picker/gallery */}
         <input
           ref={galleryInputRef}
           type="file"
@@ -245,18 +336,18 @@ export function ReceiptOcr() {
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4">
 
-        {/* Image Preview — fullscreen during loading, compact after result */}
+        {/* Image Preview */}
         {imageUrl && (
           <div className={`rounded-xl overflow-hidden border bg-card ${isFullscreenImage ? 'flex-1 min-h-[60vh]' : ''}`}>
             <img
               src={imageUrl}
-              alt="Shared receipt"
+              alt="Receipt"
               className={`w-full object-contain bg-muted ${isFullscreenImage ? 'max-h-[70vh]' : 'max-h-48'}`}
             />
           </div>
         )}
 
-        {/* Loading image */}
+        {/* Loading states */}
         {status === 'loading-image' && (
           <div className="flex flex-col items-center gap-3 py-4">
             <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
@@ -264,12 +355,17 @@ export function ReceiptOcr() {
           </div>
         )}
 
-        {/* Loading OCR */}
-        {status === 'loading-ocr' && (
+        {status === 'scanning' && (
           <div className="flex flex-col items-center gap-3 py-3">
             <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
-            <p className="text-sm text-muted-foreground">{t('receipt.processing', lang)}</p>
-            <p className="text-xs text-muted-foreground">AI is reading your receipt...</p>
+            <p className="text-sm text-muted-foreground">{t('receipt.scanning', lang)}</p>
+          </div>
+        )}
+
+        {status === 'parsing' && (
+          <div className="flex flex-col items-center gap-3 py-3">
+            <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
+            <p className="text-sm text-muted-foreground">{t('receipt.parsing', lang)}</p>
           </div>
         )}
 
@@ -290,18 +386,7 @@ export function ReceiptOcr() {
           </div>
         )}
 
-        {/* AI not configured */}
-        {status === 'no-ai' && (
-          <div className="flex flex-col items-center gap-3 py-4 text-center">
-            <AlertCircle className="w-8 h-8 text-yellow-500" />
-            <p className="text-sm text-muted-foreground">{t('receipt.aiNotConfigured', lang)}</p>
-            <Button variant="outline" onClick={handleCancel} className="mt-2">
-              {t('common.back', lang)}
-            </Button>
-          </div>
-        )}
-
-        {/* OCR Error */}
+        {/* Error */}
         {status === 'error' && (
           <div className="flex flex-col items-center gap-3 py-4 text-center">
             <AlertCircle className="w-8 h-8 text-red-500" />
@@ -315,10 +400,6 @@ export function ReceiptOcr() {
                 <ImagePlus className="w-3.5 h-3.5 mr-1" />
                 {t('receipt.pickGallery', lang)}
               </Button>
-              <Button variant="outline" onClick={handleAskAi} size="sm">
-                <MessageSquare className="w-3.5 h-3.5 mr-1" />
-                AI Assistant
-              </Button>
               <Button variant="outline" onClick={handleCancel} size="sm">
                 {t('common.cancel', lang)}
               </Button>
@@ -326,123 +407,170 @@ export function ReceiptOcr() {
           </div>
         )}
 
-        {/* OCR Success */}
-        {status === 'success' && ocrResult && (
+        {/* Success — Single Review Page */}
+        {status === 'success' && (
           <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-500" />
-              <span className="text-sm font-medium">{t('receipt.extracted', lang)}</span>
-            </div>
-
-            {/* Warning when amount is 0 */}
-            {ocrResult.amount <= 0 && (
-              <div className="flex items-center gap-2 p-3 rounded-lg border border-yellow-300 bg-yellow-50 dark:bg-yellow-950 dark:border-yellow-700">
-                <AlertCircle className="w-4 h-4 text-yellow-600 shrink-0" />
-                <p className="text-xs text-yellow-700 dark:text-yellow-400">
-                  {lang === 'id' ? 'Jumlah tidak terdeteksi. Anda dapat mencoba lagi atau meminta bantuan asisten AI.'
-                    : lang === 'zh' ? '金额未检测到。您可以重试或请求 AI 助手帮助。'
-                    : 'Amount not detected. You can retry or ask the AI assistant for help.'}
-                </p>
-                <Button variant="outline" size="sm" className="shrink-0 ml-auto" onClick={handleAskAi}>
-                  <MessageSquare className="w-3.5 h-3.5 mr-1" />
-                  AI
-                </Button>
+            {/* Parse source badge */}
+            {parseSource === 'ai' && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="px-1.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 text-[10px] font-medium">AI</span>
+                {t('receipt.extracted', lang)}
+              </div>
+            )}
+            {parseSource === 'local' && (
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span className="px-1.5 py-0.5 rounded-full bg-yellow-50 dark:bg-yellow-950 text-yellow-600 dark:text-yellow-400 text-[10px] font-medium">LOCAL</span>
+                {t('receipt.parseFailed', lang)}
               </div>
             )}
 
-            <div className="rounded-xl border bg-card p-4 space-y-3">
-              {/* Transaction Type — tappable toggle */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{t('receipt.type', lang)}</span>
+            <div className="rounded-xl border bg-card p-4 space-y-4">
+              {/* Income / Expense Toggle — Income LEFT (red), Expense RIGHT (gray) */}
+              <div className="grid grid-cols-2 gap-2">
                 <button
-                  onClick={() => setTxType(t => t === 'income' ? 'expense' : 'income')}
-                  className="flex items-center gap-1 text-sm font-medium px-2 py-0.5 rounded-full transition-colors cursor-pointer hover:opacity-80"
-                  title={lang === 'id' ? 'Ketuk untuk mengubah tipe' : lang === 'zh' ? '点击切换类型' : 'Tap to toggle type'}
-                >
-                  <ArrowLeftRight className="w-3 h-3 opacity-50" />
-                  <span className={`px-1.5 py-0.5 rounded-full ${
+                  onClick={() => handleTypeToggle('income')}
+                  className={`flex items-center justify-center gap-2 min-h-[48px] rounded-xl text-sm font-semibold transition-all ${
                     txType === 'income'
-                      ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                      : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
-                  }`}>
-                    {txType === 'income' ? t('dash.income', lang) : t('dash.expense', lang)}
-                  </span>
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <TrendingUp className="w-4 h-4" />
+                  {t('dash.income', lang)}
+                </button>
+                <button
+                  onClick={() => handleTypeToggle('expense')}
+                  className={`flex items-center justify-center gap-2 min-h-[48px] rounded-xl text-sm font-semibold transition-all ${
+                    txType === 'expense'
+                      ? 'bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-md'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <TrendingDown className="w-4 h-4" />
+                  {t('dash.expense', lang)}
                 </button>
               </div>
 
+              {/* Account Category Dropdown */}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">{t('form.account', lang)}</label>
+                {selectedAccountId && (
+                  <div className="mt-1 mb-1.5 flex items-center gap-2 bg-red-50 dark:bg-red-950 px-3 py-2 rounded-lg">
+                    <span className="text-sm font-medium">{getAccountName(categoryAccounts.find(a => a.id === selectedAccountId)!, lang)}</span>
+                    <button onClick={() => { setSelectedAccountId(''); setAccountSearchQuery(''); }} className="text-xs text-muted-foreground hover:text-foreground ml-auto">✕</button>
+                  </div>
+                )}
+                <div className="relative mt-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    value={accountSearchQuery}
+                    onChange={(e) => setAccountSearchQuery(e.target.value)}
+                    placeholder={t('form.searchAccount', lang)}
+                    className="pl-9"
+                  />
+                </div>
+                {accountSearchQuery && (
+                  <div className="flex flex-col gap-1 mt-1.5 max-h-40 overflow-y-auto border rounded-lg">
+                    {filteredAccounts.map((acc) => (
+                      <button
+                        key={acc.id}
+                        onClick={() => { setSelectedAccountId(acc.id); setAccountSearchQuery(''); }}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                          selectedAccountId === acc.id
+                            ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                            : 'hover:bg-accent'
+                        }`}
+                      >
+                        <span>{getAccountName(acc, lang)}</span>
+                      </button>
+                    ))}
+                    {filteredAccounts.length === 0 && (
+                      <p className="text-xs text-muted-foreground px-3 py-2">No accounts found</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Opponent Account (Cash/Bank) Pills */}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">{t('form.opponentAccount', lang)}</label>
+                <div className="flex gap-1 mt-1 flex-wrap">
+                  {opponentAccounts.map((acc) => (
+                    <button
+                      key={acc.id}
+                      onClick={() => setOpponentAccountId(acc.id)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                        opponentAccountId === acc.id
+                          ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                          : 'bg-muted text-muted-foreground hover:bg-accent'
+                      }`}
+                    >
+                      {getAccountName(acc, lang)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {/* Amount */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{t('form.amount', lang)}</span>
-                <span className="text-lg font-bold">
-                  {ocrResult.amount > 0 ? formatNumber(ocrResult.amount) : '—'}
-                </span>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">{t('form.amount', lang)}</label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  value={amount}
+                  onChange={(e) => handleAmountChange(e.target.value)}
+                  placeholder="0"
+                  className="text-xl font-bold h-12 mt-1"
+                />
               </div>
 
               {/* Counterparty */}
-              {ocrResult.counterparty && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    {t('receipt.fromReceipt', lang)}
-                  </span>
-                  <span className="text-sm font-medium">{ocrResult.counterparty}</span>
-                </div>
-              )}
-
-              {/* Account */}
-              {ocrResult.accountName && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{t('form.account', lang)}</span>
-                  <span className="text-sm font-medium">{ocrResult.accountName}</span>
-                </div>
-              )}
-
-              {/* Payment Method */}
-              {ocrResult.paymentMethod && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    {lang === 'id' ? 'Metode Bayar' : lang === 'zh' ? '付款方式' : 'Payment'}
-                  </span>
-                  <span className="text-sm font-medium">{ocrResult.paymentMethod}</span>
-                </div>
-              )}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">
+                  {txType === 'income' ? t('form.from', lang) : t('form.to', lang)}
+                </label>
+                <Input
+                  value={counterparty}
+                  onChange={(e) => setCounterparty(e.target.value)}
+                  placeholder={txType === 'income' ? 'PT Maju Jaya' : 'Grocery Store'}
+                  className="mt-1"
+                />
+              </div>
 
               {/* Description */}
-              {ocrResult.description && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{t('form.description', lang)}</span>
-                  <span className="text-sm text-right max-w-[60%]">{ocrResult.description}</span>
-                </div>
-              )}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">{t('form.description', lang)}</label>
+                <Input
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Optional notes..."
+                  className="mt-1"
+                />
+              </div>
 
               {/* Date */}
-              {ocrResult.date && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{t('form.date', lang)}</span>
-                  <span className="text-sm">{ocrResult.date}</span>
-                </div>
-              )}
-
-              {/* Reference */}
-              {ocrResult.reference && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{t('receipt.reference', lang)}</span>
-                  <span className="text-xs text-muted-foreground font-mono">{ocrResult.reference}</span>
-                </div>
-              )}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">{t('form.date', lang)}</label>
+                <Input
+                  type="date"
+                  value={dateStr}
+                  onChange={(e) => setDateStr(e.target.value)}
+                  className="mt-1"
+                />
+              </div>
             </div>
 
             {/* Action buttons */}
             <div className="flex gap-2">
               <Button
-                onClick={handleUseData}
-                disabled={ocrResult.amount <= 0}
+                onClick={handleRecord}
+                disabled={!canRecord}
                 className={`flex-1 h-12 text-base font-semibold ${
                   txType === 'income'
                     ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800'
                     : 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700'
                 } text-white`}
               >
-                <Pencil className="w-4 h-4 mr-2" />
                 {t('receipt.record', lang)}
               </Button>
               <Button variant="outline" onClick={handleCancel} className="h-12">
@@ -454,14 +582,4 @@ export function ReceiptOcr() {
       </motion.div>
     </div>
   );
-}
-
-/** Convert a Blob to a base64 data URI string */
-function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
 }
