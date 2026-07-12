@@ -94,10 +94,10 @@ Auto-detect thousand separator:
 - Return ONLY a plain integer.
 
 Prioritize amount sources:
-1. Lines with TOTAL, TOTAL BAYAR, GRAND TOTAL, JUMLAH, NOMINAL — prefer the LAST one found
-2. The number with the LARGEST font size (bold = likely total)
-3. The largest number in the bottom portion of the receipt
-4. The largest number anywhere on the receipt
+1. Any amount with Rp or IDR prefix — this is the MOST RELIABLE signal
+2. Lines with TOTAL, TOTAL BAYAR, GRAND TOTAL, JUMLAH, NOMINAL — prefer the LAST one found
+3. Use the BLOCK DATA below to identify which number is the transaction amount (larger font = likely total, bottom of receipt = likely total)
+4. The largest formatted number anywhere on the receipt
 
 ## DATE EXTRACTION RULES
 Common formats: dd/mm/yyyy, dd-mm-yyyy, dd MMM yyyy, yyyy-mm-dd
@@ -182,6 +182,19 @@ Return ONLY this exact JSON structure (no markdown fences, no extra text):
   "paymentMethod": "<payment method label, e.g. QRIS, Bank, Cash, Credit Card>"
 }`;
 
+        // Build block data summary for AI (top 30 blocks by font size)
+        let blockSummary = '';
+        if (blocks && blocks.length > 0) {
+          const topBlocks = [...blocks]
+            .sort((a, b) => b.fontSize - a.fontSize)
+            .slice(0, 30)
+            .sort((a, b) => a.y - b.y); // re-sort by position for readability
+          blockSummary = '\n\n## BLOCK DATA (font size hints — larger font = likely total)\n';
+          blockSummary += topBlocks.map((b, i) =>
+            `${i + 1}. "${b.text}" (font: ${Math.round(b.fontSize)}, pos: ${Math.round(b.y)})`
+          ).join('\n');
+        }
+
         const rawContent = await chatCompletion(
           {
             provider: aiConfig.provider,
@@ -192,7 +205,7 @@ Return ONLY this exact JSON structure (no markdown fences, no extra text):
           {
             messages: [
               { role: 'system', content: systemPrompt },
-              { role: 'user', content: `Parse the following receipt OCR text into structured transaction data:\n\n${text}` },
+              { role: 'user', content: `Parse the following receipt OCR text into structured transaction data:\n\n${text}${blockSummary}` },
             ],
             temperature: 0.3,
             maxTokens: 1024,
