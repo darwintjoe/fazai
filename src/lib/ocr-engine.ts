@@ -13,7 +13,8 @@ export interface OcrBlock {
   text: string;
   fontSize: number; // estimated from bounding box height
   y: number;        // vertical position from top (pixels)
-  x: number;        // horizontal position from left (pixels)
+  x: number;        // horizontal position from the left (pixels)
+  confidence: number; // OCR confidence 0–100 (averaged across words on the line)
 }
 
 type TesseractWorker = any;
@@ -222,6 +223,9 @@ function groupWordsIntoBlocks(words: any[], blocks: any[]): OcrBlock[] {
       return Math.max(max, h);
     }, 0);
 
+    // Confidence = average word confidence (Tesseract returns 0–100)
+    const avgConfidence = lineWords.reduce((sum: number, w: any) => sum + (typeof w.confidence === 'number' ? w.confidence : 0), 0) / lineWords.length;
+
     // Position = average x of first word, y = baseline
     const avgX = lineWords[0].bbox.x0;
 
@@ -230,6 +234,7 @@ function groupWordsIntoBlocks(words: any[], blocks: any[]): OcrBlock[] {
       fontSize: maxWordHeight,
       y: baseline,
       x: avgX,
+      confidence: Math.round(avgConfidence),
     });
   }
 

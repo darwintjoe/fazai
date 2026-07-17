@@ -265,6 +265,12 @@ export type TranslationKeys = {
   'receipt.pickGallery': string;
   'receipt.transactionFailed': string;
   'receipt.transactionFailedHint': string;
+  'receipt.recognizedText': string;
+  'receipt.tapHint': string;
+  'receipt.fieldAmount': string;
+  'receipt.fieldDate': string;
+  'receipt.fieldCounterparty': string;
+  'receipt.fieldDescription': string;
 };
 
 const en: TranslationKeys = {
@@ -507,6 +513,12 @@ const en: TranslationKeys = {
   'receipt.payWith': 'Pay with',
   'receipt.transactionFailed': 'This receipt shows "Transaction Failed"',
   'receipt.transactionFailedHint': 'The payment did not go through. No transaction was recorded.',
+  'receipt.recognizedText': 'Recognized text',
+  'receipt.tapHint': 'Tap a line, then choose a field to fill',
+  'receipt.fieldAmount': 'Amount',
+  'receipt.fieldDate': 'Date',
+  'receipt.fieldCounterparty': 'Name',
+  'receipt.fieldDescription': 'Description',
 };
 
 const id: TranslationKeys = {
@@ -749,6 +761,12 @@ const id: TranslationKeys = {
   'receipt.payWith': 'Bayar dengan',
   'receipt.transactionFailed': 'Struk ini menunjukkan "Transaksi Gagal"',
   'receipt.transactionFailedHint': 'Pembayaran tidak berhasil. Tidak ada transaksi yang tercatat.',
+  'receipt.recognizedText': 'Teks yang dikenali',
+  'receipt.tapHint': 'Ketuk satu baris, lalu pilih kolom untuk diisi',
+  'receipt.fieldAmount': 'Jumlah',
+  'receipt.fieldDate': 'Tanggal',
+  'receipt.fieldCounterparty': 'Nama',
+  'receipt.fieldDescription': 'Keterangan',
 };
 
 const zh: TranslationKeys = {
@@ -991,6 +1009,12 @@ const zh: TranslationKeys = {
   'receipt.payWith': '支付方式',
   'receipt.transactionFailed': '此收据显示"交易失败"',
   'receipt.transactionFailedHint': '支付未成功。未记录任何交易。',
+  'receipt.recognizedText': '识别文字',
+  'receipt.tapHint': '点击一行，然后选择要填入的字段',
+  'receipt.fieldAmount': '金额',
+  'receipt.fieldDate': '日期',
+  'receipt.fieldCounterparty': '名称',
+  'receipt.fieldDescription': '备注',
 };
 
 const translations: Record<Lang, TranslationKeys> = { en, id, zh };

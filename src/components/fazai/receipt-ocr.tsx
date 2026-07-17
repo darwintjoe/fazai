@@ -7,10 +7,12 @@ import { t, getAccountName } from '@/lib/i18n';
 import { db, type Account } from '@/lib/fazai-db';
 import { formatNumber, parseFormattedNumber } from '@/lib/format';
 import { type AiProviderConfig, type AiProviderId } from '@/lib/ai-provider';
+import { type OcrBlock } from '@/lib/ocr-engine';
+import { extractFirstAmount, extractDate } from '@/lib/keyword-map';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Camera, Loader2, AlertCircle, TrendingUp, TrendingDown, X, ImagePlus, Search, XCircle } from 'lucide-react';
+import { ArrowLeft, Camera, Loader2, AlertCircle, TrendingUp, TrendingDown, X, ImagePlus, Search, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
 
 type OcrStatus = 'loading-image' | 'scanning' | 'parsing' | 'success' | 'error' | 'failed' | 'no-image';
 
@@ -40,6 +42,12 @@ export function ReceiptOcr() {
 
   // Parsed result
   const [parseResult, setParseResult] = useState<OcrParseResult | null>(null);
+
+  // Raw OCR output for the recognized-text panel + tap-to-map
+  const [ocrText, setOcrText] = useState('');
+  const [ocrBlocks, setOcrBlocks] = useState<OcrBlock[]>([]);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [activeBlockIdx, setActiveBlockIdx] = useState<number | null>(null);
 
   // User-editable fields (pre-filled by AI/local suggestions)
   const [txType, setTxType] = useState<'income' | 'expense'>('expense');
@@ -107,6 +115,23 @@ export function ReceiptOcr() {
     }
   }, []);
 
+  // Assign a tapped text block to a field. Used by the recognized-text panel.
+  const assignBlock = useCallback((field: 'amount' | 'date' | 'counterparty' | 'description', block: OcrBlock) => {
+    const cleanText = block.text.replace(/\s+/g, ' ').trim().slice(0, 60);
+    if (field === 'amount') {
+      const amt = extractFirstAmount(block.text);
+      if (amt && amt > 0) setAmount(formatNumber(amt));
+    } else if (field === 'date') {
+      const d = extractDate(block.text);
+      if (d) setDateStr(d);
+    } else if (field === 'counterparty') {
+      if (cleanText) setCounterparty(cleanText);
+    } else if (field === 'description') {
+      if (cleanText) setDescription(cleanText);
+    }
+    setActiveBlockIdx(null);
+  }, []);
+
   // Perform the full OCR pipeline: local OCR → AI parse → local fallback
   const processReceipt = useCallback(async (blob: Blob) => {
     try {
@@ -114,6 +139,11 @@ export function ReceiptOcr() {
       setStatus('scanning');
       const ocrModule = await import('@/lib/ocr-engine');
       const { text: rawText, blocks } = await ocrModule.recognizeReceiptWithBlocks(blob, lang);
+
+      // Store raw OCR output so the user can review and tap-to-map fields
+      setOcrText(rawText);
+      setOcrBlocks(blocks);
+      setActiveBlockIdx(null);
 
       if (!rawText || rawText.length < 5) {
         setStatus('error');
@@ -170,6 +200,8 @@ export function ReceiptOcr() {
       if (!res.ok || data.error) {
         // If AI parsing completely fails, show error (fields will be empty for manual fill)
         setStatus('success');
+        // AI failed — open the panel so the user can map fields manually
+        setPanelOpen(true);
         applyParseResult({
           text: '',
           suggestedType: 'expense',
@@ -187,6 +219,8 @@ export function ReceiptOcr() {
       }
 
       setStatus('success');
+      // AI succeeded — start collapsed, but keep blocks available if the user wants to correct
+      setPanelOpen(data.source === 'local');
       applyParseResult(data);
     } catch (err: any) {
       console.error('Receipt processing error:', err);
@@ -277,6 +311,10 @@ export function ReceiptOcr() {
     setAccountSearchQuery('');
     setParseResult(null);
     setParseSource('');
+    setOcrText('');
+    setOcrBlocks([]);
+    setPanelOpen(false);
+    setActiveBlockIdx(null);
     processReceipt(imageBlob);
   }, [imageBlob, processReceipt]);
 
@@ -301,6 +339,10 @@ export function ReceiptOcr() {
     setAccountSearchQuery('');
     setParseResult(null);
     setParseSource('');
+    setOcrText('');
+    setOcrBlocks([]);
+    setPanelOpen(false);
+    setActiveBlockIdx(null);
 
     processReceipt(file);
   }, [imageUrl, processReceipt]);
@@ -449,6 +491,64 @@ export function ReceiptOcr() {
               <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                 <span className="px-1.5 py-0.5 rounded-full bg-yellow-50 dark:bg-yellow-950 text-yellow-600 dark:text-yellow-400 text-[10px] font-medium">LOCAL</span>
                 {t('receipt.parseFailed', lang)}
+              </div>
+            )}
+
+            {/* Recognized text panel — tap a line, then pick a field to fill */}
+            {ocrBlocks.length > 0 && (
+              <div className="rounded-xl border bg-card overflow-hidden">
+                <button
+                  onClick={() => setPanelOpen(v => !v)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium hover:bg-accent"
+                >
+                  <span>{t('receipt.recognizedText', lang)} ({ocrBlocks.length})</span>
+                  {panelOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+                {panelOpen && (
+                  <div className="border-t">
+                    <p className="px-4 py-1.5 text-[11px] text-muted-foreground bg-muted/40">
+                      {t('receipt.tapHint', lang)}
+                    </p>
+                    <div className="max-h-80 overflow-y-auto divide-y">
+                      {ocrBlocks.map((b, i) => {
+                        const conf = b.confidence ?? 0;
+                        const confClass = conf >= 80
+                          ? 'bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400'
+                          : conf >= 60
+                            ? 'bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400';
+                        return (
+                          <div key={i} className="px-4 py-2">
+                            <button
+                              onClick={() => setActiveBlockIdx(activeBlockIdx === i ? null : i)}
+                              className="w-full flex items-start gap-2 text-left"
+                            >
+                              <span className={`shrink-0 mt-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-medium ${confClass}`}>
+                                {conf}%
+                              </span>
+                              <span className="font-mono text-xs leading-relaxed break-words flex-1">
+                                {b.text}
+                              </span>
+                            </button>
+                            {activeBlockIdx === i && (
+                              <div className="flex flex-wrap gap-1.5 mt-2">
+                                {(['amount', 'date', 'counterparty', 'description'] as const).map(f => (
+                                  <button
+                                    key={f}
+                                    onClick={() => assignBlock(f, b)}
+                                    className="px-2.5 py-1 rounded-md bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 text-[11px] font-medium hover:bg-red-100 dark:hover:bg-red-900"
+                                  >
+                                    {t(`receipt.field${f.charAt(0).toUpperCase() + f.slice(1)}` as any, lang)}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

@@ -291,6 +291,19 @@ function extractAmountsFromLine(line: string): Array<{ amount: number; rawStr: s
 }
 
 /**
+ * Extract the most likely monetary amount from a single line/block.
+ * Used when the user taps a recognized text block to assign it as the Amount.
+ * Prefers Rp/IDR-prefixed amounts; falls back to the largest formatted number.
+ * Returns null when no amount is found.
+ */
+export function extractFirstAmount(text: string): number | null {
+  const rpFirst = extractRpAmountsFromLine(text)[0];
+  if (rpFirst) return rpFirst.amount;
+  const all = extractAmountsFromLine(text)[0];
+  return all ? all.amount : null;
+}
+
+/**
  * Extract only Rp/IDR-prefixed amounts from a line.
  * Returns amounts sorted descending.
  */

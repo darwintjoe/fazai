@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { text, blocks, lang, accounts, aiConfig } = body as {
       text: string;
-      blocks?: Array<{ text: string; fontSize: number; y: number }>;
+      blocks?: Array<{ text: string; fontSize: number; y: number; confidence?: number }>;
       lang: string;
       accounts?: AccountInfo[];
       aiConfig?: AiProviderConfig;
@@ -182,17 +182,19 @@ Return ONLY this exact JSON structure (no markdown fences, no extra text):
   "paymentMethod": "<payment method label, e.g. QRIS, Bank, Cash, Credit Card>"
 }`;
 
-        // Build block data summary for AI (top 30 blocks by font size)
+        // Build block data summary for AI.
+        // Send the FULL block list in reading order (sorted by Y, top to bottom).
+        // Previously this was capped to top-30-by-font-size, which dropped small-font
+        // totals before the model ever saw them. Reading order + confidence lets the
+        // model reason about the receipt the way a human reads it.
         let blockSummary = '';
         if (blocks && blocks.length > 0) {
-          const topBlocks = [...blocks]
-            .sort((a, b) => b.fontSize - a.fontSize)
-            .slice(0, 30)
-            .sort((a, b) => a.y - b.y); // re-sort by position for readability
-          blockSummary = '\n\n## BLOCK DATA (font size hints — larger font = likely total)\n';
-          blockSummary += topBlocks.map((b, i) =>
-            `${i + 1}. "${b.text}" (font: ${Math.round(b.fontSize)}, pos: ${Math.round(b.y)})`
-          ).join('\n');
+          const orderedBlocks = [...blocks].sort((a, b) => a.y - b.y);
+          blockSummary = '\n\n## BLOCK DATA (in reading order; larger font = likely total; conf = OCR confidence 0-100, low conf means the text may be wrong)\n';
+          blockSummary += orderedBlocks.map((b, i) => {
+            const conf = typeof b.confidence === 'number' ? `, conf: ${Math.round(b.confidence)}` : '';
+            return `${i + 1}. "${b.text}" (font: ${Math.round(b.fontSize)}${conf}, pos: ${Math.round(b.y)})`;
+          }).join('\n');
         }
 
         const rawContent = await chatCompletion(
