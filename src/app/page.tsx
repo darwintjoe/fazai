@@ -17,11 +17,13 @@ import { UserGuide } from '@/components/fazai/user-guide';
 import { ReceiptShare } from '@/components/fazai/receipt-share';
 import { StatementImport } from '@/components/fazai/statement-import';
 import { ErrorBoundary } from '@/components/fazai/error-boundary';
+import { WelcomeSetup } from '@/components/fazai/welcome-setup';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LogOut } from 'lucide-react';
 import { t } from '@/lib/i18n';
 import { runStartupMaintenance } from '@/lib/ledger-engine';
 import { usePosTracker } from '@/hooks/use-pos-tracker';
+import { db } from '@/lib/fazai-db';
 
 const emptySubscribe = () => () => {};
 const getSnapshot = () => true;
@@ -31,6 +33,20 @@ export default function Home() {
   const { isAuthenticated, logout, lang, userName, userRole } = useAuthStore();
   const { currentPage } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, getSnapshot, getServerSnapshot);
+  const [showWelcomeSetup, setShowWelcomeSetup] = React.useState(false);
+
+  // Check if owner name is set — show welcome setup if not
+  React.useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    (async () => {
+      const setting = await db.settings.get('owner-name');
+      if (!cancelled && !setting?.value) {
+        setShowWelcomeSetup(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
 
   // Start POSTracker on login, stop on logout
   usePosTracker();
@@ -84,6 +100,10 @@ export default function Home() {
 
   if (!isAuthenticated) {
     return <PinLogin />;
+  }
+
+  if (showWelcomeSetup) {
+    return <WelcomeSetup onComplete={() => setShowWelcomeSetup(false)} />;
   }
 
   const renderPage = () => {

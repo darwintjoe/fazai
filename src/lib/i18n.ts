@@ -245,6 +245,13 @@ export type TranslationKeys = {
   'guide.migration': string;
   'guide.migration.desc': string;
 
+  // Welcome Setup
+  'setup.welcomeTitle': string;
+  'setup.ownerCaption': string;
+  'setup.ownerDesc': string;
+  'setup.ownerPlaceholder': string;
+  'setup.setPin': string;
+
   // Receipt / Share Target
   'receipt.title': string;
   'receipt.processing': string;
@@ -494,6 +501,11 @@ const en: TranslationKeys = {
   'guide.tips.desc': 'All data is stored locally on your device — back up regularly using the Export function! Avoid clearing site data in browser settings, as this will erase all your accounting records. Keep your Admin PIN secure — it\'s required for factory reset protection. The app works best in portrait mode on mobile devices. Install as a PWA for the best experience with offline support.',
   'guide.migration': 'Migrate Guide',
   'guide.migration.desc': 'Follow these steps to set up FAZAI from your existing balance sheet:\n\n1. Prepare your latest balance sheet — gather your most recent balance sheet document as reference.\n\n2. Login as Admin — use the Admin PIN (default: 000000) to access the Admin Panel.\n\n3. Go to Accounts section — add all accounts following your latest balance sheet. For each account, select the correct account type (Asset, Cash/Bank, Liability, Equity, Income, or Expense) and enter the current balance.\n\n4. Review all accounts — double-check each account\'s type and balance. You may disable any unused pre-created accounts by toggling them off.\n\n5. Go to Reports → Balance Sheet — verify that all figures match your original balance sheet. The total assets should equal liabilities plus equity.\n\n6. That\'s all — FAZAI is ready to use! Start recording your daily income and expenses.',
+  'setup.welcomeTitle': 'Welcome to FAZAI',
+  'setup.ownerCaption': 'This Database belongs to',
+  'setup.ownerDesc': 'Owner name will be used when print Report',
+  'setup.ownerPlaceholder': 'Enter owner name',
+  'setup.setPin': 'Set your PIN',
   'receipt.title': 'Receipt Scanner',
   'receipt.processing': 'Reading receipt...',
   'receipt.scanning': 'Scanning receipt...',
@@ -742,6 +754,11 @@ const id: TranslationKeys = {
   'guide.tips.desc': 'Semua data disimpan secara lokal di perangkat Anda — cadangkan secara teratur menggunakan fungsi Ekspor! Jangan hapus data situs di pengaturan browser, karena ini akan menghapus semua catatan akuntansi Anda. Jaga keamanan PIN Admin Anda — diperlukan untuk perlindungan reset pabrik. Aplikasi ini bekerja paling baik dalam mode potret di perangkat seluler. Instal sebagai PWA untuk pengalaman terbaik dengan dukungan offline.',
   'guide.migration': 'Panduan Migrasi',
   'guide.migration.desc': 'Ikuti langkah-langkah berikut untuk menyiapkan FAZAI dari neraca yang ada:\n\n1. Siapkan neraca terbaru Anda — kumpulkan dokumen neraca terbaru sebagai referensi.\n\n2. Login sebagai Admin — gunakan PIN Admin (default: 000000) untuk mengakses Panel Admin.\n\n3. Buka bagian Akun — tambahkan semua akun sesuai neraca terbaru Anda. Untuk setiap akun, pilih jenis akun yang benar (Aset, Kas/Bank, Kewajiban, Modal, Pendapatan, atau Pengeluaran) dan masukkan saldo saat ini.\n\n4. Periksa semua akun — periksa kembali jenis dan saldo setiap akun. Anda dapat menonaktifkan akun bawaan yang tidak digunakan.\n\n5. Buka Laporan → Neraca — verifikasi bahwa semua angka sesuai dengan neraca asli Anda. Total aset harus sama dengan kewajiban ditambah modal.\n\n6. Selesai — FAZAI siap digunakan! Mulai catat pendapatan dan pengeluaran harian Anda.',
+  'setup.welcomeTitle': 'Selamat Datang di FAZAI',
+  'setup.ownerCaption': 'Database ini milik',
+  'setup.ownerDesc': 'Nama pemilik akan digunakan saat cetak Laporan',
+  'setup.ownerPlaceholder': 'Masukkan nama pemilik',
+  'setup.setPin': 'Atur PIN Anda',
   'receipt.title': 'Pemindai Struk',
   'receipt.processing': 'Membaca struk...',
   'receipt.scanning': 'Memindai struk...',
@@ -990,6 +1007,11 @@ const zh: TranslationKeys = {
   'guide.tips.desc': '所有数据存储在您的设备本地——请定期使用导出功能备份！请勿在浏览器设置中清除网站数据，这会删除您所有的会计记录。保管好您的管理员PIN码——这是恢复出厂设置保护的必要条件。应用在移动设备的竖屏模式下效果最佳。安装为PWA可获得最佳体验和离线支持。',
   'guide.migration': '迁移指南',
   'guide.migration.desc': '按照以下步骤从现有资产负债表设置 FAZAI：\n\n1. 准备最新资产负债表 — 收集最近的资产负债表文件作为参考。\n\n2. 以管理员身份登录 — 使用管理员 PIN 码（默认：000000）访问管理面板。\n\n3. 前往账户部分 — 按照最新资产负债表添加所有账户。为每个账户选择正确的账户类型（资产、现金/银行、负债、权益、收入或支出）并输入当前余额。\n\n4. 核对所有账户 — 仔细核对每个账户的类型和余额。您可以关闭任何未使用的预创建账户。\n\n5. 前往报表 → 资产负债表 — 验证所有数据是否与原始资产负债表一致。总资产应等于负债加权益。\n\n6. 完成 — FAZAI 已准备就绪！开始记录日常收入和支出。',
+  'setup.welcomeTitle': '欢迎使用 FAZAI',
+  'setup.ownerCaption': '此数据库属于',
+  'setup.ownerDesc': '所有者姓名将用于打印报表时显示',
+  'setup.ownerPlaceholder': '请输入所有者姓名',
+  'setup.setPin': '设置您的PIN码',
   'receipt.title': '收据扫描',
   'receipt.processing': '正在读取收据...',
   'receipt.scanning': '正在扫描收据...',
