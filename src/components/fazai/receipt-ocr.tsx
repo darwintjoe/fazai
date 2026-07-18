@@ -62,6 +62,7 @@ export function ReceiptOcr() {
   const [opponentAccounts, setOpponentAccounts] = useState<Account[]>([]);
   const [opponentAccountId, setOpponentAccountId] = useState('acc-cash');
   const [accountSearchQuery, setAccountSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [parseSource, setParseSource] = useState<'ai' | 'local' | ''>('');
 
   // Load accounts for the selected transaction type
@@ -357,9 +358,10 @@ export function ReceiptOcr() {
   }, [imageUrl, setAiChatOpen]);
 
   // Filtered accounts for dropdown
-  const filteredAccounts = accountSearchQuery
-    ? categoryAccounts.filter(a => getAccountName(a, lang).toLowerCase().includes(accountSearchQuery.toLowerCase()))
-    : [];
+  const filteredAccounts = categoryAccounts.filter(a => {
+    const name = getAccountName(a, lang).toLowerCase();
+    return !accountSearchQuery || name.includes(accountSearchQuery.toLowerCase());
+  });
 
   const numAmount = parseFormattedNumber(amount);
   const canRecord = numAmount > 0 && selectedAccountId && opponentAccountId;
@@ -593,11 +595,13 @@ export function ReceiptOcr() {
                   <Input
                     value={accountSearchQuery}
                     onChange={(e) => setAccountSearchQuery(e.target.value)}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => { setIsSearchFocused(false); setAccountSearchQuery(''); }}
                     placeholder={t('form.searchAccount', lang)}
                     className="pl-9"
                   />
                 </div>
-                {accountSearchQuery && (
+                {isSearchFocused && (
                   <div className="flex flex-col gap-1 mt-1.5 max-h-40 overflow-y-auto border rounded-lg">
                     {filteredAccounts.map((acc) => (
                       <button

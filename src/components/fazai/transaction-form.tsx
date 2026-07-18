@@ -37,6 +37,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [opponentAccounts, setOpponentAccounts] = useState<Account[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [showNewAccount, setShowNewAccount] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [showNewCashBank, setShowNewCashBank] = useState(false);
@@ -93,13 +94,10 @@ export function TransactionForm({ type }: TransactionFormProps) {
     useAppStore.getState().clearPendingReceipt();
   }, [isIncome]);
 
-  // Only show filtered accounts when there's a search query
-  const filteredAccounts = searchQuery
-    ? accounts.filter(a => {
-        const name = getAccountName(a, lang).toLowerCase();
-        return name.includes(searchQuery.toLowerCase());
-      })
-    : [];
+  const filteredAccounts = accounts.filter(a => {
+    const name = getAccountName(a, lang).toLowerCase();
+    return !searchQuery || name.includes(searchQuery.toLowerCase());
+  });
 
   const handleCreateAccount = async () => {
     if (!newAccountName.trim()) return;
@@ -285,11 +283,13 @@ export function TransactionForm({ type }: TransactionFormProps) {
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onBlur={() => { setIsSearchFocused(false); setSearchQuery(''); }}
               placeholder={t('form.searchAccount', lang)}
               className="pl-9"
             />
           </div>
-          {searchQuery && (
+          {isSearchFocused && (
             <div className="flex flex-col gap-1 mt-2 max-h-40 overflow-y-auto">
               {filteredAccounts.map((acc) => (
                 <button
