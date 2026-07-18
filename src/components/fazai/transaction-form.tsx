@@ -267,6 +267,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
             onChange={(e) => setCounterparty(e.target.value)}
             placeholder={isIncome ? 'PT Maju Jaya' : 'Grocery Store'}
             className="mt-1"
+            style={{ color: counterparty ? undefined : 'var(--muted-foreground)' }}
           />
         </div>
 
