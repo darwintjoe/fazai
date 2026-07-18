@@ -63,6 +63,7 @@ export function ReceiptOcr() {
   const [opponentAccountId, setOpponentAccountId] = useState('acc-cash');
   const [accountSearchQuery, setAccountSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [parseSource, setParseSource] = useState<'ai' | 'local' | ''>('');
 
   // Load accounts for the selected transaction type
@@ -593,10 +594,16 @@ export function ReceiptOcr() {
                 <div className="relative mt-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
+                    ref={searchInputRef}
                     value={accountSearchQuery}
                     onChange={(e) => setAccountSearchQuery(e.target.value)}
-                    onFocus={() => setIsSearchFocused(true)}
+                    onFocus={() => {
+                      setIsSearchFocused(true);
+                      searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }}
                     onBlur={() => { setIsSearchFocused(false); setAccountSearchQuery(''); }}
+                    readOnly={!accountSearchQuery}
+                    onClick={() => { if (!accountSearchQuery) searchInputRef.current?.removeAttribute('readonly'); }}
                     placeholder={t('form.searchAccount', lang)}
                     className="pl-9"
                   />

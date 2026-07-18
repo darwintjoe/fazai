@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useAppStore, type PendingReceipt } from '@/lib/app-store';
 import { t, getAccountName } from '@/lib/i18n';
@@ -38,6 +38,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
   const [opponentAccounts, setOpponentAccounts] = useState<Account[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [showNewAccount, setShowNewAccount] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [showNewCashBank, setShowNewCashBank] = useState(false);
@@ -281,10 +282,16 @@ export function TransactionForm({ type }: TransactionFormProps) {
           <div className="relative mt-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
+              ref={searchInputRef}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
+              onFocus={() => {
+                setIsSearchFocused(true);
+                searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
               onBlur={() => { setIsSearchFocused(false); setSearchQuery(''); }}
+              readOnly={!searchQuery}
+              onClick={() => { if (!searchQuery) searchInputRef.current?.removeAttribute('readonly'); }}
               placeholder={t('form.searchAccount', lang)}
               className="pl-9"
             />
