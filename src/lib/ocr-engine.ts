@@ -171,18 +171,66 @@ export async function recognizeReceiptWithBlocks(
 
   const preprocessed = await preprocessImage(image);
 
-  const { data } = await worker.recognize(preprocessed);
+  // Tesseract.js v7 default output is { text: true, blocks: false }.
+  // We MUST explicitly request blocks: true, otherwise data.blocks is null
+  // and there is no word-level bbox/confidence data to build OcrBlocks from.
+  const { data } = await worker.recognize(preprocessed, {}, { text: true, blocks: true });
   const text = (data?.text || '').trim();
-  const blocks = groupWordsIntoBlocks(data?.words || [], data?.blocks || []);
+  const words = flattenWords(data?.blocks);
+  let blocks = groupWordsIntoBlocks(words);
 
-  console.log(`[OCR] Extracted ${text.length} characters, ${blocks.length} blocks`);
+  // Fallback: if block layout parsing produced nothing but we have raw text,
+  // split it into lines so the panel is never empty and downstream AI/local
+  // parsing still has something to work with.
+  if (blocks.length === 0 && text.length > 0) {
+    blocks = blocksFromText(text);
+  }
+
+  console.log(`[OCR] Extracted ${text.length} characters, ${blocks.length} blocks (${words.length} words)`);
   return { text, blocks };
+}
+
+/**
+ * Flatten Tesseract v7 nested block structure into a flat word list.
+ * In v7, Page.blocks[].paragraphs[].lines[].words[] — there is no top-level
+ * Page.words array. Each word has { text, confidence, bbox: {x0,y0,x1,y1} }.
+ */
+function flattenWords(blocks: any[] | null | undefined): any[] {
+  if (!Array.isArray(blocks)) return [];
+  const words: any[] = [];
+  for (const block of blocks) {
+    if (!block || !Array.isArray(block.paragraphs)) continue;
+    for (const para of block.paragraphs) {
+      if (!para || !Array.isArray(para.lines)) continue;
+      for (const line of para.lines) {
+        if (!line || !Array.isArray(line.words)) continue;
+        for (const word of line.words) {
+          if (word && word.text && word.bbox) words.push(word);
+        }
+      }
+    }
+  }
+  return words;
+}
+
+/**
+ * Build OcrBlocks from raw text when word-level layout data is unavailable.
+ * Used as a fallback so the recognized-text panel is never empty. Font size
+ * and position are unknown, so they default to 0 — confidence is set to a
+ * neutral 50 since we have no per-word signal.
+ */
+function blocksFromText(text: string): OcrBlock[] {
+  return text
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0)
+    .map(l => ({ text: l, fontSize: 0, y: 0, x: 0, confidence: 50 }));
 }
 
 /**
  * Group Tesseract word-level data into lines (blocks) with estimated font sizes.
  */
-function groupWordsIntoBlocks(words: any[], blocks: any[]): OcrBlock[] {
+function groupWordsIntoBlocks(words: any[]): OcrBlock[] {
   if (!words || words.length === 0) return [];
 
   // Group words by baseline (words on the same line have similar baseline Y)
