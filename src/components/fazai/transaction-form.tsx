@@ -291,8 +291,6 @@ export function TransactionForm({ type }: TransactionFormProps) {
                 searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }}
               onBlur={() => { setIsSearchFocused(false); setSearchQuery(''); }}
-              readOnly={!searchQuery}
-              onClick={() => { if (!searchQuery) searchInputRef.current?.removeAttribute('readonly'); }}
               placeholder={t('form.searchAccount', lang)}
               className="pl-9"
             />
