@@ -13,6 +13,8 @@ export type TranslationKeys = {
   'dash.today': string;
   'dash.income': string;
   'dash.expense': string;
+  'dash.mtd': string;
+  'dash.lastMonth': string;
   'dash.recentTransactions': string;
   'dash.noTransactions': string;
   'dash.scanReceipt': string;
@@ -290,6 +292,8 @@ const en: TranslationKeys = {
   'dash.today': 'Today',
   'dash.income': 'Income',
   'dash.expense': 'Expense',
+  'dash.mtd': 'MTD',
+  'dash.lastMonth': 'Last Month',
   'dash.recentTransactions': 'Recent Transactions',
   'dash.noTransactions': 'No transactions yet',
   'dash.scanReceipt': 'Scan Receipt',
@@ -543,6 +547,8 @@ const id: TranslationKeys = {
   'dash.today': 'Hari Ini',
   'dash.income': 'Pendapatan',
   'dash.expense': 'Pengeluaran',
+  'dash.mtd': 'Bulan Ini',
+  'dash.lastMonth': 'Bulan Lalu',
   'dash.recentTransactions': 'Transaksi Terakhir',
   'dash.noTransactions': 'Belum ada transaksi',
   'dash.scanReceipt': 'Pindai Struk',
@@ -796,6 +802,8 @@ const zh: TranslationKeys = {
   'dash.today': '今日',
   'dash.income': '收入',
   'dash.expense': '支出',
+  'dash.mtd': '本月',
+  'dash.lastMonth': '上月',
   'dash.recentTransactions': '最近交易',
   'dash.noTransactions': '暂无交易记录',
   'dash.scanReceipt': '扫描收据',

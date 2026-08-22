@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
       recentTransactions = [],
       monthlySummaries = [],
       currentBalance = 0,
-      todayIncome = 0,
-      todayExpense = 0,
+      mtdIncome = 0,
+      mtdExpense = 0,
       lang = 'en',
     } = body as {
       accounts: Array<{
@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
         totalDebit: number; totalCredit: number;
       }>;
       currentBalance: number;
-      todayIncome: number;
-      todayExpense: number;
+      mtdIncome: number;
+      mtdExpense: number;
       lang: string;
     };
 
@@ -52,8 +52,8 @@ export async function POST(request: NextRequest) {
     // Current financial position
     lines.push(`=== CURRENT FINANCIAL POSITION (${now.toLocaleDateString()}) ===`);
     lines.push(`Cash & Bank Balance: ${fmt(currentBalance)}`);
-    lines.push(`Today's Income: +${fmt(todayIncome)}`);
-    lines.push(`Today's Expense: -${fmt(todayExpense)}`);
+    lines.push(`MTD Income: +${fmt(mtdIncome)}`);
+    lines.push(`MTD Expense: -${fmt(mtdExpense)}`);
     lines.push('');
 
     // Active accounts

@@ -935,11 +935,11 @@ export async function getDashboardSummary() {
   const transactions = allTransactions.filter(tx => !tx.isDeleted);
   const accounts = await db.accounts.toArray();
   const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
   let totalBalance = 0;
-  let todayIncome = 0;
-  let todayExpense = 0;
+  let mtdIncome = 0;
+  let mtdExpense = 0;
 
   const cashAccountIds = accounts
     .filter(a => (a.type === 'asset' || a.type === 'cashBank') && a.parentId)
@@ -954,12 +954,31 @@ export async function getDashboardSummary() {
       if (cashAccountIds.includes(entry.accountId)) {
         totalBalance += entry.debit - entry.credit;
       }
-      if (txDate >= todayStart && incomeAccountIds.includes(entry.accountId) && entry.credit > 0) {
-        todayIncome += entry.credit;
+      if (txDate >= monthStart && incomeAccountIds.includes(entry.accountId) && entry.credit > 0) {
+        mtdIncome += entry.credit;
       }
-      if (txDate >= todayStart && expenseAccountIds.includes(entry.accountId) && entry.debit > 0) {
-        todayExpense += entry.debit;
+      if (txDate >= monthStart && expenseAccountIds.includes(entry.accountId) && entry.debit > 0) {
+        mtdExpense += entry.debit;
       }
+    }
+  }
+
+  // Last month totals from summary table (no transaction query needed)
+  const prevMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+  const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+  const summaries = await db.accountMonthlySummaries
+    .where('year').equals(prevYear)
+    .and(s => s.month === prevMonth)
+    .toArray();
+
+  let lastMonthIncome = 0;
+  let lastMonthExpense = 0;
+  for (const s of summaries) {
+    if (incomeAccountIds.includes(s.accountId)) {
+      lastMonthIncome += s.totalCredit;
+    }
+    if (expenseAccountIds.includes(s.accountId)) {
+      lastMonthExpense += s.totalDebit;
     }
   }
 
@@ -967,7 +986,7 @@ export async function getDashboardSummary() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 10);
 
-  return { totalBalance, todayIncome, todayExpense, recentTransactions };
+  return { totalBalance, mtdIncome, mtdExpense, lastMonthIncome, lastMonthExpense, recentTransactions };
 }
 
 // Multi-entry custom transaction (admin)
