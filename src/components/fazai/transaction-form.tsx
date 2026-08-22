@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
-import { useAppStore } from '@/lib/app-store';
+import { useAppStore, type PendingReceipt } from '@/lib/app-store';
 import { t, getAccountName } from '@/lib/i18n';
 import { formatNumber, parseFormattedNumber, today } from '@/lib/format';
 import { db, type Account } from '@/lib/fazai-db';
@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { ArrowLeft, CalendarIcon, Search, Plus, Sparkles } from 'lucide-react';
+import { ArrowLeft, CalendarIcon, Search, Plus, Sparkles, Receipt } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { v4 as uuid } from 'uuid';
 import { useToast } from '@/hooks/use-toast';
@@ -37,12 +37,15 @@ export function TransactionForm({ type }: TransactionFormProps) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [opponentAccounts, setOpponentAccounts] = useState<Account[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [showNewAccount, setShowNewAccount] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [showNewCashBank, setShowNewCashBank] = useState(false);
   const [newCashBankName, setNewCashBankName] = useState('');
   const [saving, setSaving] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState('');
+  const [fromReceipt, setFromReceipt] = useState(false);
 
   const loadAccounts = useCallback(async () => {
     const accType = isIncome ? 'income' : 'expense';
@@ -60,13 +63,42 @@ export function TransactionForm({ type }: TransactionFormProps) {
     loadAccounts();
   }, [loadAccounts]);
 
-  // Only show filtered accounts when there's a search query
-  const filteredAccounts = searchQuery
-    ? accounts.filter(a => {
-        const name = getAccountName(a, lang).toLowerCase();
-        return name.includes(searchQuery.toLowerCase());
-      })
-    : [];
+  // Pre-fill from receipt OCR data
+  useEffect(() => {
+    const pending = useAppStore.getState().pendingReceipt;
+    if (!pending) return;
+
+    // Only consume if type matches
+    if ((isIncome && pending.amount <= 0 && !pending.counterparty && !pending.description) ||
+        (!isIncome && pending.amount <= 0 && !pending.counterparty && !pending.description)) {
+      return;
+    }
+
+    if (pending.amount > 0) setAmount(formatNumber(pending.amount));
+    if (pending.counterparty) setCounterparty(pending.counterparty);
+    if (pending.description) setDescription(pending.description);
+    if (pending.date) {
+      const parsed = new Date(pending.date);
+      if (!isNaN(parsed.getTime())) setDate(parsed);
+    }
+    if (pending.accountId) {
+      setSelectedAccountId(pending.accountId);
+    }
+    if (pending.accountName) {
+      setAiSuggestion(pending.accountName);
+    }
+    if (pending.opponentAccountId) {
+      setOpponentAccountId(pending.opponentAccountId);
+    }
+
+    setFromReceipt(true);
+    useAppStore.getState().clearPendingReceipt();
+  }, [isIncome]);
+
+  const filteredAccounts = accounts.filter(a => {
+    const name = getAccountName(a, lang).toLowerCase();
+    return !searchQuery || name.includes(searchQuery.toLowerCase());
+  });
 
   const handleCreateAccount = async () => {
     if (!newAccountName.trim()) return;
@@ -204,6 +236,14 @@ export function TransactionForm({ type }: TransactionFormProps) {
       </div>
 
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4">
+        {/* Receipt pre-fill indicator */}
+        {fromReceipt && (
+          <div className="flex items-center gap-2 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 px-3 py-2 rounded-lg text-xs">
+            <Receipt className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>{t('receipt.fromReceipt', lang)}</span>
+            <button onClick={() => setFromReceipt(false)} className="ml-auto hover:text-red-800 dark:hover:text-red-300">✕</button>
+          </div>
+        )}
         {/* Amount */}
         <div>
           <label className="text-sm font-medium text-muted-foreground">{t('form.amount', lang)}</label>
@@ -227,6 +267,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
             onChange={(e) => setCounterparty(e.target.value)}
             placeholder={isIncome ? 'PT Maju Jaya' : 'Grocery Store'}
             className="mt-1"
+            style={{ color: counterparty ? undefined : 'var(--muted-foreground)' }}
           />
         </div>
 
@@ -242,13 +283,21 @@ export function TransactionForm({ type }: TransactionFormProps) {
           <div className="relative mt-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
+              ref={searchInputRef}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={() => {
+                setIsSearchFocused(true);
+                searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }}
+              onBlur={() => { setIsSearchFocused(false); setSearchQuery(''); }}
+              readOnly={!searchQuery}
+              onClick={() => { if (!searchQuery) searchInputRef.current?.removeAttribute('readonly'); }}
               placeholder={t('form.searchAccount', lang)}
               className="pl-9"
             />
           </div>
-          {searchQuery && (
+          {isSearchFocused && (
             <div className="flex flex-col gap-1 mt-2 max-h-40 overflow-y-auto">
               {filteredAccounts.map((acc) => (
                 <button

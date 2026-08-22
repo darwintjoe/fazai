@@ -19,6 +19,7 @@ export function PinLogin() {
   const [seeding, setSeeding] = useState(true);
   const [showGuide, setShowGuide] = useState(false);
   const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [isNewInstall, setIsNewInstall] = useState(false);
 
   useEffect(() => {
     const readDeviceId = () => {
@@ -54,7 +55,13 @@ export function PinLogin() {
   }, [login]);
 
   useEffect(() => {
-    seedDatabase().then(() => setSeeding(false)).catch(() => setSeeding(false));
+    seedDatabase().then(async () => {
+      // Detect fresh install: only system (default) users exist
+      const allUsers = await db.users.toArray();
+      const onlySystemUsers = allUsers.length > 0 && allUsers.every(u => u.isSystem);
+      setIsNewInstall(onlySystemUsers);
+      setSeeding(false);
+    }).catch(() => setSeeding(false));
   }, []);
 
   useEffect(() => {
@@ -96,9 +103,15 @@ export function PinLogin() {
         transition={{ delay: 0.1 }}
         className="bg-card rounded-2xl shadow-xl border p-8 w-full max-w-sm"
       >
-        <p className="text-center text-sm text-muted-foreground mb-6">
+        <p className="text-center text-sm text-muted-foreground mb-2">
           {t('login.enterPin', lang)}
         </p>
+
+        {isNewInstall && (
+          <p className="text-center text-xs text-amber-600 dark:text-amber-400 mb-4 font-medium">
+            {lang === 'id' ? 'PIN default: 000000' : lang === 'zh' ? '默认PIN码：000000' : 'Default PIN: 000000'}
+          </p>
+        )}
 
         <div className="flex justify-center mb-6">
           <InputOTP

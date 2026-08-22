@@ -38,6 +38,7 @@ export function ReportViewer() {
   const [toYear, setToYear] = useState<number>(now.getFullYear());
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [ownerName, setOwnerName] = useState('');
 
   const YEAR_OPTIONS: number[] = [];
   for (let y = now.getFullYear() - 5; y <= now.getFullYear() + 1; y++) YEAR_OPTIONS.push(y);
@@ -65,6 +66,13 @@ export function ReportViewer() {
       loadAccounts();
     }
   }, [loadAccounts]);
+
+  // Load owner name from settings
+  useEffect(() => {
+    db.settings.get('owner-name').then(s => {
+      if (s?.value) setOwnerName(s.value);
+    });
+  }, []);
 
   // Compute period dates for PL, CF, Ledger from fromMonth/fromYear → toMonth/toYear
   const getPeriodDates = useCallback(() => {
@@ -154,13 +162,23 @@ export function ReportViewer() {
     doc.setFontSize(20);
     doc.setTextColor(220, 38, 38);
     doc.text('FAZAI', pageWidth / 2, 15, { align: 'center' });
+
+    let yOffset = 22;
+    if (ownerName) {
+      doc.setFontSize(9);
+      doc.setTextColor(100);
+      doc.text(`${t('setup.ownerCaption', lang)} ${ownerName}`, pageWidth / 2, yOffset, { align: 'center' });
+      yOffset += 5;
+    }
+
     doc.setFontSize(12);
     doc.setTextColor(100);
-    doc.text(reportTitle, pageWidth / 2, 22, { align: 'center' });
+    doc.text(reportTitle, pageWidth / 2, yOffset, { align: 'center' });
+    yOffset += 6;
     doc.setFontSize(9);
-    doc.text(getDateLabel(), pageWidth / 2, 28, { align: 'center' });
+    doc.text(getDateLabel(), pageWidth / 2, yOffset, { align: 'center' });
 
-    let yOffset = 35;
+    yOffset += 6;
 
     switch (reportType) {
       case 'trial-balance': {
@@ -289,7 +307,7 @@ export function ReportViewer() {
       doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' });
     }
 
-    doc.save(`FAZAI-${reportType}-${new Date().toISOString().slice(0, 10)}.pdf`);
+    doc.save(`${ownerName || 'FAZAI'}-${reportType}-${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
   const exportXlsx = async () => {
@@ -384,7 +402,7 @@ export function ReportViewer() {
       }
     }
 
-    XLSX.writeFile(wb, `FAZAI-${reportType}-${new Date().toISOString().slice(0, 10)}.xlsx`);
+    XLSX.writeFile(wb, `${ownerName || 'FAZAI'}-${reportType}-${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   return (

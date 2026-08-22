@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
+import { db } from '@/lib/fazai-db';
 
 /**
  * POSTracker configuration — supplied by the app operator.
@@ -75,10 +76,14 @@ export function usePosTracker() {
           trackerRef.current = null;
         }
 
+        // Read owner name from settings for pinger identity
+        const ownerSetting = await db.settings.get('owner-name');
+        const ownerName = ownerSetting?.value || '';
+
         const tracker = new window.POSTracker({
           ...TRACKER_CONFIG,
-          // Include the logged-in user in the store name for backend attribution
-          storeName: TRACKER_CONFIG.storeName || (userId ? `user:${userId}` : ''),
+          // Use owner name if set, otherwise fall back to user ID
+          storeName: ownerName || TRACKER_CONFIG.storeName || (userId ? `user:${userId}` : ''),
           onError: (err: any) => console.warn('[POSTracker] error:', err?.message || err),
         });
         trackerRef.current = tracker;

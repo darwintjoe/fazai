@@ -14,12 +14,16 @@ import { BottomNav } from '@/components/fazai/bottom-nav';
 import { AiChat } from '@/components/fazai/ai-chat';
 import { SettingsPage } from '@/components/fazai/settings';
 import { UserGuide } from '@/components/fazai/user-guide';
+import { ReceiptShare } from '@/components/fazai/receipt-share';
+import { StatementImport } from '@/components/fazai/statement-import';
 import { ErrorBoundary } from '@/components/fazai/error-boundary';
+import { WelcomeSetup } from '@/components/fazai/welcome-setup';
 import { AnimatePresence, motion } from 'framer-motion';
 import { LogOut } from 'lucide-react';
 import { t } from '@/lib/i18n';
 import { runStartupMaintenance } from '@/lib/ledger-engine';
 import { usePosTracker } from '@/hooks/use-pos-tracker';
+import { db } from '@/lib/fazai-db';
 
 const emptySubscribe = () => () => {};
 const getSnapshot = () => true;
@@ -29,6 +33,20 @@ export default function Home() {
   const { isAuthenticated, logout, lang, userName, userRole } = useAuthStore();
   const { currentPage } = useAppStore();
   const mounted = useSyncExternalStore(emptySubscribe, getSnapshot, getServerSnapshot);
+  const [showWelcomeSetup, setShowWelcomeSetup] = React.useState(false);
+
+  // Check if owner name is set — show welcome setup if not
+  React.useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    (async () => {
+      const setting = await db.settings.get('owner-name');
+      if (!cancelled && !setting?.value) {
+        setShowWelcomeSetup(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
 
   // Start POSTracker on login, stop on logout
   usePosTracker();
@@ -37,6 +55,16 @@ export default function Home() {
   React.useEffect(() => {
     if (isAuthenticated) {
       runStartupMaintenance();
+    }
+  }, [isAuthenticated]);
+
+  // Auto-detect share-target URL on mount (from Web Share Target API)
+  React.useEffect(() => {
+    if (isAuthenticated && typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      if (pathname.endsWith('/share-target') || pathname.endsWith('/share-target/')) {
+        useAppStore.getState().navigate('share-target');
+      }
     }
   }, [isAuthenticated]);
 
@@ -49,6 +77,19 @@ export default function Home() {
     }
   }, []);
 
+  // Browser history integration: listen for back/forward and sync with Zustand
+  React.useEffect(() => {
+    const handlePopState = () => {
+      const prev = useAppStore.getState().previousPage;
+      if (prev) {
+        useAppStore.setState({ currentPage: prev, previousPage: null });
+      }
+    };
+    history.replaceState({ page: currentPage }, '');
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   if (!mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -59,6 +100,10 @@ export default function Home() {
 
   if (!isAuthenticated) {
     return <PinLogin />;
+  }
+
+  if (showWelcomeSetup) {
+    return <WelcomeSetup onComplete={() => setShowWelcomeSetup(false)} />;
   }
 
   const renderPage = () => {
@@ -84,6 +129,10 @@ export default function Home() {
         return <AdminPanel />;
       case 'settings':
         return <SettingsPage />;
+      case 'share-target':
+        return <ReceiptShare />;
+      case 'statement-import':
+        return <StatementImport />;
       case 'guide':
         return <UserGuide standalone />;
       default:
@@ -93,7 +142,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top header with logo, user info, AI, and logout */}
+      {/* AI Chat panel (portaled to body, triggered from dashboard balance card) */}
+      <AiChat />
+
+      {/* Top header with logo, user info, and logout */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
         <div className="max-w-2xl mx-auto px-4 h-10 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -104,7 +156,6 @@ export default function Home() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <AiChat mode="button" />
             <button
               onClick={logout}
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-red-500 transition-colors"

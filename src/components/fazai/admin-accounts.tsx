@@ -40,7 +40,7 @@ export function AdminAccounts() {
   const [type, setType] = useState<Account['type']>('expense');
   const [parentId, setParentId] = useState('');
   const [balance, setBalance] = useState('');
-  const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set(['cashBank', 'income', 'expense']));
+  const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set());
 
   const loadAccounts = useCallback(async () => {
     const list = await db.accounts.toArray();

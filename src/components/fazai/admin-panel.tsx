@@ -8,13 +8,15 @@ import { AdminUsers } from './admin-users';
 import { AdminAccounts } from './admin-accounts';
 import { AdminCustomEntry } from './admin-custom-entry';
 import { AdminBackup } from './admin-backup';
-import { Users, BookOpen, PenTool, Database } from 'lucide-react';
+import { AdminAiSettings } from './admin-ai-settings';
+import { Users, BookOpen, PenTool, Database, Bot } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const ADMIN_TABS = [
   { id: 'admin-users', icon: Users, labelKey: 'admin.users' as const },
   { id: 'admin-accounts', icon: BookOpen, labelKey: 'admin.accounts' as const },
   { id: 'admin-custom', icon: PenTool, labelKey: 'admin.customTransaction' as const },
+  { id: 'admin-ai', icon: Bot, labelKey: 'admin.aiSettings' as const },
   { id: 'admin-backup', icon: Database, labelKey: 'admin.backup' as const },
 ];
 
@@ -65,6 +67,7 @@ export function AdminPanel() {
         {activeTab === 'admin-users' && <AdminUsers />}
         {activeTab === 'admin-accounts' && <AdminAccounts />}
         {activeTab === 'admin-custom' && <AdminCustomEntry />}
+        {activeTab === 'admin-ai' && <AdminAiSettings />}
         {activeTab === 'admin-backup' && <AdminBackup />}
       </motion.div>
     </div>

@@ -15,6 +15,7 @@ export type TranslationKeys = {
   'dash.expense': string;
   'dash.recentTransactions': string;
   'dash.noTransactions': string;
+  'dash.scanReceipt': string;
 
   // Forms
   'form.amount': string;
@@ -44,6 +45,12 @@ export type TranslationKeys = {
   'hist.detail': string;
   'hist.debit': string;
   'hist.credit': string;
+  'hist.editTransaction': string;
+  'hist.editTransactionDesc': string;
+  'hist.deletedNote': string;
+  'hist.editedNote': string;
+  'hist.deletedConfirmDesc': string;
+  'hist.editSuccess': string;
 
   // Reports
   'rep.title': string;
@@ -132,6 +139,21 @@ export type TranslationKeys = {
   'admin.proceedReset': string;
   'admin.challengeMismatch': string;
   'admin.wrongPin': string;
+  'admin.aiSettings': string;
+  'admin.pos': string;
+  'admin.addPosConn': string;
+  'admin.editPosConn': string;
+  'admin.posReportMethod': string;
+  'admin.posIncomeAccount': string;
+  'admin.posPaymentMap': string;
+  'admin.posImportTitle': string;
+  'admin.posPickFile': string;
+  'admin.posImportDone': string;
+  'admin.posSample': string;
+  'admin.posEmpty': string;
+  'admin.posDeleteConfirm': string;
+  'admin.posDevGuide': string;
+  'admin.posDownloadSample': string;
 
   // Common
   'common.cancel': string;
@@ -150,6 +172,8 @@ export type TranslationKeys = {
   'common.noData': string;
   'common.confirmDelete': string;
   'common.cannotUndo': string;
+  'common.edited': string;
+  'common.deleted': string;
 
   // AI
   'ai.title': string;
@@ -161,6 +185,13 @@ export type TranslationKeys = {
   'ai.changeAccount': string;
   'ai.keywordFallback': string;
   'ai.verifyAccount': string;
+  'ai.notConfigured': string;
+  'ai.editAmount': string;
+  'ai.editAmountPrompt': string;
+  'ai.editConfirm': string;
+  'ai.editChangeAmount': string;
+  'ai.editTo': string;
+  'ai.editSuccess': string;
 
   // Nav
   'nav.home': string;
@@ -213,6 +244,40 @@ export type TranslationKeys = {
   // Migration guide
   'guide.migration': string;
   'guide.migration.desc': string;
+
+  // Welcome Setup
+  'setup.welcomeTitle': string;
+  'setup.ownerCaption': string;
+  'setup.ownerDesc': string;
+  'setup.ownerPlaceholder': string;
+  'setup.setPin': string;
+
+  // Receipt / Share Target
+  'receipt.title': string;
+  'receipt.processing': string;
+  'receipt.scanning': string;
+  'receipt.parsing': string;
+  'receipt.extracted': string;
+  'receipt.noImage': string;
+  'receipt.aiNotConfigured': string;
+  'receipt.fromReceipt': string;
+  'receipt.record': string;
+  'receipt.error': string;
+  'receipt.retry': string;
+  'receipt.scanFailed': string;
+  'receipt.parseFailed': string;
+  'receipt.payWith': string;
+  'receipt.type': string;
+  'receipt.reference': string;
+  'receipt.pickGallery': string;
+  'receipt.transactionFailed': string;
+  'receipt.transactionFailedHint': string;
+  'receipt.recognizedText': string;
+  'receipt.tapHint': string;
+  'receipt.fieldAmount': string;
+  'receipt.fieldDate': string;
+  'receipt.fieldCounterparty': string;
+  'receipt.fieldDescription': string;
 };
 
 const en: TranslationKeys = {
@@ -227,6 +292,7 @@ const en: TranslationKeys = {
   'dash.expense': 'Expense',
   'dash.recentTransactions': 'Recent Transactions',
   'dash.noTransactions': 'No transactions yet',
+  'dash.scanReceipt': 'Scan Receipt',
   'form.amount': 'Amount',
   'form.from': 'From',
   'form.to': 'To',
@@ -252,6 +318,12 @@ const en: TranslationKeys = {
   'hist.detail': 'Transaction Detail',
   'hist.debit': 'Debit',
   'hist.credit': 'Credit',
+  'hist.editTransaction': 'Edit Transaction',
+  'hist.editTransactionDesc': 'Update the transaction details below.',
+  'hist.deletedNote': 'Deleted · {time}',
+  'hist.editedNote': 'Edited · {time}',
+  'hist.deletedConfirmDesc': 'The transaction will be greyed out and kept as a record, but excluded from your totals.',
+  'hist.editSuccess': 'Transaction updated',
   'rep.title': 'Reports',
   'rep.trialBalance': 'Trial Balance',
   'rep.balanceSheet': 'Balance Sheet',
@@ -336,6 +408,21 @@ const en: TranslationKeys = {
   'admin.proceedReset': 'Proceed with Reset',
   'admin.challengeMismatch': 'Confirmation code does not match',
   'admin.wrongPin': 'Incorrect Admin PIN',
+  'admin.aiSettings': 'AI Settings',
+  'admin.pos': 'POS',
+  'admin.addPosConn': 'Add POS',
+  'admin.editPosConn': 'Edit POS',
+  'admin.posReportMethod': 'Report Method',
+  'admin.posIncomeAccount': 'Income Account',
+  'admin.posPaymentMap': 'Payment Mapping',
+  'admin.posImportTitle': 'Import POS Sales',
+  'admin.posPickFile': 'Select JSON file',
+  'admin.posImportDone': 'Import complete',
+  'admin.posSample': 'Sample',
+  'admin.posEmpty': 'No POS connections yet. Add one to start importing sales.',
+  'admin.posDeleteConfirm': 'Delete this POS connection and all its import history? The recorded transactions stay.',
+  'admin.posDevGuide': 'Dev Guide',
+  'admin.posDownloadSample': 'Download sample file',
   'common.cancel': 'Cancel',
   'common.confirm': 'Confirm',
   'common.delete': 'Delete',
@@ -352,6 +439,8 @@ const en: TranslationKeys = {
   'common.noData': 'No data',
   'common.confirmDelete': 'Are you sure you want to delete?',
   'common.cannotUndo': 'This action cannot be undone.',
+  'common.edited': 'Edited',
+  'common.deleted': 'Deleted',
   'ai.title': 'AI Assistant',
   'ai.placeholder': 'Ask about your finances...',
   'ai.thinking': 'Thinking...',
@@ -361,6 +450,13 @@ const en: TranslationKeys = {
   'ai.changeAccount': 'Change account',
   'ai.keywordFallback': 'Keyword match',
   'ai.verifyAccount': 'AI offline — verify account before confirming',
+  'ai.notConfigured': 'AI not configured — go to Admin → AI Settings to set up your API key',
+  'ai.editAmount': 'Edit Amount',
+  'ai.editAmountPrompt': '🗑️ "Change my last transaction to 50k"',
+  'ai.editConfirm': 'Update amount',
+  'ai.editChangeAmount': 'Change amount to',
+  'ai.editTo': 'to',
+  'ai.editSuccess': '✓ Amount updated successfully!',
   'nav.home': 'Home',
   'nav.reports': 'Reports',
   'nav.history': 'History',
@@ -400,11 +496,41 @@ const en: TranslationKeys = {
   'guide.factoryReset': 'Factory Reset',
   'guide.factoryResetDesc': 'Factory Reset permanently deletes ALL data. A random challenge code must be typed and Admin PIN entered to confirm, preventing accidental resets.',
   'guide.ai': 'AI Assistant',
-  'guide.ai.desc': 'The floating AI chat button lets you record transactions using everyday language! Simply type things like "beli makan 5000", "terima gaji 1 juta", or "lunch 25k" and the AI will parse the amount, category, and type. Review the parsed transaction in the confirmation card, then tap "Confirm & Record" to save it instantly. You can also ask general financial questions — the AI can help with accounting concepts, budget tips, and explaining income/expense categories.',
+  'guide.ai.desc': 'The floating AI chat button lets you record transactions and query your finances using everyday language! Type things like "lunch 25k", "terima gaji 1 juta", or "how much did I spend this month?" and the AI will respond. To use the AI, you need to configure an API key first: go to Admin Panel → AI Settings, select your provider (OpenAI, Anthropic, Google, Groq, DeepSeek, Qwen, Kimi, or Z.Ai), enter your API key, and test the connection. Your API key is stored locally on your device and never sent anywhere except your chosen provider. If the AI is unavailable, a keyword-based fallback will still work for simple transactions.',
   'guide.tips': 'Tips & Notes',
   'guide.tips.desc': 'All data is stored locally on your device — back up regularly using the Export function! Avoid clearing site data in browser settings, as this will erase all your accounting records. Keep your Admin PIN secure — it\'s required for factory reset protection. The app works best in portrait mode on mobile devices. Install as a PWA for the best experience with offline support.',
   'guide.migration': 'Migrate Guide',
   'guide.migration.desc': 'Follow these steps to set up FAZAI from your existing balance sheet:\n\n1. Prepare your latest balance sheet — gather your most recent balance sheet document as reference.\n\n2. Login as Admin — use the Admin PIN (default: 000000) to access the Admin Panel.\n\n3. Go to Accounts section — add all accounts following your latest balance sheet. For each account, select the correct account type (Asset, Cash/Bank, Liability, Equity, Income, or Expense) and enter the current balance.\n\n4. Review all accounts — double-check each account\'s type and balance. You may disable any unused pre-created accounts by toggling them off.\n\n5. Go to Reports → Balance Sheet — verify that all figures match your original balance sheet. The total assets should equal liabilities plus equity.\n\n6. That\'s all — FAZAI is ready to use! Start recording your daily income and expenses.',
+  'setup.welcomeTitle': 'Welcome to FAZAI',
+  'setup.ownerCaption': 'This Database belongs to',
+  'setup.ownerDesc': 'Owner name will be used when print Report',
+  'setup.ownerPlaceholder': 'Enter owner name',
+  'setup.setPin': 'Set your PIN',
+  'receipt.title': 'Receipt Scanner',
+  'receipt.processing': 'Reading receipt...',
+  'receipt.scanning': 'Scanning receipt...',
+  'receipt.parsing': 'Processing receipt data...',
+  'receipt.extracted': 'Extracted from receipt',
+  'receipt.noImage': 'No image received. Please share an image to scan.',
+  'receipt.aiNotConfigured': 'AI is not configured. Please go to Admin → AI Settings to set up an API key first.',
+  'receipt.fromReceipt': 'Pre-filled from receipt scan',
+  'receipt.record': 'Record Transaction',
+  'receipt.error': 'Failed to read receipt',
+  'receipt.retry': 'Retry',
+  'receipt.scanFailed': 'Could not read text from receipt. Try a clearer photo.',
+  'receipt.parseFailed': 'Could not parse receipt data. You can fill in the details manually.',
+  'receipt.type': 'Type',
+  'receipt.reference': 'Reference',
+  'receipt.pickGallery': 'Pick from Gallery',
+  'receipt.payWith': 'Pay with',
+  'receipt.transactionFailed': 'This receipt shows "Transaction Failed"',
+  'receipt.transactionFailedHint': 'The payment did not go through. No transaction was recorded.',
+  'receipt.recognizedText': 'Recognized text',
+  'receipt.tapHint': 'Tap a line, then choose a field to fill',
+  'receipt.fieldAmount': 'Amount',
+  'receipt.fieldDate': 'Date',
+  'receipt.fieldCounterparty': 'Name',
+  'receipt.fieldDescription': 'Description',
 };
 
 const id: TranslationKeys = {
@@ -419,6 +545,7 @@ const id: TranslationKeys = {
   'dash.expense': 'Pengeluaran',
   'dash.recentTransactions': 'Transaksi Terakhir',
   'dash.noTransactions': 'Belum ada transaksi',
+  'dash.scanReceipt': 'Pindai Struk',
   'form.amount': 'Jumlah',
   'form.from': 'Dari',
   'form.to': 'Kepada',
@@ -444,6 +571,12 @@ const id: TranslationKeys = {
   'hist.detail': 'Detail Transaksi',
   'hist.debit': 'Debit',
   'hist.credit': 'Kredit',
+  'hist.editTransaction': 'Edit Transaksi',
+  'hist.editTransactionDesc': 'Perbarui detail transaksi di bawah ini.',
+  'hist.deletedNote': 'Dihapus · {time}',
+  'hist.editedNote': 'Diedit · {time}',
+  'hist.deletedConfirmDesc': 'Transaksi akan menjadi abu-abu dan disimpan sebagai catatan, tetapi dikecualikan dari total Anda.',
+  'hist.editSuccess': 'Transaksi diperbarui',
   'rep.title': 'Laporan',
   'rep.trialBalance': 'Neraca Saldo',
   'rep.balanceSheet': 'Neraca',
@@ -528,6 +661,21 @@ const id: TranslationKeys = {
   'admin.proceedReset': 'Lanjutkan Reset',
   'admin.challengeMismatch': 'Kode konfirmasi tidak cocok',
   'admin.wrongPin': 'PIN Admin salah',
+  'admin.aiSettings': 'Pengaturan AI',
+  'admin.pos': 'POS',
+  'admin.addPosConn': 'Tambah POS',
+  'admin.editPosConn': 'Edit POS',
+  'admin.posReportMethod': 'Metode Laporan',
+  'admin.posIncomeAccount': 'Akun Pendapatan',
+  'admin.posPaymentMap': 'Pemetaan Pembayaran',
+  'admin.posImportTitle': 'Impor Penjualan POS',
+  'admin.posPickFile': 'Pilih file JSON',
+  'admin.posImportDone': 'Impor selesai',
+  'admin.posSample': 'Contoh',
+  'admin.posEmpty': 'Belum ada koneksi POS. Tambahkan satu untuk mulai mengimpor penjualan.',
+  'admin.posDeleteConfirm': 'Hapus koneksi POS ini beserta riwayat impornya? Transaksi yang sudah dicatat tetap utuh.',
+  'admin.posDevGuide': 'Panduan Dev',
+  'admin.posDownloadSample': 'Unduh file contoh',
   'common.cancel': 'Batal',
   'common.confirm': 'Konfirmasi',
   'common.delete': 'Hapus',
@@ -544,6 +692,8 @@ const id: TranslationKeys = {
   'common.noData': 'Tidak ada data',
   'common.confirmDelete': 'Apakah Anda yakin ingin menghapus?',
   'common.cannotUndo': 'Tindakan ini tidak dapat dibatalkan.',
+  'common.edited': 'Diedit',
+  'common.deleted': 'Dihapus',
   'ai.title': 'Asisten AI',
   'ai.placeholder': 'Tanya tentang keuangan Anda...',
   'ai.thinking': 'Berpikir...',
@@ -553,6 +703,13 @@ const id: TranslationKeys = {
   'ai.changeAccount': 'Ubah akun',
   'ai.keywordFallback': 'Cocokan kata kunci',
   'ai.verifyAccount': 'AI offline — periksa akun sebelum mengkonfirmasi',
+  'ai.notConfigured': 'AI belum dikonfigurasi — buka Admin → Pengaturan AI untuk mengatur API key',
+  'ai.editAmount': 'Edit Jumlah',
+  'ai.editAmountPrompt': '🗑️ "Ubah transaksi terakhir menjadi 50 ribu"',
+  'ai.editConfirm': 'Perbarui jumlah',
+  'ai.editChangeAmount': 'Ubah jumlah menjadi',
+  'ai.editTo': 'menjadi',
+  'ai.editSuccess': '✓ Jumlah berhasil diperbarui!',
   'nav.home': 'Beranda',
   'nav.reports': 'Laporan',
   'nav.history': 'Riwayat',
@@ -592,11 +749,41 @@ const id: TranslationKeys = {
   'guide.factoryReset': 'Reset Pabrik',
   'guide.factoryResetDesc': 'Reset Pabrik menghapus semua data secara permanen. Kode tantangan acak harus diketik dan PIN Admin dimasukkan untuk mengkonfirmasi, mencegah reset yang tidak disengaja.',
   'guide.ai': 'Asisten AI',
-  'guide.ai.desc': 'Tombol obrolan AI mengambang memungkinkan Anda mencatat transaksi menggunakan bahasa sehari-hari! Cukup ketik seperti "beli makan 5000", "terima gaji 1 juta", atau "bayar listrik 300ribu" dan AI akan mengenali jumlah, kategori, dan jenisnya. Periksa transaksi yang dienali di kartu konfirmasi, lalu ketuk "Konfirmasi & Catat" untuk menyimpannya. Anda juga bisa bertanya tentang keuangan — AI dapat membantu konsep akuntansi, tips anggaran, dan menjelaskan kategori pendapatan/pengeluaran.',
+  'guide.ai.desc': 'Tombol obrolan AI mengambang memungkinkan Anda mencatat transaksi dan menanyakan keuangan menggunakan bahasa sehari-hari! Ketik seperti "beli makan 5000", "terima gaji 1 juta", atau "berapa pengeluaran bulan ini?" dan AI akan merespons. Untuk menggunakan AI, Anda perlu mengonfigurasi API key terlebih dahulu: buka Panel Admin → Pengaturan AI, pilih provider (OpenAI, Anthropic, Google, Groq, DeepSeek, Qwen, Kimi, atau Z.Ai), masukkan API key Anda, dan uji koneksi. API key Anda disimpan secara lokal di perangkat dan hanya dikirim ke provider yang Anda pilih. Jika AI tidak tersedia, fallback berbasis kata kunci tetap berfungsi untuk transaksi sederhana.',
   'guide.tips': 'Tips & Catatan',
   'guide.tips.desc': 'Semua data disimpan secara lokal di perangkat Anda — cadangkan secara teratur menggunakan fungsi Ekspor! Jangan hapus data situs di pengaturan browser, karena ini akan menghapus semua catatan akuntansi Anda. Jaga keamanan PIN Admin Anda — diperlukan untuk perlindungan reset pabrik. Aplikasi ini bekerja paling baik dalam mode potret di perangkat seluler. Instal sebagai PWA untuk pengalaman terbaik dengan dukungan offline.',
   'guide.migration': 'Panduan Migrasi',
   'guide.migration.desc': 'Ikuti langkah-langkah berikut untuk menyiapkan FAZAI dari neraca yang ada:\n\n1. Siapkan neraca terbaru Anda — kumpulkan dokumen neraca terbaru sebagai referensi.\n\n2. Login sebagai Admin — gunakan PIN Admin (default: 000000) untuk mengakses Panel Admin.\n\n3. Buka bagian Akun — tambahkan semua akun sesuai neraca terbaru Anda. Untuk setiap akun, pilih jenis akun yang benar (Aset, Kas/Bank, Kewajiban, Modal, Pendapatan, atau Pengeluaran) dan masukkan saldo saat ini.\n\n4. Periksa semua akun — periksa kembali jenis dan saldo setiap akun. Anda dapat menonaktifkan akun bawaan yang tidak digunakan.\n\n5. Buka Laporan → Neraca — verifikasi bahwa semua angka sesuai dengan neraca asli Anda. Total aset harus sama dengan kewajiban ditambah modal.\n\n6. Selesai — FAZAI siap digunakan! Mulai catat pendapatan dan pengeluaran harian Anda.',
+  'setup.welcomeTitle': 'Selamat Datang di FAZAI',
+  'setup.ownerCaption': 'Database ini milik',
+  'setup.ownerDesc': 'Nama pemilik akan digunakan saat cetak Laporan',
+  'setup.ownerPlaceholder': 'Masukkan nama pemilik',
+  'setup.setPin': 'Atur PIN Anda',
+  'receipt.title': 'Pemindai Struk',
+  'receipt.processing': 'Membaca struk...',
+  'receipt.scanning': 'Memindai struk...',
+  'receipt.parsing': 'Memproses data struk...',
+  'receipt.extracted': 'Diekstrak dari struk',
+  'receipt.noImage': 'Tidak ada gambar diterima. Silakan bagikan gambar untuk dipindai.',
+  'receipt.aiNotConfigured': 'AI belum dikonfigurasi. Silakan buka Admin → Pengaturan AI untuk mengatur API key terlebih dahulu.',
+  'receipt.fromReceipt': 'Prasiswa dari pemindaian struk',
+  'receipt.record': 'Catat Transaksi',
+  'receipt.error': 'Gagal membaca struk',
+  'receipt.retry': 'Coba Lagi',
+  'receipt.scanFailed': 'Tidak dapat membaca teks dari struk. Coba foto yang lebih jelas.',
+  'receipt.parseFailed': 'Tidak dapat memproses data struk. Anda dapat mengisi detail secara manual.',
+  'receipt.type': 'Jenis',
+  'receipt.reference': 'Referensi',
+  'receipt.pickGallery': 'Pilih dari Galeri',
+  'receipt.payWith': 'Bayar dengan',
+  'receipt.transactionFailed': 'Struk ini menunjukkan "Transaksi Gagal"',
+  'receipt.transactionFailedHint': 'Pembayaran tidak berhasil. Tidak ada transaksi yang tercatat.',
+  'receipt.recognizedText': 'Teks yang dikenali',
+  'receipt.tapHint': 'Ketuk satu baris, lalu pilih kolom untuk diisi',
+  'receipt.fieldAmount': 'Jumlah',
+  'receipt.fieldDate': 'Tanggal',
+  'receipt.fieldCounterparty': 'Nama',
+  'receipt.fieldDescription': 'Keterangan',
 };
 
 const zh: TranslationKeys = {
@@ -611,6 +798,7 @@ const zh: TranslationKeys = {
   'dash.expense': '支出',
   'dash.recentTransactions': '最近交易',
   'dash.noTransactions': '暂无交易记录',
+  'dash.scanReceipt': '扫描收据',
   'form.amount': '金额',
   'form.from': '来自',
   'form.to': '付给',
@@ -636,6 +824,12 @@ const zh: TranslationKeys = {
   'hist.detail': '交易详情',
   'hist.debit': '借方',
   'hist.credit': '贷方',
+  'hist.editTransaction': '编辑交易',
+  'hist.editTransactionDesc': '请在下方更新交易详情。',
+  'hist.deletedNote': '已删除 · {time}',
+  'hist.editedNote': '已编辑 · {time}',
+  'hist.deletedConfirmDesc': '该交易将变灰并保留为记录，但会从您的总计中排除。',
+  'hist.editSuccess': '交易已更新',
   'rep.title': '报表',
   'rep.trialBalance': '试算平衡表',
   'rep.balanceSheet': '资产负债表',
@@ -720,6 +914,21 @@ const zh: TranslationKeys = {
   'admin.proceedReset': '继续重置',
   'admin.challengeMismatch': '确认代码不匹配',
   'admin.wrongPin': '管理员PIN码错误',
+  'admin.aiSettings': 'AI设置',
+  'admin.pos': 'POS',
+  'admin.addPosConn': '添加POS',
+  'admin.editPosConn': '编辑POS',
+  'admin.posReportMethod': '报告方式',
+  'admin.posIncomeAccount': '收入账户',
+  'admin.posPaymentMap': '付款映射',
+  'admin.posImportTitle': '导入POS销售',
+  'admin.posPickFile': '选择JSON文件',
+  'admin.posImportDone': '导入完成',
+  'admin.posSample': '示例',
+  'admin.posEmpty': '暂无POS连接。添加一个即可开始导入销售。',
+  'admin.posDeleteConfirm': '删除此POS连接及其所有导入记录？已记录的交易将保留。',
+  'admin.posDevGuide': '开发指南',
+  'admin.posDownloadSample': '下载示例文件',
   'common.cancel': '取消',
   'common.confirm': '确认',
   'common.delete': '删除',
@@ -736,6 +945,8 @@ const zh: TranslationKeys = {
   'common.noData': '暂无数据',
   'common.confirmDelete': '确定要删除吗？',
   'common.cannotUndo': '此操作不可撤销。',
+  'common.edited': '已编辑',
+  'common.deleted': '已删除',
   'ai.title': 'AI助手',
   'ai.placeholder': '询问您的财务状况...',
   'ai.thinking': '思考中...',
@@ -745,6 +956,13 @@ const zh: TranslationKeys = {
   'ai.changeAccount': '更改账户',
   'ai.keywordFallback': '关键词匹配',
   'ai.verifyAccount': 'AI离线 — 确认前请核对账户',
+  'ai.notConfigured': 'AI未配置 — 请前往管理→AI设置配置API密钥',
+  'ai.editAmount': '编辑金额',
+  'ai.editAmountPrompt': '🗑️ "把最后一笔交易改成5万"',
+  'ai.editConfirm': '更新金额',
+  'ai.editChangeAmount': '将金额改为',
+  'ai.editTo': '为',
+  'ai.editSuccess': '✓ 金额更新成功！',
   'nav.home': '首页',
   'nav.reports': '报表',
   'nav.history': '历史',
@@ -784,11 +1002,41 @@ const zh: TranslationKeys = {
   'guide.factoryReset': '恢复出厂设置',
   'guide.factoryResetDesc': '恢复出厂设置将永久删除所有数据。必须输入随机验证码和管理员PIN码才能确认，防止意外重置。',
   'guide.ai': 'AI助手',
-  'guide.ai.desc': '浮动的AI聊天按钮让您可以用日常语言记录交易！只需输入"买饭50"、"收到工资1万"或"午餐25k"，AI将自动解析金额、类别和类型。在确认卡片中查看解析结果，然后点击"确认并记录"即可保存。您也可以询问一般财务问题——AI可以帮助理解会计概念、提供预算建议和解释收支类别。',
+  'guide.ai.desc': '浮动的AI聊天按钮让您可以用日常语言记录交易和查询财务！只需输入"买饭50"、"收到工资1万"或"这个月花了多少？"AI就会回应。使用AI前，您需要先配置API密钥：前往管理面板→AI设置，选择提供商（OpenAI、Anthropic、Google、Groq、DeepSeek、Qwen、Kimi或Z.Ai），输入您的API密钥，然后测试连接。您的API密钥仅保存在设备本地，仅发送到您选择的提供商。如果AI不可用，基于关键词的备用方案仍可处理简单交易。',
   'guide.tips': '提示与说明',
   'guide.tips.desc': '所有数据存储在您的设备本地——请定期使用导出功能备份！请勿在浏览器设置中清除网站数据，这会删除您所有的会计记录。保管好您的管理员PIN码——这是恢复出厂设置保护的必要条件。应用在移动设备的竖屏模式下效果最佳。安装为PWA可获得最佳体验和离线支持。',
   'guide.migration': '迁移指南',
   'guide.migration.desc': '按照以下步骤从现有资产负债表设置 FAZAI：\n\n1. 准备最新资产负债表 — 收集最近的资产负债表文件作为参考。\n\n2. 以管理员身份登录 — 使用管理员 PIN 码（默认：000000）访问管理面板。\n\n3. 前往账户部分 — 按照最新资产负债表添加所有账户。为每个账户选择正确的账户类型（资产、现金/银行、负债、权益、收入或支出）并输入当前余额。\n\n4. 核对所有账户 — 仔细核对每个账户的类型和余额。您可以关闭任何未使用的预创建账户。\n\n5. 前往报表 → 资产负债表 — 验证所有数据是否与原始资产负债表一致。总资产应等于负债加权益。\n\n6. 完成 — FAZAI 已准备就绪！开始记录日常收入和支出。',
+  'setup.welcomeTitle': '欢迎使用 FAZAI',
+  'setup.ownerCaption': '此数据库属于',
+  'setup.ownerDesc': '所有者姓名将用于打印报表时显示',
+  'setup.ownerPlaceholder': '请输入所有者姓名',
+  'setup.setPin': '设置您的PIN码',
+  'receipt.title': '收据扫描',
+  'receipt.processing': '正在读取收据...',
+  'receipt.scanning': '正在扫描收据...',
+  'receipt.parsing': '正在处理收据数据...',
+  'receipt.extracted': '从收据提取',
+  'receipt.noImage': '未收到图片。请分享图片进行扫描。',
+  'receipt.aiNotConfigured': 'AI未配置。请前往管理→AI设置配置API密钥。',
+  'receipt.fromReceipt': '从收据扫描预填',
+  'receipt.record': '记录交易',
+  'receipt.error': '读取收据失败',
+  'receipt.retry': '重试',
+  'receipt.scanFailed': '无法读取收据文字。请尝试更清晰的照片。',
+  'receipt.parseFailed': '无法处理收据数据。您可以手动填写详细信息。',
+  'receipt.type': '类型',
+  'receipt.reference': '参考号',
+  'receipt.pickGallery': '从相册选择',
+  'receipt.payWith': '支付方式',
+  'receipt.transactionFailed': '此收据显示"交易失败"',
+  'receipt.transactionFailedHint': '支付未成功。未记录任何交易。',
+  'receipt.recognizedText': '识别文字',
+  'receipt.tapHint': '点击一行，然后选择要填入的字段',
+  'receipt.fieldAmount': '金额',
+  'receipt.fieldDate': '日期',
+  'receipt.fieldCounterparty': '名称',
+  'receipt.fieldDescription': '备注',
 };
 
 const translations: Record<Lang, TranslationKeys> = { en, id, zh };
