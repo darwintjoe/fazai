@@ -145,8 +145,8 @@ export function AiChat() {
             totalDebit: s.totalDebit, totalCredit: s.totalCredit,
           })),
           currentBalance: dashboardData.totalBalance,
-          todayIncome: dashboardData.todayIncome,
-          todayExpense: dashboardData.todayExpense,
+          mtdIncome: dashboardData.mtdIncome,
+          mtdExpense: dashboardData.mtdExpense,
           lang,
         }),
       });

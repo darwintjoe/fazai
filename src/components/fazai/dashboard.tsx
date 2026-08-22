@@ -1,28 +1,32 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useAppStore } from '@/lib/app-store';
 import { t, getAccountName, type Lang } from '@/lib/i18n';
 import { formatNumber, formatDate } from '@/lib/format';
 import { getDashboardSummary } from '@/lib/ledger-engine';
 import { db, type Transaction, type Account } from '@/lib/fazai-db';
-import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, ChevronRight, Download, Camera, MessageCircle, FileText } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, ChevronRight, Download, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { usePwaInstall } from '@/hooks/use-pwa-install';
 
 function useDashboardData(lang: Lang) {
   const [balance, setBalance] = useState(0);
-  const [todayIncome, setTodayIncome] = useState(0);
-  const [todayExpense, setTodayExpense] = useState(0);
+  const [mtdIncome, setMtdIncome] = useState(0);
+  const [mtdExpense, setMtdExpense] = useState(0);
+  const [lastMonthIncome, setLastMonthIncome] = useState(0);
+  const [lastMonthExpense, setLastMonthExpense] = useState(0);
   const [recentTx, setRecentTx] = useState<(Transaction & { accountName?: string })[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const refresh = useCallback(async () => {
     const summary = await getDashboardSummary();
     setBalance(summary.totalBalance);
-    setTodayIncome(summary.todayIncome);
-    setTodayExpense(summary.todayExpense);
+    setMtdIncome(summary.mtdIncome);
+    setMtdExpense(summary.mtdExpense);
+    setLastMonthIncome(summary.lastMonthIncome);
+    setLastMonthExpense(summary.lastMonthExpense);
 
     const accs = await db.accounts.toArray();
     setAccounts(accs);
@@ -43,16 +47,14 @@ function useDashboardData(lang: Lang) {
     refresh();
   }, [refresh]);
 
-  return { balance, todayIncome, todayExpense, recentTx, accounts, refresh };
+  return { balance, mtdIncome, mtdExpense, lastMonthIncome, lastMonthExpense, recentTx, accounts, refresh };
 }
 
 export function Dashboard() {
   const { lang } = useAuthStore();
   const { navigate, txVersion, toggleAiChat } = useAppStore();
-  const { balance, todayIncome, todayExpense, recentTx, accounts, refresh } = useDashboardData(lang);
+  const { balance, mtdIncome, mtdExpense, lastMonthIncome, lastMonthExpense, recentTx, accounts, refresh } = useDashboardData(lang);
   const { isInstallable, promptInstall } = usePwaInstall();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   // Re-fetch data when txVersion changes (transaction created/deleted elsewhere)
   useEffect(() => {
     if (txVersion > 0) {
@@ -60,42 +62,8 @@ export function Dashboard() {
     }
   }, [txVersion, refresh]);
 
-  /** Handle camera/gallery file selection — store in Cache API and navigate to OCR */
-  const handleImageSelected = useCallback(async (file: File) => {
-    try {
-      const cache = await caches.open('shared-files');
-      const response = new Response(file);
-      // Store with the same key the service worker uses
-      await cache.put('/shared-image-0', response);
-      // Also store a count metadata entry (ReceiptOcr may expect this)
-      await cache.put('/shared-count', new Response('1'));
-      navigate('share-target');
-    } catch (err) {
-      console.error('Failed to store image for OCR:', err);
-    }
-  }, [navigate]);
-
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      handleImageSelected(file);
-    }
-    // Reset input so same file can be selected again
-    e.target.value = '';
-  }, [handleImageSelected]);
-
   return (
     <div className="flex flex-col gap-4 pb-20">
-      {/* Hidden file input for camera/gallery */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleFileChange}
-        className="hidden"
-      />
-
       {/* PWA Install Banner */}
       {isInstallable && (
         <motion.div
@@ -138,41 +106,29 @@ export function Dashboard() {
                 <ArrowUpRight className="w-3.5 h-3.5 text-red-200" />
                 <div>
                   <p className="text-[10px] opacity-80">{t('dash.income', lang)}</p>
-                  <p className="text-xs font-semibold">{formatNumber(todayIncome)}</p>
+                  <p className="text-xs font-semibold">{formatNumber(mtdIncome)}</p>
+                  <p className="text-[9px] opacity-60">{t('dash.lastMonth', lang)}: {formatNumber(lastMonthIncome)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-1.5">
                 <ArrowDownRight className="w-3.5 h-3.5 text-white/60" />
                 <div>
                   <p className="text-[10px] opacity-80">{t('dash.expense', lang)}</p>
-                  <p className="text-xs font-semibold">{formatNumber(todayExpense)}</p>
+                  <p className="text-xs font-semibold">{formatNumber(mtdExpense)}</p>
+                  <p className="text-[9px] opacity-60">{t('dash.lastMonth', lang)}: {formatNumber(lastMonthExpense)}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Transparent side-menu icons — right side of card */}
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              title={t('dash.scanReceipt', lang)}
-              className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 backdrop-blur-sm flex items-center justify-center transition-all"
-            >
-              <Camera className="w-4 h-4 text-white" />
-            </button>
-            <button
-              onClick={() => navigate('statement-import')}
-              title={lang === 'id' ? 'Impor Mutasi Bank' : lang === 'zh' ? '导入银行对账单' : 'Bank Statement Import'}
-              className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 backdrop-blur-sm flex items-center justify-center transition-all"
-            >
-              <FileText className="w-4 h-4 text-white" />
-            </button>
+          {/* AI Assistant icon — right side of card */}
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
             <button
               onClick={toggleAiChat}
               title={t('ai.title', lang)}
-              className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 backdrop-blur-sm flex items-center justify-center transition-all"
+              className="w-18 h-18 rounded-full bg-white/15 hover:bg-white/25 active:bg-white/30 backdrop-blur-sm flex items-center justify-center transition-all"
             >
-              <MessageCircle className="w-4 h-4 text-white" />
+              <MessageCircle className="w-8 h-8 text-white" />
             </button>
           </div>
         </Card>
