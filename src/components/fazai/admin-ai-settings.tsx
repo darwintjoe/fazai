@@ -24,7 +24,7 @@ import { Bot, Eye, EyeOff, Check, X, Loader2, Zap, Settings2, ExternalLink } fro
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
-/** Providers visible to users in the admin settings dropdown. Groq is hidden (internal-only).
+/** Providers visible to users in the admin settings dropdown.
  *  Sorted A-Z by provider name for consistent ordering. */
 const PROVIDER_IDS: AiProviderId[] = [
   'anthropic', 'deepseek', 'google', 'kimi', 'openai', 'qwen', 'zai',
@@ -43,6 +43,38 @@ export function AdminAiSettings() {
   const [testResult, setTestResult] = useState<'success' | 'fail' | null>(null);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [models, setModels] = useState<string[]>([]);
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [modelsFetched, setModelsFetched] = useState(false);
+
+  const fetchAvailableModels = useCallback(async (prov: AiProviderId, key: string, ep?: string) => {
+    if (!key.trim()) {
+      setModels([]);
+      setModelsFetched(false);
+      return;
+    }
+    setModelsLoading(true);
+    try {
+      const res = await fetch('/api/ai/models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: prov, apiKey: key.trim(), endpoint: ep || undefined }),
+      });
+      const data = await res.json();
+      if (res.ok && Array.isArray(data.models)) {
+        setModels(data.models);
+        setModelsFetched(true);
+      } else {
+        setModels(AI_PROVIDERS[prov].models);
+        setModelsFetched(true);
+      }
+    } catch {
+      setModels(AI_PROVIDERS[prov].models);
+      setModelsFetched(true);
+    } finally {
+      setModelsLoading(false);
+    }
+  }, []);
 
   // Load saved settings from Dexie
   useEffect(() => {
@@ -55,7 +87,7 @@ export function AdminAiSettings() {
 
         if (provSetting?.value) {
           const savedProvider = provSetting.value as AiProviderId;
-          // Silently remap hidden providers (e.g. groq) to a visible default
+          // Silently remap unknown providers to default
           if (!PROVIDER_IDS.includes(savedProvider)) {
             setProvider('openai');
           } else {
@@ -65,6 +97,12 @@ export function AdminAiSettings() {
         if (modelSetting?.value) setModel(modelSetting.value);
         if (keySetting?.value) setApiKey(keySetting.value);
         if (endpointSetting?.value) setEndpoint(endpointSetting.value);
+
+        // Auto-fetch models if API key exists
+        if (keySetting?.value) {
+          const prov = (provSetting?.value as AiProviderId) || 'zai';
+          fetchAvailableModels(prov, keySetting.value, endpointSetting?.value);
+        }
       } catch (e) {
         console.error('Failed to load AI settings:', e);
       } finally {
@@ -81,6 +119,8 @@ export function AdminAiSettings() {
     setModel(info.defaultModel);
     setEndpoint('');
     setTestResult(null);
+    setModels([]);
+    setModelsFetched(false);
   }, []);
 
   const handleTest = async () => {
@@ -212,21 +252,41 @@ export function AdminAiSettings() {
 
         {/* Model Name */}
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">
+          <label className="text-xs font-medium text-muted-foreground flex items-center gap-2">
             {lang === 'id' ? 'Model' : lang === 'zh' ? '模型' : 'Model'}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 px-1.5 text-[10px] text-red-600 dark:text-red-400 hover:text-red-700"
+              onClick={() => fetchAvailableModels(provider, apiKey, endpoint)}
+              disabled={modelsLoading || !apiKey.trim()}
+            >
+              {modelsLoading ? (
+                <Loader2 className="w-2.5 h-2.5 animate-spin mr-0.5" />
+              ) : null}
+              {lang === 'id' ? 'Ambil Model' : lang === 'zh' ? '获取模型' : 'Fetch Models'}
+            </Button>
           </label>
-          <Select value={model || providerInfo.defaultModel} onValueChange={setModel}>
-            <SelectTrigger className="h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {providerInfo.models.map(m => (
-                <SelectItem key={m} value={m}>
-                  {m}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {models.length > 0 ? (
+            <Select value={model || providerInfo.defaultModel} onValueChange={setModel}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {models.map(m => (
+                  <SelectItem key={m} value={m}>
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
+            <div className="flex items-center h-9 px-3 rounded-md border border-dashed text-xs text-muted-foreground">
+              {modelsLoading
+                ? (lang === 'id' ? 'Mengambil model...' : lang === 'zh' ? '正在获取模型...' : 'Fetching models...')
+                : (lang === 'id' ? 'Masukkan API key lalu klik "Ambil Model"' : lang === 'zh' ? '输入API密钥后点击"获取模型"' : 'Enter API key then click "Fetch Models"')}
+            </div>
+          )}
           <p className="text-[10px] text-muted-foreground">
             {lang === 'id'
               ? 'Model default: ' + providerInfo.defaultModel

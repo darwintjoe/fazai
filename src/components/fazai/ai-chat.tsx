@@ -92,12 +92,12 @@ export function AiChat() {
               endpoint: endpoint?.value || undefined,
             });
           } else {
-            // Silently fall back to factory-default Groq (internal provider).
-            // The server-side API routes will inject GROQ_API_KEY from env if available,
+            // Silently fall back to factory-default Z.Ai (internal provider).
+            // The server-side API routes will inject ZAI_API_KEY from env if available,
             // otherwise keyword parser kicks in automatically.
             setAiConfig({
-              provider: 'groq',
-              model: model?.value || 'llama-3.1-8b-instant',
+              provider: 'zai',
+              model: model?.value || 'z.ai/glm-4.7-flash',
               apiKey: key?.value || '',
               endpoint: endpoint?.value || undefined,
             });

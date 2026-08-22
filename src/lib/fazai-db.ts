@@ -286,7 +286,7 @@ export async function seedDatabase() {
   if (!existingProvider) {
     await db.settings.bulkPut([
       { key: 'ai-provider', value: 'zai' },
-      { key: 'ai-model', value: 'GLM-4.7-Flash' },
+      { key: 'ai-model', value: 'z.ai/glm-4.7-flash' },
       { key: 'ai-api-key', value: '' },
       { key: 'ai-endpoint', value: '' },
     ]);

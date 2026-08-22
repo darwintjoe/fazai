@@ -123,7 +123,7 @@ export function StatementImport() {
       const allAccounts = await db.accounts.filter(a => a.isActive).toArray();
 
       const apiKey = keySetting?.value as string | undefined;
-      const provId = (provSetting?.value as string) || 'groq';
+      const provId = (provSetting?.value as string) || 'zai';
 
       const aiConfig: AiProviderConfig = {
         provider: provId as AiProviderId,

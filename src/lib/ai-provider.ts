@@ -10,7 +10,6 @@ export type AiProviderId =
   | 'openai'
   | 'anthropic'
   | 'google'
-  | 'groq'
   | 'deepseek'
   | 'qwen'
   | 'kimi'
@@ -39,7 +38,6 @@ export const AI_KEY_URLS: Record<AiProviderId, string> = {
   openai: 'https://platform.openai.com/api-keys',
   anthropic: 'https://console.anthropic.com/settings/keys',
   google: 'https://aistudio.google.com/app/apikey',
-  groq: 'https://console.groq.com/keys',
   deepseek: 'https://platform.deepseek.com/api_keys',
   qwen: 'https://dashscope.console.aliyun.com/apiKey',
   kimi: 'https://platform.moonshot.cn/console/api-keys',
@@ -71,21 +69,6 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderInfo> = {
     models: ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'],
     openaiCompatible: false,
   },
-  groq: {
-    id: 'groq',
-    name: 'Groq',
-    defaultEndpoint: 'https://api.groq.com/openai/v1',
-    defaultModel: 'llama-3.1-8b-instant',
-    models: [
-      'meta-llama/llama-4-scout-17b-16e-instruct',
-      'qwen/qwen3.6-27b',
-      'llama-3.3-70b-versatile',
-      'llama-3.1-8b-instant',
-      'mixtral-8x7b-32768',
-      'gemma2-9b-it',
-    ],
-    openaiCompatible: true,
-  },
   deepseek: {
     id: 'deepseek',
     name: 'DeepSeek',
@@ -114,8 +97,8 @@ export const AI_PROVIDERS: Record<AiProviderId, AiProviderInfo> = {
     id: 'zai',
     name: 'Z.Ai',
     defaultEndpoint: 'https://api.z.ai/api/paas/v4/',
-    defaultModel: 'GLM-4.5-Flash',
-    models: ['GLM-4.5-Flash', 'GLM-4.7-Flash'],
+    defaultModel: 'z.ai/glm-4.7-flash',
+    models: ['z.ai/glm-4.7-flash'],
     openaiCompatible: true,
   },
 };
@@ -127,6 +110,40 @@ export function getProviderInfo(providerId: AiProviderId): AiProviderInfo {
 export function getEndpoint(config: AiProviderConfig): string {
   const info = AI_PROVIDERS[config.provider];
   return config.endpoint?.trim() || info.defaultEndpoint;
+}
+
+/**
+ * Fetch available models from a provider's API.
+ * Only works for OpenAI-compatible providers that expose GET /v1/models.
+ * Returns the static fallback list on error.
+ */
+export async function fetchModels(
+  provider: AiProviderId,
+  apiKey: string,
+  endpoint?: string,
+): Promise<string[]> {
+  const info = AI_PROVIDERS[provider];
+  if (!info.openaiCompatible) {
+    return info.models;
+  }
+
+  const base = (endpoint?.trim() || info.defaultEndpoint).replace(/\/+$/, '');
+  const url = `${base}/models`;
+
+  try {
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+    });
+    if (!res.ok) return info.models;
+    const data = await res.json();
+    const ids: string[] = (data.data || [])
+      .map((m: any) => m.id)
+      .filter(Boolean)
+      .sort();
+    return ids.length > 0 ? ids : info.models;
+  } catch {
+    return info.models;
+  }
 }
 
 interface ChatMessage {
@@ -170,7 +187,7 @@ export async function chatCompletion(
   throw new Error(`Unsupported provider: ${config.provider}`);
 }
 
-// ── OpenAI-compatible (OpenAI, Groq, DeepSeek, Qwen, Kimi, Z.Ai) ──
+// ── OpenAI-compatible (OpenAI, DeepSeek, Qwen, Kimi, Z.Ai) ──
 
 async function callOpenAICompatible(
   endpoint: string,
