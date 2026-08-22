@@ -722,45 +722,81 @@ export interface ProfitLossSection {
 }
 
 export interface ProfitLoss {
+  // Standard view
   income: ProfitLossSection;
   expenses: ProfitLossSection;
+  // EBITDA / EBITDAR views
+  revenue: ProfitLossSection;
+  cogs: ProfitLossSection;
+  operatingExpenses: ProfitLossSection;
+  rent: ProfitLossSection;
+  depreciation: ProfitLossSection;
+  otherIncome: ProfitLossSection;
+  otherExpense: ProfitLossSection;
+  taxExpense: ProfitLossSection;
+  // Subtotals
+  grossProfit: number;
+  ebitdar: number;
+  ebitda: number;
+  earningsBeforeTax: number;
   netProfit: number;
 }
 
 export async function generateProfitLoss(fromDate: Date, toDate: Date, lang: Lang = 'en'): Promise<ProfitLoss> {
-  const [accounts, balances] = await Promise.all([
+  const [accounts, categories, balances] = await Promise.all([
     db.accounts.filter(a => a.isActive).toArray(),
+    db.accountCategories.toArray(),
     getAccountBalancesOptimized(fromDate, toDate),
   ]);
 
-  const incomeItems: ProfitLossSection['items'] = [];
-  let totalIncome = 0;
+  const catMap = new Map(categories.map(c => [c.id, c]));
 
-  for (const acc of accounts.filter(a => a.type === 'income' && a.parentId)) {
-    const bal = balances.get(acc.id);
-    const net = bal ? bal.credit - bal.debit : 0;
-    if (net !== 0) {
-      incomeItems.push({ accountCode: acc.code, accountName: getAccountName(acc, lang), amount: net });
-      totalIncome += net;
+  const buildSection = (catIds: string[]): ProfitLossSection => {
+    const items: ProfitLossSection['items'] = [];
+    let total = 0;
+    for (const acc of accounts.filter(a => catIds.includes(a.categoryId) && a.parentId)) {
+      const bal = balances.get(acc.id);
+      if (!bal) continue;
+      const isIncome = acc.type === 'income';
+      const net = isIncome ? bal.credit - bal.debit : bal.debit - bal.credit;
+      if (net !== 0) {
+        items.push({ accountCode: acc.code, accountName: getAccountName(acc, lang), amount: net });
+        total += net;
+      }
     }
-  }
+    return { items, total };
+  };
 
-  const expenseItems: ProfitLossSection['items'] = [];
-  let totalExpenses = 0;
+  const revenue = buildSection(['cat-income']);
+  const cogs = buildSection(['cat-cogs']);
+  const operatingExpenses = buildSection(['cat-expenses']);
+  const rent = buildSection(['cat-rent']);
+  const depreciation = buildSection(['cat-depreciation-expense']);
+  const otherIncome = buildSection(['cat-other-income']);
+  const otherExpense = buildSection(['cat-other-expense']);
+  const taxExpense = buildSection(['cat-tax-expense']);
 
-  for (const acc of accounts.filter(a => a.type === 'expense' && a.parentId)) {
-    const bal = balances.get(acc.id);
-    const net = bal ? bal.debit - bal.credit : 0;
-    if (net !== 0) {
-      expenseItems.push({ accountCode: acc.code, accountName: getAccountName(acc, lang), amount: net });
-      totalExpenses += net;
-    }
-  }
+  // Standard view: all income together, all expense together
+  const income: ProfitLossSection = {
+    items: [...revenue.items, ...otherIncome.items],
+    total: revenue.total + otherIncome.total,
+  };
+  const expenses: ProfitLossSection = {
+    items: [...cogs.items, ...operatingExpenses.items, ...rent.items, ...depreciation.items, ...otherExpense.items, ...taxExpense.items],
+    total: cogs.total + operatingExpenses.total + rent.total + depreciation.total + otherExpense.total + taxExpense.total,
+  };
+
+  const grossProfit = revenue.total - cogs.total;
+  const ebitdar = grossProfit - operatingExpenses.total;
+  const ebitda = ebitdar - rent.total;
+  const netOther = otherIncome.total - otherExpense.total;
+  const earningsBeforeTax = ebitda - depreciation.total + netOther;
+  const netProfit = earningsBeforeTax - taxExpense.total;
 
   return {
-    income: { items: incomeItems, total: totalIncome },
-    expenses: { items: expenseItems, total: totalExpenses },
-    netProfit: totalIncome - totalExpenses,
+    income, expenses,
+    revenue, cogs, operatingExpenses, rent, depreciation, otherIncome, otherExpense, taxExpense,
+    grossProfit, ebitdar, ebitda, earningsBeforeTax, netProfit,
   };
 }
 

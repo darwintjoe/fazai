@@ -113,12 +113,14 @@ export function TransactionForm({ type }: TransactionFormProps) {
     const newCode = `${prefix}-${String(maxCode + 100).padStart(4, '0')}`;
 
     const parentId = accType === 'income' ? 'acc-income-root' : 'acc-expense-root';
+    const categoryId = accType === 'income' ? 'cat-income' : 'cat-expenses';
 
     const newAccount: Account = {
       id: `acc-${uuid()}`,
       code: newCode,
       name: newAccountName.trim(),
       type: accType,
+      categoryId,
       parentId,
       isSystem: false,
       isActive: true,
@@ -147,6 +149,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
       code: newCode,
       name: newCashBankName.trim(),
       type: 'cashBank',
+      categoryId: 'cat-cashbank',
       parentId: 'acc-cashbank-root',
       isSystem: false,
       isActive: true,

@@ -211,6 +211,41 @@ export type TranslationKeys = {
   'type.income': string;
   'type.expense': string;
 
+  // Account categories
+  'cat.cashbank': string;
+  'cat.ar': string;
+  'cat.inventory': string;
+  'cat.fixedasset': string;
+  'cat.accumdepr': string;
+  'cat.ap': string;
+  'cat.taxpayable': string;
+  'cat.taxreceivable': string;
+  'cat.otherliability': string;
+  'cat.equity': string;
+  'cat.income': string;
+  'cat.cogs': string;
+  'cat.expenses': string;
+  'cat.rent': string;
+  'cat.depreciation-expense': string;
+  'cat.other-income': string;
+  'cat.other-expense': string;
+  'cat.tax-expense': string;
+
+  // P&L report labels
+  'pl.revenue': string;
+  'pl.totalRevenue': string;
+  'pl.grossProfit': string;
+  'pl.totalOpEx': string;
+  'pl.ebitdar': string;
+  'pl.ebitda': string;
+  'pl.depreciation': string;
+  'pl.ebt': string;
+  'pl.tax': string;
+  'pl.cogs': string;
+  'pl.opEx': string;
+  'pl.rent': string;
+  'pl.otherIncomeExpense': string;
+
   // Guide
   'guide.title': string;
   'guide.gettingStarted': string;
@@ -473,6 +508,37 @@ const en: TranslationKeys = {
   'type.equity': 'Equity',
   'type.income': 'Income',
   'type.expense': 'Expense',
+  'cat.cashbank': 'Cash & Bank',
+  'cat.ar': 'Accounts Receivable',
+  'cat.inventory': 'Inventory',
+  'cat.fixedasset': 'Fixed Asset',
+  'cat.accumdepr': 'Accumulated Depreciation',
+  'cat.ap': 'Accounts Payable',
+  'cat.taxpayable': 'Tax Payable',
+  'cat.taxreceivable': 'Tax Receivable',
+  'cat.otherliability': 'Other Liabilities',
+  'cat.equity': 'Equity',
+  'cat.income': 'Income',
+  'cat.cogs': 'Cost of Goods Sold',
+  'cat.expenses': 'Operating Expenses',
+  'cat.rent': 'Rent',
+  'cat.depreciation-expense': 'Depreciation Expense',
+  'cat.other-income': 'Other Income',
+  'cat.other-expense': 'Other Expense',
+  'cat.tax-expense': 'Tax Expense',
+  'pl.revenue': 'Revenue',
+  'pl.totalRevenue': 'Total Revenue',
+  'pl.grossProfit': 'Gross Profit',
+  'pl.totalOpEx': 'Total Operating Expenses',
+  'pl.ebitdar': 'EBITDAR',
+  'pl.ebitda': 'EBITDA',
+  'pl.depreciation': 'Depreciation',
+  'pl.ebt': 'Earnings Before Tax',
+  'pl.tax': 'Tax Expense',
+  'pl.cogs': 'Cost of Goods Sold',
+  'pl.opEx': 'Operating Expenses',
+  'pl.rent': 'Rent',
+  'pl.otherIncomeExpense': 'Other Income & Expense',
   'guide.title': 'User Guide',
   'guide.gettingStarted': 'Getting Started',
   'guide.defaultPin': 'Default PINs: Admin = 000000, User = 111111',
@@ -728,6 +794,37 @@ const id: TranslationKeys = {
   'type.equity': 'Modal',
   'type.income': 'Pendapatan',
   'type.expense': 'Pengeluaran',
+  'cat.cashbank': 'Kas & Bank',
+  'cat.ar': 'Piutang Usaha',
+  'cat.inventory': 'Persediaan',
+  'cat.fixedasset': 'Aset Tetap',
+  'cat.accumdepr': 'Akumulasi Depresiasi',
+  'cat.ap': 'Utang Usaha',
+  'cat.taxpayable': 'Pajak Harus Dibayar',
+  'cat.taxreceivable': 'Pajak Dibayar Dimuka',
+  'cat.otherliability': 'Kewajiban Lainnya',
+  'cat.equity': 'Modal',
+  'cat.income': 'Pendapatan',
+  'cat.cogs': 'Harga Pokok Penjualan',
+  'cat.expenses': 'Biaya Operasional',
+  'cat.rent': 'Sewa',
+  'cat.depreciation-expense': 'Biaya Depresiasi',
+  'cat.other-income': 'Pendapatan Lainnya',
+  'cat.other-expense': 'Pengeluaran Lainnya',
+  'cat.tax-expense': 'Beban Pajak',
+  'pl.revenue': 'Pendapatan',
+  'pl.totalRevenue': 'Total Pendapatan',
+  'pl.grossProfit': 'Laba Kotor',
+  'pl.totalOpEx': 'Total Biaya Operasional',
+  'pl.ebitdar': 'EBITDAR',
+  'pl.ebitda': 'EBITDA',
+  'pl.depreciation': 'Depresiasi',
+  'pl.ebt': 'Laba Sebelum Pajak',
+  'pl.tax': 'Beban Pajak',
+  'pl.cogs': 'Harga Pokok Penjualan',
+  'pl.opEx': 'Biaya Operasional',
+  'pl.rent': 'Sewa',
+  'pl.otherIncomeExpense': 'Pendapatan & Beban Lain',
   'guide.title': 'Panduan Pengguna',
   'guide.gettingStarted': 'Memulai',
   'guide.defaultPin': 'PIN default: Admin = 000000, Pengguna = 111111',
@@ -983,6 +1080,37 @@ const zh: TranslationKeys = {
   'type.equity': '权益',
   'type.income': '收入',
   'type.expense': '支出',
+  'cat.cashbank': '现金与银行',
+  'cat.ar': '应收账款',
+  'cat.inventory': '库存',
+  'cat.fixedasset': '固定资产',
+  'cat.accumdepr': '累计折旧',
+  'cat.ap': '应付账款',
+  'cat.taxpayable': '应付税款',
+  'cat.taxreceivable': '应收税款',
+  'cat.otherliability': '其他负债',
+  'cat.equity': '权益',
+  'cat.income': '收入',
+  'cat.cogs': '销售成本',
+  'cat.expenses': '运营费用',
+  'cat.rent': '租金',
+  'cat.depreciation-expense': '折旧费用',
+  'cat.other-income': '其他收入',
+  'cat.other-expense': '其他支出',
+  'cat.tax-expense': '税费',
+  'pl.revenue': '收入',
+  'pl.totalRevenue': '总收入',
+  'pl.grossProfit': '毛利润',
+  'pl.totalOpEx': '运营费用合计',
+  'pl.ebitdar': 'EBITDAR',
+  'pl.ebitda': 'EBITDA',
+  'pl.depreciation': '折旧',
+  'pl.ebt': '税前利润',
+  'pl.tax': '税费',
+  'pl.cogs': '销售成本',
+  'pl.opEx': '运营费用',
+  'pl.rent': '租金',
+  'pl.otherIncomeExpense': '其他收入与费用',
   'guide.title': '用户指南',
   'guide.gettingStarted': '入门指南',
   'guide.defaultPin': '默认PIN码：管理员 = 000000，用户 = 111111',

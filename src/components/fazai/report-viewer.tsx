@@ -49,6 +49,7 @@ export function ReportViewer() {
   const [profitLoss, setProfitLoss] = useState<ProfitLoss | null>(null);
   const [cashFlow, setCashFlow] = useState<CashFlow | null>(null);
   const [ledgerEntries, setLedgerEntries] = useState<LedgerEntry[]>([]);
+  const [plView, setPlView] = useState<'standard' | 'ebitda' | 'ebitdar'>('standard');
 
   const accountsLoadRef = useRef(false);
 
@@ -223,29 +224,71 @@ export function ReportViewer() {
       }
       case 'profit-loss': {
         if (profitLoss) {
-          autoTable(doc, {
-            startY: yOffset,
-            head: [[t('dash.income', lang), '', '']],
-            body: profitLoss.income.items.map(i => [i.accountName, '', formatNumber(i.amount)]),
-            foot: [[t('rep.total', lang) + ' ' + t('dash.income', lang), '', formatNumber(profitLoss.income.total)]],
-            styles: { fontSize: 9 },
-            headStyles: { fillColor: [220, 38, 38] },
-            footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
-          });
-          yOffset = (doc as any).lastAutoTable.finalY + 10;
-          autoTable(doc, {
-            startY: yOffset,
-            head: [[t('dash.expense', lang), '', '']],
-            body: profitLoss.expenses.items.map(i => [i.accountName, '', formatNumber(i.amount)]),
-            foot: [[t('rep.total', lang) + ' ' + t('dash.expense', lang), '', formatNumber(profitLoss.expenses.total)]],
-            styles: { fontSize: 9 },
-            headStyles: { fillColor: [239, 68, 68] },
-            footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
-          });
-          yOffset = (doc as any).lastAutoTable.finalY + 10;
-          doc.setFontSize(12);
-          doc.setTextColor(0);
-          doc.text(`${t('rep.netProfit', lang)}: ${formatNumber(profitLoss.netProfit)}`, 14, yOffset);
+          const addSection = (title: string, section: { items: { accountName: string; amount: number }[]; total: number }, totalLabel: string) => {
+            doc.setFontSize(11);
+            doc.setTextColor(0);
+            doc.text(title, 14, yOffset);
+            yOffset += 3;
+            autoTable(doc, {
+              startY: yOffset,
+              head: [[t('rep.account', lang), '', t('rep.balance', lang)]],
+              body: section.items.map(i => [i.accountName, '', formatNumber(i.amount)]),
+              foot: [[totalLabel, '', formatNumber(section.total)]],
+              styles: { fontSize: 9 },
+              headStyles: { fillColor: [220, 38, 38] },
+              footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+            });
+            yOffset = (doc as any).lastAutoTable.finalY + 8;
+          };
+          const addSubtotal = (label: string, value: number) => {
+            doc.setFontSize(10);
+            doc.setTextColor(0);
+            doc.text(`${label}: ${formatNumber(value)}`, 14, yOffset);
+            yOffset += 6;
+          };
+
+          if (plView === 'standard') {
+            addSection(t('dash.income', lang), profitLoss.income, t('rep.total', lang));
+            addSection(t('dash.expense', lang), profitLoss.expenses, t('rep.total', lang));
+            addSubtotal(t('rep.netProfit', lang), profitLoss.netProfit);
+          } else {
+            // EBITDA / EBITDAR views
+            addSection(t('pl.revenue', lang), profitLoss.revenue, `${t('rep.total', lang)} ${t('pl.revenue', lang)}`);
+            addSection(t('pl.cogs', lang) || 'COGS', profitLoss.cogs, `${t('rep.total', lang)} ${t('pl.cogs', lang) || 'COGS'}`);
+            addSubtotal(t('pl.grossProfit', lang), profitLoss.grossProfit);
+            addSection(t('pl.opEx', lang) || 'Operating Expenses', profitLoss.operatingExpenses, `${t('pl.totalOpEx', lang) || 'Total OpEx'}`);
+
+            if (plView === 'ebitdar') {
+              addSubtotal(t('pl.ebitdar', lang), profitLoss.ebitdar);
+              addSection(t('pl.rent', lang) || 'Rent', profitLoss.rent, `${t('rep.total', lang)} ${t('pl.rent', lang) || 'Rent'}`);
+            }
+            addSubtotal(t('pl.ebitda', lang), profitLoss.ebitda);
+            addSection(t('pl.depreciation', lang), profitLoss.depreciation, `${t('rep.total', lang)} ${t('pl.depreciation', lang)}`);
+
+            // Other Income & Expense
+            const otherItems = [...profitLoss.otherIncome.items, ...profitLoss.otherExpense.items];
+            const otherTotal = profitLoss.otherIncome.total - profitLoss.otherExpense.total;
+            if (otherItems.length > 0) {
+              doc.setFontSize(11);
+              doc.setTextColor(0);
+              doc.text(t('pl.otherIncomeExpense', lang) || 'Other Income & Expense', 14, yOffset);
+              yOffset += 3;
+              autoTable(doc, {
+                startY: yOffset,
+                head: [[t('rep.account', lang), '', t('rep.balance', lang)]],
+                body: otherItems.map(i => [i.accountName, '', formatNumber(i.amount)]),
+                foot: [[t('rep.total', lang), '', formatNumber(otherTotal)]],
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [220, 38, 38] },
+                footStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
+              });
+              yOffset = (doc as any).lastAutoTable.finalY + 8;
+            }
+
+            addSubtotal(t('pl.ebt', lang), profitLoss.earningsBeforeTax);
+            addSection(t('pl.tax', lang) || 'Tax Expense', profitLoss.taxExpense, `${t('rep.total', lang)} ${t('pl.tax', lang) || 'Tax'}`);
+            addSubtotal(t('rep.netProfit', lang), profitLoss.netProfit);
+          }
         }
         break;
       }
@@ -352,15 +395,46 @@ export function ReportViewer() {
       case 'profit-loss': {
         if (profitLoss) {
           const data: Record<string, any>[] = [];
-          data.push({ [t('rep.account', lang)]: t('dash.income', lang), [t('rep.balance', lang)]: '' });
-          profitLoss.income.items.forEach(i => data.push({ [t('rep.account', lang)]: i.accountName, [t('rep.balance', lang)]: i.amount }));
-          data.push({ [t('rep.account', lang)]: t('rep.total', lang), [t('rep.balance', lang)]: profitLoss.income.total });
-          data.push({});
-          data.push({ [t('rep.account', lang)]: t('dash.expense', lang), [t('rep.balance', lang)]: '' });
-          profitLoss.expenses.items.forEach(i => data.push({ [t('rep.account', lang)]: i.accountName, [t('rep.balance', lang)]: i.amount }));
-          data.push({ [t('rep.account', lang)]: t('rep.total', lang), [t('rep.balance', lang)]: profitLoss.expenses.total });
-          data.push({});
-          data.push({ [t('rep.account', lang)]: t('rep.netProfit', lang), [t('rep.balance', lang)]: profitLoss.netProfit });
+          const acctLabel = t('rep.account', lang);
+          const balLabel = t('rep.balance', lang);
+          const addSectionRows = (title: string, section: { items: { accountName: string; amount: number }[]; total: number }, totalLabel: string) => {
+            data.push({ [acctLabel]: title, [balLabel]: '' });
+            section.items.forEach(i => data.push({ [acctLabel]: i.accountName, [balLabel]: i.amount }));
+            data.push({ [acctLabel]: totalLabel, [balLabel]: section.total });
+            data.push({});
+          };
+          const addSubtotalRow = (label: string, value: number) => {
+            data.push({ [acctLabel]: label, [balLabel]: value });
+            data.push({});
+          };
+
+          if (plView === 'standard') {
+            addSectionRows(t('dash.income', lang), profitLoss.income, t('rep.total', lang));
+            addSectionRows(t('dash.expense', lang), profitLoss.expenses, t('rep.total', lang));
+            addSubtotalRow(t('rep.netProfit', lang), profitLoss.netProfit);
+          } else {
+            addSectionRows(t('pl.revenue', lang), profitLoss.revenue, `${t('rep.total', lang)} ${t('pl.revenue', lang)}`);
+            addSectionRows(t('pl.cogs', lang) || 'COGS', profitLoss.cogs, `${t('rep.total', lang)} ${t('pl.cogs', lang) || 'COGS'}`);
+            addSubtotalRow(t('pl.grossProfit', lang), profitLoss.grossProfit);
+            addSectionRows(t('pl.opEx', lang) || 'Operating Expenses', profitLoss.operatingExpenses, `${t('pl.totalOpEx', lang) || 'Total OpEx'}`);
+
+            if (plView === 'ebitdar') {
+              addSubtotalRow(t('pl.ebitdar', lang), profitLoss.ebitdar);
+              addSectionRows(t('pl.rent', lang) || 'Rent', profitLoss.rent, `${t('rep.total', lang)} ${t('pl.rent', lang) || 'Rent'}`);
+            }
+            addSubtotalRow(t('pl.ebitda', lang), profitLoss.ebitda);
+            addSectionRows(t('pl.depreciation', lang), profitLoss.depreciation, `${t('rep.total', lang)} ${t('pl.depreciation', lang)}`);
+
+            const otherItems = [...profitLoss.otherIncome.items, ...profitLoss.otherExpense.items];
+            const otherTotal = profitLoss.otherIncome.total - profitLoss.otherExpense.total;
+            if (otherItems.length > 0) {
+              addSectionRows(t('pl.otherIncomeExpense', lang) || 'Other Income & Expense', { items: otherItems, total: otherTotal }, t('rep.total', lang));
+            }
+
+            addSubtotalRow(t('pl.ebt', lang), profitLoss.earningsBeforeTax);
+            addSectionRows(t('pl.tax', lang) || 'Tax Expense', profitLoss.taxExpense, `${t('rep.total', lang)} ${t('pl.tax', lang) || 'Tax'}`);
+            addSubtotalRow(t('rep.netProfit', lang), profitLoss.netProfit);
+          }
           const ws = XLSX.utils.json_to_sheet(data);
           XLSX.utils.book_append_sheet(wb, ws, reportTitle);
         }
@@ -558,39 +632,277 @@ export function ReportViewer() {
 
           {reportType === 'profit-loss' && profitLoss && (
             <div className="p-4">
-              <h3 className="font-semibold text-sm mb-2 text-red-600">{t('dash.income', lang)}</h3>
-              <table className="w-full text-sm mb-4">
-                <tbody>
-                  {profitLoss.income.items.map((item, idx) => (
-                    <tr key={idx} className="border-t">
-                      <td className="p-2">{item.accountName}</td>
-                      <td className="text-right p-2">{formatNumber(item.amount)}</td>
-                    </tr>
-                  ))}
-                  <tr className="border-t-2 font-semibold">
-                    <td className="p-2">{t('rep.total', lang)}</td>
-                    <td className="text-right p-2">{formatNumber(profitLoss.income.total)}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <h3 className="font-semibold text-sm mb-2 text-red-600">{t('dash.expense', lang)}</h3>
-              <table className="w-full text-sm mb-4">
-                <tbody>
-                  {profitLoss.expenses.items.map((item, idx) => (
-                    <tr key={idx} className="border-t">
-                      <td className="p-2">{item.accountName}</td>
-                      <td className="text-right p-2">{formatNumber(item.amount)}</td>
-                    </tr>
-                  ))}
-                  <tr className="border-t-2 font-semibold">
-                    <td className="p-2">{t('rep.total', lang)}</td>
-                    <td className="text-right p-2">{formatNumber(profitLoss.expenses.total)}</td>
-                  </tr>
-                </tbody>
-              </table>
-              <div className={`border-t-2 pt-3 font-bold text-lg ${profitLoss.netProfit >= 0 ? 'text-red-600' : 'text-red-600'}`}>
-                {t('rep.netProfit', lang)}: {formatNumber(profitLoss.netProfit)}
+              <div className="flex gap-1 mb-4">
+                {(['standard', 'ebitda', 'ebitdar'] as const).map(v => (
+                  <Button key={v} size="sm" variant={plView === v ? 'default' : 'outline'} className="h-7 text-[10px] px-2" onClick={() => setPlView(v)}>
+                    {v === 'standard' ? 'Standard' : v === 'ebitda' ? 'EBITDA' : 'EBITDAR'}
+                  </Button>
+                ))}
               </div>
+
+              {plView === 'standard' && (
+                <>
+                  <h3 className="font-semibold text-sm mb-2 text-red-600">{t('dash.income', lang)}</h3>
+                  <table className="w-full text-sm mb-4">
+                    <tbody>
+                      {profitLoss.income.items.map((item, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{item.accountName}</td>
+                          <td className="text-right p-2">{formatNumber(item.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-t-2 font-semibold">
+                        <td className="p-2">{t('rep.total', lang)}</td>
+                        <td className="text-right p-2">{formatNumber(profitLoss.income.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <h3 className="font-semibold text-sm mb-2 text-red-600">{t('dash.expense', lang)}</h3>
+                  <table className="w-full text-sm mb-4">
+                    <tbody>
+                      {profitLoss.expenses.items.map((item, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{item.accountName}</td>
+                          <td className="text-right p-2">{formatNumber(item.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-t-2 font-semibold">
+                        <td className="p-2">{t('rep.total', lang)}</td>
+                        <td className="text-right p-2">{formatNumber(profitLoss.expenses.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div className="border-t-2 pt-3 font-bold text-lg text-green-600">
+                    {t('rep.netProfit', lang)}: {formatNumber(profitLoss.netProfit)}
+                  </div>
+                </>
+              )}
+
+              {plView === 'ebitda' && (
+                <>
+                  <h3 className="font-semibold text-sm mb-2 text-red-600">{t('pl.revenue', lang)}</h3>
+                  <table className="w-full text-sm mb-4">
+                    <tbody>
+                      {profitLoss.revenue.items.map((item, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{item.accountName}</td>
+                          <td className="text-right p-2">{formatNumber(item.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-t-2 font-semibold">
+                        <td className="p-2">{t('pl.totalRevenue', lang)}</td>
+                        <td className="text-right p-2">{formatNumber(profitLoss.revenue.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <h3 className="font-semibold text-sm mb-2 text-red-600">{t('pl.cogs', lang)}</h3>
+                  <table className="w-full text-sm mb-4">
+                    <tbody>
+                      {profitLoss.cogs.items.map((item, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{item.accountName}</td>
+                          <td className="text-right p-2">{formatNumber(item.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-t-2 font-semibold">
+                        <td className="p-2">{t('rep.total', lang)}</td>
+                        <td className="text-right p-2">{formatNumber(profitLoss.cogs.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div className="border-t-2 pt-3 font-bold text-lg">{t('pl.grossProfit', lang)}: {formatNumber(profitLoss.grossProfit)}</div>
+                  <h3 className="font-semibold text-sm mb-2 mt-4 text-red-600">{t('pl.opEx', lang)}</h3>
+                  <table className="w-full text-sm mb-4">
+                    <tbody>
+                      {profitLoss.operatingExpenses.items.map((item, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{item.accountName}</td>
+                          <td className="text-right p-2">{formatNumber(item.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-t-2 font-semibold">
+                        <td className="p-2">{t('pl.totalOpEx', lang)}</td>
+                        <td className="text-right p-2">{formatNumber(profitLoss.operatingExpenses.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div className="border-t-2 pt-3 font-bold text-lg">{t('pl.ebitda', lang)}: {formatNumber(profitLoss.ebitda)}</div>
+                  <h3 className="font-semibold text-sm mb-2 mt-4 text-red-600">{t('pl.depreciation', lang)}</h3>
+                  <table className="w-full text-sm mb-4">
+                    <tbody>
+                      {profitLoss.depreciation.items.map((item, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{item.accountName}</td>
+                          <td className="text-right p-2">{formatNumber(item.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-t-2 font-semibold">
+                        <td className="p-2">{t('rep.total', lang)}</td>
+                        <td className="text-right p-2">{formatNumber(profitLoss.depreciation.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  {(profitLoss.otherIncome.items.length > 0 || profitLoss.otherExpense.items.length > 0) && (
+                    <>
+                      <h3 className="font-semibold text-sm mb-2 text-red-600">{t('pl.otherIncomeExpense', lang)}</h3>
+                      <table className="w-full text-sm mb-4">
+                        <tbody>
+                          {[...profitLoss.otherIncome.items, ...profitLoss.otherExpense.items].map((item, idx) => (
+                            <tr key={idx} className="border-t">
+                              <td className="p-2">{item.accountName}</td>
+                              <td className="text-right p-2">{formatNumber(item.amount)}</td>
+                            </tr>
+                          ))}
+                          <tr className="border-t-2 font-semibold">
+                            <td className="p-2">{t('rep.total', lang)}</td>
+                            <td className="text-right p-2">{formatNumber(profitLoss.otherIncome.total - profitLoss.otherExpense.total)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </>
+                  )}
+                  <div className="border-t-2 pt-3 font-bold text-lg">{t('pl.ebt', lang)}: {formatNumber(profitLoss.earningsBeforeTax)}</div>
+                  <h3 className="font-semibold text-sm mb-2 mt-4 text-red-600">{t('pl.tax', lang)}</h3>
+                  <table className="w-full text-sm mb-4">
+                    <tbody>
+                      {profitLoss.taxExpense.items.map((item, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{item.accountName}</td>
+                          <td className="text-right p-2">{formatNumber(item.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-t-2 font-semibold">
+                        <td className="p-2">{t('rep.total', lang)}</td>
+                        <td className="text-right p-2">{formatNumber(profitLoss.taxExpense.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div className="border-t-2 pt-3 font-bold text-lg text-green-600">
+                    {t('rep.netProfit', lang)}: {formatNumber(profitLoss.netProfit)}
+                  </div>
+                </>
+              )}
+
+              {plView === 'ebitdar' && (
+                <>
+                  <h3 className="font-semibold text-sm mb-2 text-red-600">{t('pl.revenue', lang)}</h3>
+                  <table className="w-full text-sm mb-4">
+                    <tbody>
+                      {profitLoss.revenue.items.map((item, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{item.accountName}</td>
+                          <td className="text-right p-2">{formatNumber(item.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-t-2 font-semibold">
+                        <td className="p-2">{t('pl.totalRevenue', lang)}</td>
+                        <td className="text-right p-2">{formatNumber(profitLoss.revenue.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <h3 className="font-semibold text-sm mb-2 text-red-600">{t('pl.cogs', lang)}</h3>
+                  <table className="w-full text-sm mb-4">
+                    <tbody>
+                      {profitLoss.cogs.items.map((item, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{item.accountName}</td>
+                          <td className="text-right p-2">{formatNumber(item.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-t-2 font-semibold">
+                        <td className="p-2">{t('rep.total', lang)}</td>
+                        <td className="text-right p-2">{formatNumber(profitLoss.cogs.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div className="border-t-2 pt-3 font-bold text-lg">{t('pl.grossProfit', lang)}: {formatNumber(profitLoss.grossProfit)}</div>
+                  <h3 className="font-semibold text-sm mb-2 mt-4 text-red-600">{t('pl.opEx', lang)}</h3>
+                  <table className="w-full text-sm mb-4">
+                    <tbody>
+                      {profitLoss.operatingExpenses.items.map((item, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{item.accountName}</td>
+                          <td className="text-right p-2">{formatNumber(item.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-t-2 font-semibold">
+                        <td className="p-2">{t('pl.totalOpEx', lang)}</td>
+                        <td className="text-right p-2">{formatNumber(profitLoss.operatingExpenses.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div className="border-t-2 pt-3 font-bold text-lg">{t('pl.ebitdar', lang)}: {formatNumber(profitLoss.ebitdar)}</div>
+                  <h3 className="font-semibold text-sm mb-2 mt-4 text-red-600">{t('pl.rent', lang)}</h3>
+                  <table className="w-full text-sm mb-4">
+                    <tbody>
+                      {profitLoss.rent.items.map((item, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{item.accountName}</td>
+                          <td className="text-right p-2">{formatNumber(item.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-t-2 font-semibold">
+                        <td className="p-2">{t('rep.total', lang)}</td>
+                        <td className="text-right p-2">{formatNumber(profitLoss.rent.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div className="border-t-2 pt-3 font-bold text-lg">{t('pl.ebitda', lang)}: {formatNumber(profitLoss.ebitda)}</div>
+                  <h3 className="font-semibold text-sm mb-2 mt-4 text-red-600">{t('pl.depreciation', lang)}</h3>
+                  <table className="w-full text-sm mb-4">
+                    <tbody>
+                      {profitLoss.depreciation.items.map((item, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{item.accountName}</td>
+                          <td className="text-right p-2">{formatNumber(item.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-t-2 font-semibold">
+                        <td className="p-2">{t('rep.total', lang)}</td>
+                        <td className="text-right p-2">{formatNumber(profitLoss.depreciation.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  {(profitLoss.otherIncome.items.length > 0 || profitLoss.otherExpense.items.length > 0) && (
+                    <>
+                      <h3 className="font-semibold text-sm mb-2 text-red-600">{t('pl.otherIncomeExpense', lang)}</h3>
+                      <table className="w-full text-sm mb-4">
+                        <tbody>
+                          {[...profitLoss.otherIncome.items, ...profitLoss.otherExpense.items].map((item, idx) => (
+                            <tr key={idx} className="border-t">
+                              <td className="p-2">{item.accountName}</td>
+                              <td className="text-right p-2">{formatNumber(item.amount)}</td>
+                            </tr>
+                          ))}
+                          <tr className="border-t-2 font-semibold">
+                            <td className="p-2">{t('rep.total', lang)}</td>
+                            <td className="text-right p-2">{formatNumber(profitLoss.otherIncome.total - profitLoss.otherExpense.total)}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </>
+                  )}
+                  <div className="border-t-2 pt-3 font-bold text-lg">{t('pl.ebt', lang)}: {formatNumber(profitLoss.earningsBeforeTax)}</div>
+                  <h3 className="font-semibold text-sm mb-2 mt-4 text-red-600">{t('pl.tax', lang)}</h3>
+                  <table className="w-full text-sm mb-4">
+                    <tbody>
+                      {profitLoss.taxExpense.items.map((item, idx) => (
+                        <tr key={idx} className="border-t">
+                          <td className="p-2">{item.accountName}</td>
+                          <td className="text-right p-2">{formatNumber(item.amount)}</td>
+                        </tr>
+                      ))}
+                      <tr className="border-t-2 font-semibold">
+                        <td className="p-2">{t('rep.total', lang)}</td>
+                        <td className="text-right p-2">{formatNumber(profitLoss.taxExpense.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div className="border-t-2 pt-3 font-bold text-lg text-green-600">
+                    {t('rep.netProfit', lang)}: {formatNumber(profitLoss.netProfit)}
+                  </div>
+                </>
+              )}
             </div>
           )}
 

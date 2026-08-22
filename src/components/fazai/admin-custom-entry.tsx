@@ -246,11 +246,18 @@ export function AdminCustomEntry() {
       income: 'acc-income-root', expense: 'acc-expense-root',
     };
 
+    const catMap: Record<string, string> = {
+      asset: 'cat-fixedasset', cashBank: 'cat-cashbank',
+      liability: 'cat-otherliability', equity: 'cat-equity',
+      income: 'cat-income', expense: 'cat-expenses',
+    };
+
     const newAccount: Account = {
       id: `acc-${uuid()}`,
       code: newCode,
       name: newAccountName.trim(),
       type: accType as Account['type'],
+      categoryId: catMap[accType] || 'cat-expenses',
       parentId: rootMap[accType],
       isSystem: false,
       isActive: true,
