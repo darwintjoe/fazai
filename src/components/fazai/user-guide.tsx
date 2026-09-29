@@ -125,7 +125,7 @@ export function UserGuide({ standalone = false, overlay = false, onClose }: User
 
   const wrapperClass = overlay
     ? 'fixed inset-0 z-[100] bg-background overflow-y-auto'
-    : 'flex flex-col gap-4 pb-20';
+    : 'flex flex-col gap-4 md:gap-6 pb-20 lg:pb-10';
 
   return (
     <div className={wrapperClass}>
@@ -154,7 +154,7 @@ export function UserGuide({ standalone = false, overlay = false, onClose }: User
       </div>
 
       {/* Content */}
-      <div className={overlay ? 'px-4' : ''}>
+      <div className={overlay ? 'px-4 md:px-6 md:max-w-3xl md:mx-auto md:pb-8' : ''}>
         <Accordion type="multiple" className="w-full">
           {guideSections.map((section, index) => {
             const Icon = section.icon;
@@ -206,7 +206,7 @@ export function UserGuide({ standalone = false, overlay = false, onClose }: User
 
       {/* Close button for overlay mode */}
       {overlay && (
-        <div className="px-4 pb-8 pt-4">
+        <div className="px-4 md:px-6 md:max-w-3xl md:mx-auto pb-8 pt-4">
           <button
             onClick={onClose}
             className="w-full py-3 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors"

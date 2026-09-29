@@ -93,14 +93,14 @@ export function History() {
   };
 
   return (
-    <div className="flex flex-col gap-4 pb-20">
+    <div className="flex flex-col gap-4 md:gap-6 pb-20 lg:pb-10">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold">{t('hist.title', lang)}</h2>
       </div>
 
       {/* Search & Filter */}
-      <div className="flex gap-2">
+      <div className="flex flex-col md:flex-row md:items-center gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
@@ -111,7 +111,7 @@ export function History() {
           />
         </div>
       </div>
-      <div className="flex gap-1.5">
+      <div className="flex gap-1.5 md:gap-2 flex-wrap">
         {(['all', 'income', 'expense'] as const).map((ft) => (
           <button
             key={ft}
@@ -133,7 +133,7 @@ export function History() {
           {t('hist.noResults', lang)}
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 md:gap-3 lg:grid lg:grid-cols-2">
           <AnimatePresence>
             {filteredTransactions.map((tx) => {
               const { isIncome, amount, primaryAccount } = getTxDetails(tx, accounts);
@@ -202,7 +202,7 @@ export function History() {
 
       {/* Transaction Detail Dialog */}
       <Dialog open={!!selectedTx} onOpenChange={() => setSelectedTx(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t('hist.detail', lang)}</DialogTitle>
           </DialogHeader>
@@ -403,7 +403,7 @@ function TransactionEditDialog({ tx, accounts, onClose, onSaved }: EditDialogPro
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('hist.editTransaction', lang)}</DialogTitle>
           <DialogDescription>{t('hist.editTransactionDesc', lang)}</DialogDescription>

@@ -126,7 +126,7 @@ export function AddAccountDialog({ open, onOpenChange, editAccount, onSaved }: A
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-sm">{editAccount ? t('admin.editAccount', lang) : t('admin.addAccount', lang)}</DialogTitle>
         </DialogHeader>

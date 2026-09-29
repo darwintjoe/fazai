@@ -57,7 +57,7 @@ export function WelcomeSetup({ onComplete }: WelcomeSetupProps) {
         animate={{ opacity: 1, y: 0 }}
         className="min-h-screen flex flex-col items-center justify-center p-4"
       >
-        <div className="w-full max-w-sm flex flex-col gap-6">
+        <div className="w-full max-w-sm md:max-w-lg flex flex-col gap-6">
           {/* Title */}
           <div className="text-center">
             <img src="/FAZAI.jpg" alt="FAZAI" className="w-16 h-16 rounded-2xl shadow-lg object-cover mx-auto mb-3" />

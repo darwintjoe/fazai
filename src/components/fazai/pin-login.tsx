@@ -84,7 +84,7 @@ export function PinLogin() {
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-red-50 to-amber-50 dark:from-gray-900 dark:to-gray-800 p-4">
+    <div className="relative min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-red-50 to-amber-50 dark:from-gray-900 dark:to-gray-800 p-4 md:p-8">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -101,7 +101,7 @@ export function PinLogin() {
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.1 }}
-        className="bg-card rounded-2xl shadow-xl border p-8 w-full max-w-sm"
+        className="bg-card rounded-2xl shadow-xl border p-8 w-full max-w-sm md:max-w-md"
       >
         <p className="text-center text-sm text-muted-foreground mb-2">
           {t('login.enterPin', lang)}

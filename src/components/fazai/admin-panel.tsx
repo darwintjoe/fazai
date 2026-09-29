@@ -34,10 +34,10 @@ export function AdminPanel() {
   }
 
   return (
-    <div className="flex flex-col gap-4 pb-20">
-      <h2 className="text-xl font-bold">{t('admin.title', lang)}</h2>
+    <div className="flex flex-col gap-4 md:gap-6 pb-20 lg:pb-10">
+      <h2 className="text-xl md:text-2xl font-bold">{t('admin.title', lang)}</h2>
 
-      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide">
+      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide lg:hidden">
         {ADMIN_TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -58,18 +58,41 @@ export function AdminPanel() {
         })}
       </div>
 
-      <motion.div
-        key={activeTab}
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.15 }}
-      >
-        {activeTab === 'admin-users' && <AdminUsers />}
-        {activeTab === 'admin-accounts' && <AdminAccounts />}
-        {activeTab === 'admin-custom' && <AdminCustomEntry />}
-        {activeTab === 'admin-ai' && <AdminAiSettings />}
-        {activeTab === 'admin-backup' && <AdminBackup />}
-      </motion.div>
+      <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-6 lg:items-start">
+        <div className="hidden lg:flex lg:flex-col lg:gap-1 lg:sticky lg:top-20">
+          {ADMIN_TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px] text-left ${
+                  isActive
+                    ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                {t(tab.labelKey, lang)}
+              </button>
+            );
+          })}
+        </div>
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 5 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.15 }}
+          className="min-w-0"
+        >
+          {activeTab === 'admin-users' && <AdminUsers />}
+          {activeTab === 'admin-accounts' && <AdminAccounts />}
+          {activeTab === 'admin-custom' && <AdminCustomEntry />}
+          {activeTab === 'admin-ai' && <AdminAiSettings />}
+          {activeTab === 'admin-backup' && <AdminBackup />}
+        </motion.div>
+      </div>
     </div>
   );
 }

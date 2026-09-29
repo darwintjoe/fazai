@@ -63,7 +63,7 @@ export function Dashboard() {
   }, [txVersion, refresh]);
 
   return (
-    <div className="flex flex-col gap-4 pb-20">
+    <div className="flex flex-col gap-4 md:gap-6 pb-20 lg:pb-10">
       {/* PWA Install Banner */}
       {isInstallable && (
         <motion.div
@@ -93,14 +93,14 @@ export function Dashboard() {
 
       {/* Balance Card with embedded AI + Camera side icons */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <Card className="relative bg-gradient-to-br from-red-600 to-red-700 text-white p-5 rounded-2xl shadow-lg border-0 overflow-hidden">
+        <Card className="relative bg-gradient-to-br from-red-600 to-red-700 text-white p-5 md:p-6 lg:p-8 rounded-2xl shadow-lg border-0 overflow-hidden">
           {/* Subtle decorative circle for depth */}
           <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/5" />
           <div className="absolute -bottom-4 -left-4 w-20 h-20 rounded-full bg-white/5" />
 
           <div className="relative">
             <p className="text-xs opacity-90">{t('dash.balance', lang)}</p>
-            <p className="text-3xl font-bold mt-1 tracking-tight">{formatNumber(balance)}</p>
+            <p className="text-3xl md:text-4xl font-bold mt-1 tracking-tight">{formatNumber(balance)}</p>
             <div className="flex gap-6 mt-3">
               <div className="flex items-center gap-1.5">
                 <ArrowUpRight className="w-3.5 h-3.5 text-red-200" />
@@ -135,7 +135,7 @@ export function Dashboard() {
       </motion.div>
 
       {/* Income / Expense — dominant action cards */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:gap-4 w-full">
         <motion.button
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -143,7 +143,7 @@ export function Dashboard() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={() => navigate('income')}
-          className="flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-red-600 to-red-700 text-white rounded-2xl p-5 shadow-md min-h-[120px] transition-transform"
+          className="flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-red-600 to-red-700 text-white rounded-2xl p-5 md:p-6 shadow-md min-h-[120px] md:min-h-[140px] transition-transform"
         >
           <TrendingUp className="w-8 h-8" />
           <span className="text-base font-bold">{t('dash.income', lang)}</span>
@@ -155,7 +155,7 @@ export function Dashboard() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.97 }}
           onClick={() => navigate('expense')}
-          className="flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-200 rounded-2xl p-5 shadow-md min-h-[120px] transition-transform"
+          className="flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 text-gray-700 dark:text-gray-200 rounded-2xl p-5 md:p-6 shadow-md min-h-[120px] md:min-h-[140px] transition-transform"
         >
           <TrendingDown className="w-8 h-8" />
           <span className="text-base font-bold">{t('dash.expense', lang)}</span>
@@ -178,7 +178,7 @@ export function Dashboard() {
             <p className="text-sm text-muted-foreground">{t('dash.noTransactions', lang)}</p>
           </Card>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 md:gap-3 lg:grid lg:grid-cols-2">
             {recentTx.map((tx) => {
               const isIncome = tx.type === 'income';
               const amount = isIncome

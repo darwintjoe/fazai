@@ -232,7 +232,7 @@ export function StatementImport() {
   const handleCancel = () => goBack();
 
   return (
-    <div className="flex flex-col gap-4 pb-20">
+    <div className="flex flex-col gap-4 md:gap-6 pb-20 lg:pb-10">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button onClick={handleCancel} className="p-2 rounded-lg hover:bg-accent">
@@ -335,7 +335,7 @@ export function StatementImport() {
             </div>
 
             {/* Transaction list */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 md:gap-3 lg:grid lg:grid-cols-2 lg:items-start">
               {transactions.map((tx, idx) => (
                 <TransactionRow
                   key={idx}

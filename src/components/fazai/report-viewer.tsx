@@ -480,7 +480,7 @@ export function ReportViewer() {
   };
 
   return (
-    <div className="flex flex-col gap-4 pb-20">
+    <div className="flex flex-col gap-4 md:gap-6 pb-20 lg:pb-10">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button onClick={() => navigate('reports')} className="p-2 rounded-lg hover:bg-accent">
@@ -558,7 +558,7 @@ export function ReportViewer() {
       </div>
 
       {/* Generate & Export Buttons */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Button size="sm" onClick={generateReport} className="text-xs">
           {t('rep.generate', lang)}
         </Button>
@@ -574,7 +574,7 @@ export function ReportViewer() {
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
           {reportType === 'trial-balance' && (
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[560px] text-sm md:text-[15px]">
               <thead>
                 <tr className="bg-red-50 dark:bg-red-950">
                   <th className="text-left p-3 font-medium">{t('rep.account', lang)}</th>
@@ -949,7 +949,7 @@ export function ReportViewer() {
           )}
 
           {reportType === 'ledger' && (
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="bg-red-50 dark:bg-red-950">
                   <th className="text-left p-3 font-medium">{t('form.date', lang)}</th>

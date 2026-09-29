@@ -183,7 +183,7 @@ export function AdminAccounts() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-sm">{t('common.confirmDelete', lang)}</DialogTitle>
           </DialogHeader>

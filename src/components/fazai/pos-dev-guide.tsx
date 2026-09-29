@@ -93,7 +93,7 @@ export function PosDevGuide({ open, onOpenChange, connection }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-sm flex items-center gap-1.5">
             <Code2 className="w-4 h-4" />

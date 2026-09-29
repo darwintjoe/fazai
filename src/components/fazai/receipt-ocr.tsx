@@ -370,7 +370,7 @@ export function ReceiptOcr() {
   const isFullscreenImage = status === 'loading-image' || status === 'scanning' || status === 'parsing';
 
   return (
-    <div className="flex flex-col gap-4 pb-20">
+    <div className="flex flex-col gap-4 md:gap-6 pb-20 lg:pb-10">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button onClick={handleCancel} className="p-2 rounded-lg hover:bg-accent">
@@ -386,7 +386,7 @@ export function ReceiptOcr() {
         />
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-6">
 
         {/* Image Preview */}
         {imageUrl && (

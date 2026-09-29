@@ -73,7 +73,7 @@ export function PosImportDialog({ open, onOpenChange, connection, onDone }: Prop
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-sm">
             {t('admin.posImportTitle', lang)} — {connection.name}
