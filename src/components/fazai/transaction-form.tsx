@@ -227,7 +227,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
   };
 
   return (
-    <div className="flex flex-col gap-4 pb-20">
+    <div className="flex flex-col gap-4 md:gap-6 pb-20 lg:pb-10">
       {/* Header */}
       <div className="flex items-center gap-3">
         <button onClick={() => navigate('dashboard')} className="p-2 rounded-lg hover:bg-accent">
@@ -238,7 +238,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
         </h2>
       </div>
 
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-6">
         {/* Receipt pre-fill indicator */}
         {fromReceipt && (
           <div className="flex items-center gap-2 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 px-3 py-2 rounded-lg text-xs">
@@ -431,7 +431,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
         <Button
           onClick={handleSave}
           disabled={saving || parseFormattedNumber(amount) <= 0 || !selectedAccountId}
-          className={`w-full h-12 text-base font-semibold ${
+          className={`w-full md:col-span-2 md:max-w-sm md:ml-auto h-12 text-base font-semibold ${
             isIncome
               ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800'
               : 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700'

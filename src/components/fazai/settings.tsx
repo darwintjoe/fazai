@@ -48,8 +48,8 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4 pb-20">
-      <h2 className="text-xl font-bold">{t('nav.settings', lang)}</h2>
+    <div className="flex flex-col gap-4 md:gap-6 pb-20 lg:pb-10">
+      <h2 className="text-xl md:text-2xl font-bold">{t('nav.settings', lang)}</h2>
 
       {/* User Guide */}
       <Card
@@ -68,7 +68,7 @@ export function SettingsPage() {
       </Card>
 
       {/* Language */}
-      <Card className="p-4">
+      <Card className="p-4 md:p-6">
         <label className="text-sm font-medium">{t('admin.language', lang)}</label>
         <div className="flex gap-2 mt-2">
           {(Object.entries(LANG_LABELS) as [Lang, string][]).map(([key, label]) => (
@@ -88,7 +88,7 @@ export function SettingsPage() {
       </Card>
 
       {/* Theme */}
-      <Card className="p-4">
+      <Card className="p-4 md:p-6">
         <label className="text-sm font-medium">{t('admin.theme', lang)}</label>
         <div className="flex gap-2 mt-2">
           <button
@@ -115,9 +115,9 @@ export function SettingsPage() {
       </Card>
 
       {/* Change PIN */}
-      <Card className="p-4">
+      <Card className="p-4 md:p-6">
         <label className="text-sm font-medium">{t('admin.changePin', lang)}</label>
-        <div className="flex flex-col gap-2 mt-2">
+        <div className="flex flex-col gap-2 mt-2 md:max-w-md">
           <Input
             type="password"
             value={oldPin}

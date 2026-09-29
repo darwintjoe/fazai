@@ -1,28 +1,31 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { t, getAccountName } from '@/lib/i18n';
-import { db, type Account } from '@/lib/fazai-db';
+import { db, type Account, type AccountCategory } from '@/lib/fazai-db';
 import { createMultiEntryTransaction } from '@/lib/ledger-engine';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon, Plus, Trash2, Search } from 'lucide-react';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger } from '@/components/ui/select';
+import { CalendarIcon, Plus, Trash2, Search, ChevronDown, ChevronRight, ChevronUp } from 'lucide-react';
 import { formatNumber, parseFormattedNumber, today } from '@/lib/format';
 import { useToast } from '@/hooks/use-toast';
-import { v4 as uuid } from 'uuid';
-
-const ACCOUNT_TYPE_ORDER = ['asset', 'cashBank', 'liability', 'equity', 'income', 'expense'] as const;
+import { AddAccountDialog } from './add-account-dialog';
 
 interface JournalRow {
   id: string;
   accountId: string;
   amount: string;     // single value
   isDebit: boolean;   // true = Dr, false = Cr
+}
+
+/** Natural Dr/Cr for an account type */
+function drCrForType(type: Account['type']): boolean {
+  return type !== 'income' && type !== 'liability' && type !== 'equity';
 }
 
 export function AdminCustomEntry() {
@@ -38,27 +41,32 @@ export function AdminCustomEntry() {
   const [calOpen, setCalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  // Track which row triggered "Add New" so we can fill it after creation
+  const [openRowId, setOpenRowId] = useState<string | null>(null);
+  const [categories, setCategories] = useState<AccountCategory[]>([]);
+  const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
+  // Row awaiting the new account created via the shared Add Account dialog
   const [addNewForRow, setAddNewForRow] = useState<string | null>(null);
-  const [newAccountName, setNewAccountName] = useState('');
-  const [showNewAccount, setShowNewAccount] = useState<string | null>(null);
-  const newAccountInputRef = useRef<HTMLInputElement>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+
+  const listRef = useRef<HTMLDivElement>(null);
+  const scrollList = (dir: 1 | -1) => {
+    listRef.current?.scrollBy({ top: dir * 160, behavior: 'smooth' });
+  };
 
   const loadAccounts = useCallback(async () => {
-    const accs = await db.accounts.filter(a => a.isActive).toArray();
-    setAccounts(accs.filter(a => a.parentId));
+    const [accs, allCats] = await Promise.all([
+      db.accounts.filter(a => a.isActive).toArray(),
+      db.accountCategories.toArray(),
+    ]);
+    const leaf = accs.filter(a => a.parentId);
+    setAccounts(leaf);
+    setCategories(allCats.filter(c => c.isActive));
+    return leaf;
   }, []);
 
   useEffect(() => {
     loadAccounts();
   }, [loadAccounts]);
-
-  // Auto-focus the new account input when shown
-  useEffect(() => {
-    if (showNewAccount && newAccountInputRef.current) {
-      newAccountInputRef.current.focus();
-    }
-  }, [showNewAccount]);
 
   const addRow = () => {
     setRows(prev => [...prev, { id: crypto.randomUUID(), accountId: '', amount: '', isDebit: false }]);
@@ -90,69 +98,38 @@ export function AdminCustomEntry() {
   const difference = totalDebit - totalCredit;
 
   /** Get the natural opposing account for a given account */
-  const getOpposingAccount = useCallback((accountId: string): string | null => {
-    const acc = accounts.find(a => a.id === accountId);
+  const getOpposingAccount = useCallback((accountId: string, list: Account[]): string | null => {
+    const acc = list.find(a => a.id === accountId);
     if (!acc) return null;
 
     // For expense/income accounts, the opposing is the default cash/bank account
     if (acc.type === 'expense' || acc.type === 'income') {
       // Prefer "Cash on Hand", then "Bank Account", then first cashBank child
-      const cashOnHand = accounts.find(a => a.id === 'acc-cash');
+      const cashOnHand = list.find(a => a.id === 'acc-cash');
       if (cashOnHand) return cashOnHand.id;
-      const bank = accounts.find(a => a.id === 'acc-bank');
+      const bank = list.find(a => a.id === 'acc-bank');
       if (bank) return bank.id;
-      const firstCashBank = accounts.find(a => a.type === 'cashBank' && a.parentId);
+      const firstCashBank = list.find(a => a.type === 'cashBank' && a.parentId);
       if (firstCashBank) return firstCashBank.id;
     }
 
-    // For cash/bank accounts, the opposing depends on context:
-    // If paired with an expense (debit), cash is credit → opposing is the expense
-    // If paired with an income (credit), cash is debit → opposing is the income
-    // This is harder to auto-detect, so we skip for cash/bank as primary
-    if (acc.type === 'cashBank') {
-      return null;
-    }
-
     return null;
-  }, [accounts]);
+  }, []);
 
-  /** Handle account selection — auto-suggest opposing account and Dr/Cr */
-  const handleAccountSelect = (rowId: string, accountId: string) => {
-    // Check if user selected "Add New"
-    if (accountId.startsWith('__new_')) {
-      const accType = accountId.replace('__new_', '');
-      setAddNewForRow(rowId); // remember which row triggered this
-      setShowNewAccount(accType);
-      setNewAccountName('');
-      return;
-    }
-
-    // Set the account for this row
+  /** Apply an account selection to a row: set account, auto Dr/Cr, auto-suggest opposing */
+  const applySelection = useCallback((rowId: string, accountId: string, list: Account[]) => {
     setRows(prev => {
       const newRows = prev.map(r => r.id === rowId ? { ...r, accountId } : r);
 
-      // Auto-set Dr/Cr based on account type
-      const acc = accounts.find(a => a.id === accountId);
+      const acc = list.find(a => a.id === accountId);
       if (acc) {
         const row = newRows.find(r => r.id === rowId);
         if (row) {
-          // Income → Cr, Expense → Dr, CashBank → Dr (for receiving) or Cr (for paying)
-          if (acc.type === 'income') {
-            row.isDebit = false; // Income is always Credit
-          } else if (acc.type === 'expense') {
-            row.isDebit = true; // Expense is always Debit
-          } else if (acc.type === 'cashBank') {
-            // Default to Dr (receiving cash), user can toggle
-            row.isDebit = true;
-          } else if (acc.type === 'asset') {
-            row.isDebit = true;
-          } else if (acc.type === 'liability' || acc.type === 'equity') {
-            row.isDebit = false;
-          }
+          row.isDebit = drCrForType(acc.type);
         }
 
         // Auto-suggest opposing account in empty rows
-        const opposingId = getOpposingAccount(accountId);
+        const opposingId = getOpposingAccount(accountId, list);
         if (opposingId) {
           // Find a row with no account set, fill it with the opposing account
           const emptyRow = newRows.find(r => !r.accountId && r.id !== rowId);
@@ -169,6 +146,22 @@ export function AdminCustomEntry() {
 
       return newRows;
     });
+  }, [getOpposingAccount]);
+
+  /** Handle account selection from the dropdown */
+  const handleAccountSelect = (rowId: string, accountId: string) => {
+    applySelection(rowId, accountId, accounts);
+  };
+
+  /** Fill the pending row after a new account is created via the shared dialog */
+  const handleAccountCreated = async (newAccount: Account) => {
+    const fresh = await loadAccounts();
+    setShowAddDialog(false);
+    const rowId = addNewForRow;
+    setAddNewForRow(null);
+    if (rowId) {
+      applySelection(rowId, newAccount.id, fresh);
+    }
   };
 
   // Auto-fill remaining balance when amounts change (auto-suggest without button)
@@ -228,62 +221,58 @@ export function AdminCustomEntry() {
     }
   };
 
-  const handleCreateAccount = async (accType: string) => {
-    if (!newAccountName.trim()) return;
+  // Group accounts by the 18 account categories (same BS / Profit & Loss structure
+  // as Admin - Accounts). All category headers show by default, collapsed;
+  // tap a header to expand. Dropdown items show the bare account name;
+  // the selected row shows "category / account".
+  const q = searchQuery.trim().toLowerCase();
+  const isSearching = q.length > 0;
+  const catLabel = (catId: string) =>
+    t(`cat.${catId.replace('cat-', '')}` as keyof import('@/lib/i18n').TranslationKeys, lang);
+  const groups = ['BS', 'PL'].map(g => ({
+    group: g,
+    cats: categories
+      .filter(c => c.group === g)
+      .sort((a, b) => a.order - b.order)
+      .map(c => {
+        const label = catLabel(c.id);
+        const items = accounts
+          .filter(a => a.categoryId === c.id)
+          .map(a => ({ acc: a, qual: `${label} / ${getAccountName(a, lang)}` }))
+          .filter(x => !isSearching || x.qual.toLowerCase().includes(q));
+        return { id: c.id, label, items };
+      })
+      .filter(c => !isSearching || c.items.length > 0),
+  }));
 
-    const existingAccounts = accounts.filter(a => a.type === accType);
-    const maxCode = existingAccounts.reduce((max, a) => {
-      const parts = a.code.split('-');
-      return parts.length > 1 ? Math.max(max, parseInt(parts[1])) : max;
-    }, 0);
-    const prefix = accType === 'asset' ? '1' : accType === 'cashBank' ? '1' : accType === 'liability' ? '2' : accType === 'equity' ? '3' : accType === 'income' ? '4' : '5';
-    const subCode = accType === 'cashBank' ? '1' : '0';
-    const newCode = `${prefix}-${subCode}${String(maxCode + 100).padStart(3, '0')}`;
-
-    const rootMap: Record<string, string> = {
-      asset: 'acc-asset-root', cashBank: 'acc-cashbank-root',
-      liability: 'acc-liability-root', equity: 'acc-equity-root',
-      income: 'acc-income-root', expense: 'acc-expense-root',
-    };
-
-    const catMap: Record<string, string> = {
-      asset: 'cat-fixedasset', cashBank: 'cat-cashbank',
-      liability: 'cat-otherliability', equity: 'cat-equity',
-      income: 'cat-income', expense: 'cat-expenses',
-    };
-
-    const newAccount: Account = {
-      id: `acc-${uuid()}`,
-      code: newCode,
-      name: newAccountName.trim(),
-      type: accType as Account['type'],
-      categoryId: catMap[accType] || 'cat-expenses',
-      parentId: rootMap[accType],
-      isSystem: false,
-      isActive: true,
-      createdAt: new Date(),
-    };
-
-    await db.accounts.add(newAccount);
-    setNewAccountName('');
-    setShowNewAccount(null);
-    await loadAccounts();
-
-    // Auto-fill the new account into the row that triggered "Add New"
-    if (addNewForRow) {
-      handleAccountSelect(addNewForRow, newAccount.id);
-      setAddNewForRow(null);
+  // "category / account" label per account id, for the selected-row display.
+  // Rendered from state (not Radix SelectValue) so the row never blanks when
+  // its group is collapsed or filtered out of the dropdown.
+  const qualById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const a of accounts) {
+      const name = getAccountName(a, lang);
+      if (!a.categoryId) { m.set(a.id, name); continue; }
+      const label = t(`cat.${a.categoryId.replace('cat-', '')}` as keyof import('@/lib/i18n').TranslationKeys, lang);
+      m.set(a.id, `${label} / ${name}`);
     }
+    return m;
+  }, [accounts, lang]);
+
+  const toggleCat = (catId: string) => {
+    setExpandedCats(prev => {
+      const next = new Set(prev);
+      if (next.has(catId)) next.delete(catId); else next.add(catId);
+      return next;
+    });
   };
 
-  // Group accounts by type for the selector
-  const groupedAccounts = ACCOUNT_TYPE_ORDER.map(accType => ({
-    type: accType,
-    label: t(`type.${accType}` as keyof import('@/lib/i18n').TranslationKeys, lang),
-    accounts: accounts
-      .filter(a => a.type === accType)
-      .filter(a => !searchQuery || getAccountName(a, lang).toLowerCase().includes(searchQuery.toLowerCase())),
-  })).filter(g => g.accounts.length > 0);
+  const openAddDialog = () => {
+    setAddNewForRow(openRowId);
+    setOpenRowId(null);
+    setSearchQuery('');
+    setShowAddDialog(true);
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -311,50 +300,6 @@ export function AdminCustomEntry() {
         </Popover>
       </div>
 
-      {/* Search accounts filter */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-        <Input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={t('form.searchAccount', lang)}
-          className="h-8 text-xs pl-9"
-        />
-      </div>
-
-      {/* New Account inline creation */}
-      {showNewAccount && (
-        <div className="flex gap-2 items-center p-2 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-800">
-          <Input
-            ref={newAccountInputRef}
-            value={newAccountName}
-            onChange={(e) => setNewAccountName(e.target.value)}
-            placeholder={lang === 'id' ? 'Nama akun baru...' : lang === 'zh' ? '新账户名称...' : 'New account name...'}
-            className="h-8 text-xs flex-1"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') handleCreateAccount(showNewAccount);
-              if (e.key === 'Escape') { setShowNewAccount(null); setAddNewForRow(null); }
-            }}
-          />
-          <Button
-            size="sm"
-            className="h-8 text-xs bg-red-600 hover:bg-red-700 text-white shrink-0"
-            onClick={() => handleCreateAccount(showNewAccount)}
-            disabled={!newAccountName.trim()}
-          >
-            {lang === 'id' ? 'Buat' : lang === 'zh' ? '创建' : 'Create'}
-          </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-8 text-xs shrink-0"
-            onClick={() => { setShowNewAccount(null); setAddNewForRow(null); }}
-          >
-            ✕
-          </Button>
-        </div>
-      )}
-
       {/* Journal Entry Rows - Mobile Optimized */}
       <div className="border rounded-lg overflow-hidden">
         {/* Header */}
@@ -366,27 +311,108 @@ export function AdminCustomEntry() {
         </div>
 
         {/* Rows */}
-        {rows.map((row, _rowIdx) => (
+        {rows.map((row) => {
+          const rowLabel = qualById.get(row.accountId);
+          return (
           <div key={row.id} className="grid grid-cols-[1fr_100px_52px_28px] gap-1 px-2 py-1.5 border-t items-center">
             {/* Account selector with grouped options */}
-            <Select value={row.accountId} onValueChange={(v) => handleAccountSelect(row.id, v)}>
+            <Select
+              value={row.accountId}
+              open={openRowId === row.id}
+              onValueChange={(v) => { setSearchQuery(''); handleAccountSelect(row.id, v); }}
+              onOpenChange={(open) => { setOpenRowId(open ? row.id : null); if (!open) { setSearchQuery(''); setExpandedCats(new Set()); } }}
+            >
               <SelectTrigger className="h-8 text-xs border-0 shadow-none p-1">
-                <SelectValue placeholder="—" />
+                <span className={`flex-1 min-w-0 truncate text-left ${rowLabel ? '' : 'text-muted-foreground'}`}>
+                  {rowLabel ?? '—'}
+                </span>
               </SelectTrigger>
-              <SelectContent>
-                {groupedAccounts.map(group => (
-                  <SelectGroup key={group.type}>
-                    <SelectLabel className="text-[10px] font-bold text-muted-foreground uppercase">{group.label}</SelectLabel>
-                    {group.accounts.map(a => (
-                      <SelectItem key={a.id} value={a.id} className="text-xs">
-                        {getAccountName(a, lang)}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value={`__new_${group.type}`} className="text-xs text-red-600 font-medium">
-                      + {lang === 'id' ? 'Tambah' : lang === 'zh' ? '新增' : 'Add New'}
-                    </SelectItem>
+              <SelectContent
+                align="start"
+                sideOffset={4}
+                className="w-[min(85vw,420px)] max-h-[min(60dvh,560px)]"
+                onCloseAutoFocus={(e) => e.preventDefault()}
+              >
+                <div
+                  className="bg-popover p-1 pb-2"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
+                  <div className="flex gap-1">
+                    <div className="relative flex-1 min-w-0">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                      <Input
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        placeholder={t('form.searchAccount', lang)}
+                        className="h-8 text-xs pl-8"
+                      />
+                    </div>
+                    <Button size="sm" variant="outline" className="h-8 text-xs shrink-0" onClick={openAddDialog}>
+                      <Plus className="w-3.5 h-3.5 mr-1" />
+                      {lang === 'id' ? 'Akun' : lang === 'zh' ? '账户' : 'Account'}
+                    </Button>
+                  </div>
+                </div>
+                <div ref={listRef} className="select-list-scroll max-h-[32dvh]">
+                {isSearching && groups.every(g => g.cats.length === 0) && (
+                  <div className="px-2 py-2 text-xs text-muted-foreground">No accounts found</div>
+                )}
+                {groups.map(g => (
+                  <SelectGroup key={g.group}>
+                    <div className="px-2 pt-1.5 text-[10px] font-semibold text-muted-foreground uppercase">
+                      {g.group === 'BS' ? 'Balance Sheet' : 'Profit & Loss'}
+                    </div>
+                    {g.cats.map(cat => {
+                      const expanded = isSearching || expandedCats.has(cat.id);
+                      return (
+                        <div key={cat.id}>
+                          <button
+                            type="button"
+                            onPointerDown={(e) => e.preventDefault()}
+                            onClick={() => toggleCat(cat.id)}
+                            className="flex w-full items-center gap-1 px-2 py-1.5 hover:bg-accent rounded-sm"
+                          >
+                            {expanded
+                              ? <ChevronDown className="w-3 h-3 shrink-0 text-muted-foreground" />
+                              : <ChevronRight className="w-3 h-3 shrink-0 text-muted-foreground" />}
+                            <span className="truncate text-xs font-medium">{cat.label}</span>
+                            <span className="ml-auto text-[10px] text-muted-foreground font-normal">({cat.items.length})</span>
+                          </button>
+                          {expanded && (cat.items.length > 0 ? cat.items.map(({ acc: a }) => (
+                            <SelectItem key={a.id} value={a.id} className="text-xs pl-7">
+                              {getAccountName(a, lang)}
+                            </SelectItem>
+                          )) : (
+                            <div className="px-2 py-1 pl-7 text-[11px] text-muted-foreground">No accounts — use + Account</div>
+                          ))}
+                        </div>
+                      );
+                    })}
                   </SelectGroup>
                 ))}
+                </div>
+                <div className="flex items-center justify-center gap-6 border-t border-border/60 py-0.5">
+                  <button
+                    type="button"
+                    aria-label="Scroll up"
+                    onPointerDown={(e) => e.preventDefault()}
+                    onClick={() => scrollList(-1)}
+                    className="p-1.5 rounded hover:bg-accent text-muted-foreground"
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Scroll down"
+                    onPointerDown={(e) => e.preventDefault()}
+                    onClick={() => scrollList(1)}
+                    className="p-1.5 rounded hover:bg-accent text-muted-foreground"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                </div>
               </SelectContent>
             </Select>
 
@@ -424,7 +450,8 @@ export function AdminCustomEntry() {
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
 
         {/* Totals */}
         <div className="grid grid-cols-[1fr_100px_52px_28px] gap-1 px-2 py-1.5 border-t-2 bg-muted/30 font-semibold text-xs">
@@ -459,6 +486,14 @@ export function AdminCustomEntry() {
       >
         {saving ? t('common.loading', lang) : t('form.save', lang)}
       </Button>
+
+      {/* Shared Add Account dialog (same as Admin - Accounts, incl. opening balance for BS) */}
+      <AddAccountDialog
+        open={showAddDialog}
+        onOpenChange={(o) => { setShowAddDialog(o); if (!o) setAddNewForRow(null); }}
+        editAccount={null}
+        onSaved={handleAccountCreated}
+      />
     </div>
   );
 }

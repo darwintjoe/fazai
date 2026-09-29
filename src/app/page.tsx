@@ -10,7 +10,7 @@ import { History } from '@/components/fazai/history';
 import { Reports } from '@/components/fazai/reports';
 import { ReportViewer } from '@/components/fazai/report-viewer';
 import { AdminPanel } from '@/components/fazai/admin-panel';
-import { BottomNav } from '@/components/fazai/bottom-nav';
+import { BottomNav, SidebarNav } from '@/components/fazai/bottom-nav';
 import { AiChat } from '@/components/fazai/ai-chat';
 import { SettingsPage } from '@/components/fazai/settings';
 import { UserGuide } from '@/components/fazai/user-guide';
@@ -147,7 +147,7 @@ export default function Home() {
 
       {/* Top header with logo, user info, and logout */}
       <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
-        <div className="max-w-2xl mx-auto px-4 h-10 flex items-center justify-between">
+        <div className="max-w-2xl md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto px-4 md:px-6 h-10 md:h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src="/FAZAI.jpg" alt="FAZAI" className="w-6 h-6 rounded-md object-cover" />
             <span className="text-xs text-muted-foreground">{userName}</span>
@@ -167,7 +167,10 @@ export default function Home() {
         </div>
       </div>
 
-      <main className="max-w-2xl mx-auto px-4 pt-3 safe-area-top">
+      <div className="max-w-2xl md:max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto px-4 md:px-6 lg:px-8">
+        <div className="lg:flex lg:gap-8 lg:items-start">
+          <SidebarNav />
+          <main className="flex-1 min-w-0 pt-3 md:pt-6 lg:pb-10 safe-area-top">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPage}
@@ -181,7 +184,9 @@ export default function Home() {
             </ErrorBoundary>
           </motion.div>
         </AnimatePresence>
-      </main>
+          </main>
+        </div>
+      </div>
       <BottomNav />
     </div>
   );
