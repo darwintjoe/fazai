@@ -4,7 +4,7 @@ import React from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useAppStore } from '@/lib/app-store';
 import { t } from '@/lib/i18n';
-import { FileText, PieChart, TrendingUp, DollarSign, BookOpen, Lock } from 'lucide-react';
+import { FileText, PieChart, TrendingUp, DollarSign, BookOpen, Lock, Users } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 
@@ -14,6 +14,7 @@ const REPORT_TYPES = [
   { id: 'profit-loss', icon: TrendingUp, color: 'from-red-600 to-amber-600' },
   { id: 'cash-flow', icon: DollarSign, color: 'from-amber-500 to-orange-600' },
   { id: 'ledger', icon: BookOpen, color: 'from-rose-500 to-pink-600' },
+  { id: 'contact-statement', icon: Users, color: 'from-teal-500 to-emerald-600' },
 ] as const;
 
 const REPORT_KEY_MAP: Record<string, string> = {
@@ -22,6 +23,7 @@ const REPORT_KEY_MAP: Record<string, string> = {
   'profit-loss': 'rep.profitLoss',
   'cash-flow': 'rep.cashFlow',
   'ledger': 'rep.ledger',
+  'contact-statement': 'rep.contacts',
 };
 
 export function Reports() {

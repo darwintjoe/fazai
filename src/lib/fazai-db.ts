@@ -46,6 +46,10 @@ export interface Transaction {
   date: Date;
   description: string;
   counterparty: string;
+  contactId?: string | null;
+  totalUnpaid?: number;
+  dueDate?: Date | null;
+  agingDays?: number;
   type: 'income' | 'expense' | 'custom';
   createdBy: string;
   createdAt: Date;
@@ -74,6 +78,16 @@ export interface AccountMonthlySummary {
 export interface Setting {
   key: string;
   value: string;
+}
+
+export interface Contact {
+  id: string;
+  name: string;
+  company: string;
+  phone: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // ============================================
@@ -145,6 +159,7 @@ class FazaiDB extends Dexie {
   posConnections!: Table<PosConnection, string>;
   posSales!: Table<PosSale, string>;
   posImports!: Table<PosImport, string>;
+  contacts!: Table<Contact, string>;
 
   constructor() {
     super('fazai-db');
@@ -241,6 +256,66 @@ class FazaiDB extends Dexie {
           await db.accounts.update(acc.id, { categoryId: catId } as any);
         }
       }
+    });
+    this.version(7).stores({
+      users: 'id, pin, name, role',
+      accounts: 'id, code, name, type, categoryId, isActive, parentId',
+      accountCategories: 'id, group, order, isActive',
+      transactions: 'id, date, type, createdBy, description, counterparty, contactId',
+      accountMonthlySummaries: 'id, accountId, year, month, [accountId+year+month]',
+      archivedTransactions: 'id, date, type, createdBy, archivedAt, contactId',
+      settings: 'key',
+      posConnections: 'id, apiKey, isActive',
+      posSales: 'id, connectionId, posSaleId, reportDate, saleDate, transactionId',
+      posImports: 'id, connectionId, importedAt',
+      contacts: 'id, name, company, phone, isActive',
+    }).upgrade(async () => {
+      const txs = await db.transactions.toArray();
+      const archived = await db.archivedTransactions.toArray();
+      const seen = new Map<string, string>();
+      const linkTx = async (tx: { id: string; counterparty: string; contactId?: string | null }, table: 'transactions' | 'archivedTransactions') => {
+        const name = (tx.counterparty || '').trim();
+        if (!name) return;
+        const key = name.toLowerCase();
+        let contactId = seen.get(key);
+        if (!contactId) {
+          const existing = await db.contacts.where('name').equalsIgnoreCase(name).first();
+          if (existing) {
+            contactId = existing.id;
+          } else {
+            contactId = `ctc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+            await db.contacts.add({
+              id: contactId,
+              name,
+              company: '',
+              phone: '',
+              isActive: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            });
+          }
+          seen.set(key, contactId);
+        }
+        if (!tx.contactId) {
+          await (db as any)[table].update(tx.id, { contactId });
+        }
+      };
+      for (const tx of txs) await linkTx(tx, 'transactions');
+      for (const tx of archived) await linkTx(tx, 'archivedTransactions');
+    });
+    // v8: release marker, schema identical to v7
+    this.version(8).stores({
+      users: 'id, pin, name, role',
+      accounts: 'id, code, name, type, categoryId, isActive, parentId',
+      accountCategories: 'id, group, order, isActive',
+      transactions: 'id, date, type, createdBy, description, counterparty, contactId',
+      accountMonthlySummaries: 'id, accountId, year, month, [accountId+year+month]',
+      archivedTransactions: 'id, date, type, createdBy, archivedAt, contactId',
+      settings: 'key',
+      posConnections: 'id, apiKey, isActive',
+      posSales: 'id, connectionId, posSaleId, reportDate, saleDate, transactionId',
+      posImports: 'id, connectionId, importedAt',
+      contacts: 'id, name, company, phone, isActive',
     });
   }
 }
@@ -401,13 +476,14 @@ export async function exportAllData() {
   const posConnections = await db.posConnections.toArray();
   const posSales = await db.posSales.toArray();
   const posImports = await db.posImports.toArray();
-  return { users, accounts, accountCategories, transactions, accountMonthlySummaries: summaries, archivedTransactions, settings, posConnections, posSales, posImports, exportedAt: new Date().toISOString(), version: 6 };
+  const contacts = await db.contacts.toArray();
+  return { users, accounts, accountCategories, transactions, accountMonthlySummaries: summaries, archivedTransactions, settings, posConnections, posSales, posImports, contacts, exportedAt: new Date().toISOString(), version: 8 };
 }
 
 export type ExportData = Awaited<ReturnType<typeof exportAllData>>;
 
 export async function importAllData(data: ExportData) {
-  await db.transaction('rw', [db.users, db.accounts, db.accountCategories, db.transactions, db.accountMonthlySummaries, db.archivedTransactions, db.settings, db.posConnections, db.posSales, db.posImports], async () => {
+  await db.transaction('rw', [db.users, db.accounts, db.accountCategories, db.transactions, db.accountMonthlySummaries, db.archivedTransactions, db.settings, db.posConnections, db.posSales, db.posImports, db.contacts], async () => {
     await db.users.clear();
     await db.accounts.clear();
     await db.accountCategories.clear();
@@ -418,6 +494,7 @@ export async function importAllData(data: ExportData) {
     await db.posConnections.clear();
     await db.posSales.clear();
     await db.posImports.clear();
+    await db.contacts.clear();
 
     if (data.accountCategories?.length) await db.accountCategories.bulkAdd(data.accountCategories);
     if (data.users?.length) await db.users.bulkAdd(data.users);
@@ -429,6 +506,7 @@ export async function importAllData(data: ExportData) {
     if (data.posConnections?.length) await db.posConnections.bulkAdd(data.posConnections);
     if (data.posSales?.length) await db.posSales.bulkAdd(data.posSales);
     if (data.posImports?.length) await db.posImports.bulkAdd(data.posImports);
+    if ((data as any).contacts?.length) await db.contacts.bulkAdd((data as any).contacts);
   });
 }
 
@@ -448,7 +526,7 @@ export async function verifyAdminPin(pin: string): Promise<boolean> {
 }
 
 export async function factoryReset(): Promise<void> {
-  await db.transaction('rw', [db.users, db.accounts, db.accountCategories, db.transactions, db.accountMonthlySummaries, db.archivedTransactions, db.settings, db.posConnections, db.posSales, db.posImports], async () => {
+  await db.transaction('rw', [db.users, db.accounts, db.accountCategories, db.transactions, db.accountMonthlySummaries, db.archivedTransactions, db.settings, db.posConnections, db.posSales, db.posImports, db.contacts], async () => {
     await db.users.clear();
     await db.accounts.clear();
     await db.accountCategories.clear();
@@ -459,6 +537,7 @@ export async function factoryReset(): Promise<void> {
     await db.posConnections.clear();
     await db.posSales.clear();
     await db.posImports.clear();
+    await db.contacts.clear();
   });
   await seedDatabase();
 }

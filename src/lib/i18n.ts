@@ -61,6 +61,7 @@ export type TranslationKeys = {
   'rep.profitLoss': string;
   'rep.cashFlow': string;
   'rep.ledger': string;
+  'rep.contacts': string;
   'rep.dateRange': string;
   'rep.from': string;
   'rep.to': string;
@@ -85,6 +86,23 @@ export type TranslationKeys = {
   'rep.selectAccount': string;
   'rep.description': string;
   'rep.noData': string;
+  'rep.customer': string;
+  'rep.paid': string;
+  'rep.unpaid': string;
+  'rep.aging': string;
+  'rep.outstandingTxns': string;
+  'rep.noOutstanding': string;
+  'contact.title': string;
+  'contact.search': string;
+  'contact.add': string;
+  'contact.edit': string;
+  'contact.name': string;
+  'contact.company': string;
+  'contact.phone': string;
+  'contact.save': string;
+  'contact.noFound': string;
+  'contact.deactivate': string;
+  'contact.activate': string;
 
   // Admin
   'admin.title': string;
@@ -199,6 +217,7 @@ export type TranslationKeys = {
   'nav.home': string;
   'nav.reports': string;
   'nav.history': string;
+  'nav.contacts': string;
   'nav.admin': string;
   'nav.settings': string;
   'nav.logout': string;
@@ -369,6 +388,7 @@ const en: TranslationKeys = {
   'rep.profitLoss': 'Profit & Loss',
   'rep.cashFlow': 'Cash Flow',
   'rep.ledger': 'Ledger',
+  'rep.contacts': 'Contacts',
   'rep.dateRange': 'Date Range',
   'rep.from': 'From',
   'rep.to': 'To',
@@ -393,6 +413,23 @@ const en: TranslationKeys = {
   'rep.selectAccount': 'Select Account',
   'rep.description': 'Description',
   'rep.noData': 'No data for this period',
+  'rep.customer': 'Customer',
+  'rep.paid': 'Total Paid',
+  'rep.unpaid': 'Total Unpaid',
+  'rep.aging': 'Aging',
+  'rep.outstandingTxns': 'Outstanding transactions',
+  'rep.noOutstanding': 'No outstanding transactions.',
+  'contact.title': 'Contacts',
+  'contact.search': 'Search name, company, phone',
+  'contact.add': 'Add',
+  'contact.edit': 'Edit contact',
+  'contact.name': 'Name',
+  'contact.company': 'Company (optional)',
+  'contact.phone': 'Phone (optional)',
+  'contact.save': 'Save',
+  'contact.noFound': 'No contacts found',
+  'contact.deactivate': 'Deactivate',
+  'contact.activate': 'Activate',
   'admin.title': 'Admin Panel',
   'admin.users': 'Users',
   'admin.accounts': 'Accounts',
@@ -499,6 +536,7 @@ const en: TranslationKeys = {
   'nav.home': 'Home',
   'nav.reports': 'Reports',
   'nav.history': 'History',
+  'nav.contacts': 'Contacts',
   'nav.admin': 'Admin',
   'nav.settings': 'Settings',
   'nav.logout': 'Logout',
@@ -655,6 +693,7 @@ const id: TranslationKeys = {
   'rep.profitLoss': 'Laba Rugi',
   'rep.cashFlow': 'Arus Kas',
   'rep.ledger': 'Buku Besar',
+  'rep.contacts': 'Kontak',
   'rep.dateRange': 'Rentang Tanggal',
   'rep.from': 'Dari',
   'rep.to': 'Sampai',
@@ -679,6 +718,23 @@ const id: TranslationKeys = {
   'rep.selectAccount': 'Pilih Akun',
   'rep.description': 'Keterangan',
   'rep.noData': 'Tidak ada data untuk periode ini',
+  'rep.customer': 'Pelanggan',
+  'rep.paid': 'Total Dibayar',
+  'rep.unpaid': 'Total Belum Dibayar',
+  'rep.aging': 'Umur',
+  'rep.outstandingTxns': 'Transaksi belum dibayar',
+  'rep.noOutstanding': 'Tidak ada transaksi belum dibayar.',
+  'contact.title': 'Kontak',
+  'contact.search': 'Cari nama, perusahaan, telepon',
+  'contact.add': 'Tambah',
+  'contact.edit': 'Edit kontak',
+  'contact.name': 'Nama',
+  'contact.company': 'Perusahaan (opsional)',
+  'contact.phone': 'Telepon (opsional)',
+  'contact.save': 'Simpan',
+  'contact.noFound': 'Tidak ada kontak',
+  'contact.deactivate': 'Nonaktifkan',
+  'contact.activate': 'Aktifkan',
   'admin.title': 'Panel Admin',
   'admin.users': 'Pengguna',
   'admin.accounts': 'Akun',
@@ -785,6 +841,7 @@ const id: TranslationKeys = {
   'nav.home': 'Beranda',
   'nav.reports': 'Laporan',
   'nav.history': 'Riwayat',
+  'nav.contacts': 'Kontak',
   'nav.admin': 'Admin',
   'nav.settings': 'Pengaturan',
   'nav.logout': 'Keluar',
@@ -941,6 +998,7 @@ const zh: TranslationKeys = {
   'rep.profitLoss': '利润表',
   'rep.cashFlow': '现金流量表',
   'rep.ledger': '分类账',
+  'rep.contacts': '联系人',
   'rep.dateRange': '日期范围',
   'rep.from': '从',
   'rep.to': '至',
@@ -965,6 +1023,23 @@ const zh: TranslationKeys = {
   'rep.selectAccount': '选择账户',
   'rep.description': '描述',
   'rep.noData': '此期间无数据',
+  'rep.customer': '客户',
+  'rep.paid': '已付总额',
+  'rep.unpaid': '未付总额',
+  'rep.aging': '账龄',
+  'rep.outstandingTxns': '未结交易',
+  'rep.noOutstanding': '无未结交易。',
+  'contact.title': '联系人',
+  'contact.search': '搜索名称、公司、电话',
+  'contact.add': '添加',
+  'contact.edit': '编辑联系人',
+  'contact.name': '名称',
+  'contact.company': '公司（可选）',
+  'contact.phone': '电话（可选）',
+  'contact.save': '保存',
+  'contact.noFound': '未找到联系人',
+  'contact.deactivate': '停用',
+  'contact.activate': '启用',
   'admin.title': '管理面板',
   'admin.users': '用户',
   'admin.accounts': '账户',
@@ -1071,6 +1146,7 @@ const zh: TranslationKeys = {
   'nav.home': '首页',
   'nav.reports': '报表',
   'nav.history': '历史',
+  'nav.contacts': '联系人',
   'nav.admin': '管理',
   'nav.settings': '设置',
   'nav.logout': '退出',

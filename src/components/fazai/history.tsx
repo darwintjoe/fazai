@@ -5,7 +5,7 @@ import { useAuthStore } from '@/lib/auth-store';
 import { useAppStore } from '@/lib/app-store';
 import { t, getAccountName } from '@/lib/i18n';
 import { formatNumber, formatDate, formatDateTime, parseFormattedNumber } from '@/lib/format';
-import { db, type Transaction, type Account } from '@/lib/fazai-db';
+import { db, type Transaction, type Account, type Contact } from '@/lib/fazai-db';
 import { deleteTransaction, editTransaction } from '@/lib/ledger-engine';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -359,6 +359,9 @@ function TransactionEditDialog({ tx, accounts, onClose, onSaved }: EditDialogPro
 
   const [amount, setAmount] = useState(formatNumber(originalAmount));
   const [counterparty, setCounterparty] = useState(tx.counterparty || '');
+  const [contactId, setContactId] = useState<string | null>((tx as any).contactId || null);
+  const [contactResults, setContactResults] = useState<Contact[]>([]);
+  const [showContactList, setShowContactList] = useState(false);
   const [description, setDescription] = useState(tx.description || '');
   const [date, setDate] = useState<Date>(new Date(tx.date));
   const [calendarOpen, setCalendarOpen] = useState(false);
@@ -383,11 +386,16 @@ function TransactionEditDialog({ tx, accounts, onClose, onSaved }: EditDialogPro
       toast({ title: t('common.error', lang), variant: 'destructive' });
       return;
     }
+    if (counterparty.trim() && !contactId) {
+      toast({ title: t('common.error', lang), variant: 'destructive' });
+      return;
+    }
     setSaving(true);
     try {
       await editTransaction(tx.id, {
         amount: numAmount,
-        counterparty,
+        counterparty: counterparty.trim(),
+        contactId,
         description,
         date,
         primaryAccountId: isIncomeOrExpense ? primaryAccountId : undefined,
@@ -428,11 +436,56 @@ function TransactionEditDialog({ tx, accounts, onClose, onSaved }: EditDialogPro
               <label className="text-sm font-medium text-muted-foreground">
                 {tx.type === 'income' ? t('form.from', lang) : t('form.to', lang)}
               </label>
-              <Input
-                value={counterparty}
-                onChange={(e) => setCounterparty(e.target.value)}
-                className="mt-1"
-              />
+              {contactId ? (
+                <div className="mt-1 flex items-center gap-2 bg-red-50 dark:bg-red-950 px-3 py-2 rounded-lg">
+                  <span className="text-sm font-medium">{counterparty}</span>
+                  <button onClick={() => { setContactId(null); setCounterparty(''); }} className="text-xs text-muted-foreground hover:text-foreground ml-auto">✕</button>
+                </div>
+              ) : (
+                <div className="relative mt-1">
+                  <Input
+                    value={counterparty}
+                    onChange={async (e) => {
+                      const v = e.target.value;
+                      setCounterparty(v);
+                      const q = v.trim().toLowerCase();
+                      if (!q) {
+                        setContactResults([]);
+                        setShowContactList(false);
+                        return;
+                      }
+                      const all = await db.contacts.filter(c => c.isActive).toArray();
+                      const hits = all.filter(c =>
+                        c.name.toLowerCase().includes(q) ||
+                        c.company.toLowerCase().includes(q) ||
+                        c.phone.includes(q)
+                      ).slice(0, 8);
+                      setContactResults(hits);
+                      setShowContactList(true);
+                    }}
+                    className="mt-1"
+                  />
+                  {showContactList && counterparty.trim() && (
+                    <div className="absolute z-10 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {contactResults.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => { setContactId(c.id); setCounterparty(c.name); setShowContactList(false); }}
+                          className="flex flex-col w-full px-3 py-2 text-left text-sm hover:bg-accent"
+                        >
+                          <span className="font-medium">{c.name}</span>
+                          {(c.company || c.phone) && (
+                            <span className="text-xs text-muted-foreground">{[c.company, c.phone].filter(Boolean).join(' • ')}</span>
+                          )}
+                        </button>
+                      ))}
+                      {contactResults.length === 0 && (
+                        <p className="text-xs text-muted-foreground px-3 py-2">No match. Create contact in Contacts page.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

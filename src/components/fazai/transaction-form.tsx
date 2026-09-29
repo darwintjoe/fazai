@@ -5,7 +5,7 @@ import { useAuthStore } from '@/lib/auth-store';
 import { useAppStore, type PendingReceipt } from '@/lib/app-store';
 import { t, getAccountName } from '@/lib/i18n';
 import { formatNumber, parseFormattedNumber, today } from '@/lib/format';
-import { db, type Account } from '@/lib/fazai-db';
+import { db, type Account, type Contact } from '@/lib/fazai-db';
 import { createIncomeTransaction, createExpenseTransaction } from '@/lib/ledger-engine';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +29,12 @@ export function TransactionForm({ type }: TransactionFormProps) {
 
   const [amount, setAmount] = useState('');
   const [counterparty, setCounterparty] = useState('');
+  const [contactId, setContactId] = useState<string | null>(null);
+  const [contactResults, setContactResults] = useState<Contact[]>([]);
+  const [showContactList, setShowContactList] = useState(false);
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [newCompany, setNewCompany] = useState('');
+  const [newPhone, setNewPhone] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [opponentAccountId, setOpponentAccountId] = useState('acc-cash');
   const [description, setDescription] = useState('');
@@ -62,6 +68,31 @@ export function TransactionForm({ type }: TransactionFormProps) {
   useEffect(() => {
     loadAccounts();
   }, [loadAccounts]);
+
+  useEffect(() => {
+    const q = counterparty.trim().toLowerCase();
+    if (!q) {
+      setContactResults([]);
+      setShowContactList(false);
+      setShowAddContact(false);
+      return;
+    }
+    if (contactId) return;
+    let cancelled = false;
+    (async () => {
+      const all = await db.contacts.filter(c => c.isActive).toArray();
+      if (cancelled) return;
+      const hits = all.filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        c.company.toLowerCase().includes(q) ||
+        c.phone.includes(q)
+      ).slice(0, 8);
+      setContactResults(hits);
+      setShowContactList(true);
+      setShowAddContact(hits.length === 0);
+    })();
+    return () => { cancelled = true; };
+  }, [counterparty, contactId]);
 
   // Pre-fill from receipt OCR data
   useEffect(() => {
@@ -173,13 +204,15 @@ export function TransactionForm({ type }: TransactionFormProps) {
   const handleSave = async () => {
     const numAmount = parseFormattedNumber(amount);
     if (numAmount <= 0 || !selectedAccountId || !opponentAccountId) return;
+    if (counterparty.trim() && !contactId) return;
 
     setSaving(true);
     try {
       if (isIncome) {
         await createIncomeTransaction({
           amount: numAmount,
-          counterparty,
+          counterparty: counterparty.trim(),
+          contactId,
           incomeAccountId: selectedAccountId,
           opponentAccountId,
           description,
@@ -189,7 +222,8 @@ export function TransactionForm({ type }: TransactionFormProps) {
       } else {
         await createExpenseTransaction({
           amount: numAmount,
-          counterparty,
+          counterparty: counterparty.trim(),
+          contactId,
           expenseAccountId: selectedAccountId,
           opponentAccountId,
           description,
@@ -265,13 +299,69 @@ export function TransactionForm({ type }: TransactionFormProps) {
           <label className="text-sm font-medium text-muted-foreground">
             {isIncome ? t('form.from', lang) : t('form.to', lang)}
           </label>
-          <Input
-            value={counterparty}
-            onChange={(e) => setCounterparty(e.target.value)}
-            placeholder={isIncome ? 'PT Maju Jaya' : 'Grocery Store'}
-            className="mt-1"
-            style={{ color: counterparty ? undefined : 'var(--muted-foreground)' }}
-          />
+          {contactId ? (
+            <div className="mt-1 flex items-center gap-2 bg-red-50 dark:bg-red-950 px-3 py-2 rounded-lg">
+              <span className="text-sm font-medium">{counterparty}</span>
+              <button onClick={() => { setContactId(null); setCounterparty(''); }} className="text-xs text-muted-foreground hover:text-foreground ml-auto">✕</button>
+            </div>
+          ) : (
+            <div className="relative mt-1">
+              <Input
+                value={counterparty}
+                onChange={(e) => setCounterparty(e.target.value)}
+                onFocus={() => { if (counterparty.trim()) setShowContactList(true); }}
+                placeholder={isIncome ? 'PT Maju Jaya' : 'Grocery Store'}
+                className="mt-1"
+                style={{ color: counterparty ? undefined : 'var(--muted-foreground)' }}
+              />
+              {showContactList && counterparty.trim() && (
+                <div className="absolute z-10 w-full mt-1 bg-background border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {contactResults.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => { setContactId(c.id); setCounterparty(c.name); setShowContactList(false); setShowAddContact(false); }}
+                      className="flex flex-col w-full px-3 py-2 text-left text-sm hover:bg-accent"
+                    >
+                      <span className="font-medium">{c.name}</span>
+                      {(c.company || c.phone) && (
+                        <span className="text-xs text-muted-foreground">{[c.company, c.phone].filter(Boolean).join(' • ')}</span>
+                      )}
+                    </button>
+                  ))}
+                  {showAddContact && (
+                    <div className="px-3 py-2 border-t">
+                      <p className="text-xs text-muted-foreground mb-2">No match. Add as new contact?</p>
+                      <Input
+                        value={newCompany}
+                        onChange={(e) => setNewCompany(e.target.value)}
+                        placeholder="Company (optional)"
+                        className="text-sm mb-2"
+                      />
+                      <Input
+                        value={newPhone}
+                        onChange={(e) => setNewPhone(e.target.value)}
+                        placeholder="Phone (optional)"
+                        className="text-sm mb-2"
+                      />
+                      <Button size="sm" variant="outline" onClick={async () => {
+                        const name = counterparty.trim();
+                        if (!name) return;
+                        const id = `ctc-${uuid()}`;
+                        await db.contacts.add({ id, name, company: newCompany.trim(), phone: newPhone.trim(), isActive: true, createdAt: new Date(), updatedAt: new Date() });
+                        setContactId(id);
+                        setNewCompany('');
+                        setNewPhone('');
+                        setShowContactList(false);
+                        setShowAddContact(false);
+                      }}>
+                        Add &quot;{counterparty.trim()}&quot;
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Account Selection — Hidden until search */}

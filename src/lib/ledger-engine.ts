@@ -303,19 +303,21 @@ export async function getAccountBalances(fromDate?: Date, toDate?: Date): Promis
 export async function createIncomeTransaction(params: {
   amount: number;
   counterparty: string;
+  contactId?: string | null;
   incomeAccountId: string;
   opponentAccountId: string;
   description: string;
   date: Date;
   userId: string;
 }): Promise<Transaction> {
-  const { amount, counterparty, incomeAccountId, opponentAccountId, description, date, userId } = params;
+  const { amount, counterparty, contactId, incomeAccountId, opponentAccountId, description, date, userId } = params;
 
   const transaction: Transaction = {
     id: uuid(),
     date,
     description,
     counterparty,
+    contactId: contactId || null,
     type: 'income',
     createdBy: userId,
     createdAt: new Date(),
@@ -342,19 +344,21 @@ export async function createIncomeTransaction(params: {
 export async function createExpenseTransaction(params: {
   amount: number;
   counterparty: string;
+  contactId?: string | null;
   expenseAccountId: string;
   opponentAccountId: string;
   description: string;
   date: Date;
   userId: string;
 }): Promise<Transaction> {
-  const { amount, counterparty, expenseAccountId, opponentAccountId, description, date, userId } = params;
+  const { amount, counterparty, contactId, expenseAccountId, opponentAccountId, description, date, userId } = params;
 
   const transaction: Transaction = {
     id: uuid(),
     date,
     description,
     counterparty,
+    contactId: contactId || null,
     type: 'expense',
     createdBy: userId,
     createdAt: new Date(),
@@ -477,6 +481,7 @@ export async function editTransaction(
   params: {
     amount: number;
     counterparty?: string;
+    contactId?: string | null;
     primaryAccountId?: string;   // income/expense category account
     opponentAccountId?: string;  // cash/bank account
     description?: string;
@@ -494,6 +499,7 @@ export async function editTransaction(
   const {
     amount,
     counterparty = tx.counterparty,
+    contactId = (tx as any).contactId ?? null,
     primaryAccountId,
     opponentAccountId,
     description = tx.description,
@@ -541,6 +547,7 @@ export async function editTransaction(
 
   const updated: Partial<Transaction> = {
     counterparty,
+    contactId,
     description,
     date,
     entries,
