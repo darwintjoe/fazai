@@ -8,9 +8,10 @@ import { getAccountBalance } from '@/lib/ledger-engine';
 import { formatNumber } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, ChevronDown, ChevronRight, ToggleLeft, ToggleRight, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AddAccountDialog } from './add-account-dialog';
+import { AccountImport } from './account-import';
 
 const GROUPS = ['BS', 'PL'] as const;
 
@@ -25,6 +26,7 @@ export function AdminAccounts() {
   const [showAdd, setShowAdd] = useState(false);
   const [editAccount, setEditAccount] = useState<Account | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Account | null>(null);
+  const [showImport, setShowImport] = useState(false);
 
   const loadData = useCallback(async () => {
     const [accList, allCats] = await Promise.all([
@@ -164,11 +166,20 @@ export function AdminAccounts() {
 
   return (
     <div className="flex flex-col gap-3">
+      {showImport ? (
+        <AccountImport onBack={() => { setShowImport(false); loadData(); }} />
+      ) : (
+      <>
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-sm">{t('admin.accounts', lang)}</h3>
-        <Button size="sm" onClick={() => { setEditAccount(null); setShowAdd(true); }} className="h-8 text-xs">
-          <Plus className="w-3.5 h-3.5 mr-1" /> {t('admin.addAccount', lang)}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setShowImport(true)} className="h-8 text-xs">
+            <Upload className="w-3.5 h-3.5 mr-1" /> Import
+          </Button>
+          <Button size="sm" onClick={() => { setEditAccount(null); setShowAdd(true); }} className="h-8 text-xs">
+            <Plus className="w-3.5 h-3.5 mr-1" /> {t('admin.addAccount', lang)}
+          </Button>
+        </div>
       </div>
 
       {GROUPS.map(g => renderGroup(g))}
@@ -197,6 +208,8 @@ export function AdminAccounts() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </>
+      )}
     </div>
   );
 }
