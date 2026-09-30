@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
       currentBalance = 0,
       mtdIncome = 0,
       mtdExpense = 0,
+      contacts = [],
       lang = 'en',
     } = body as {
       accounts: Array<{
@@ -31,6 +32,7 @@ export async function POST(request: NextRequest) {
       }>;
       recentTransactions: Array<{
         id: string; date: string; description: string; counterparty: string;
+        contactId?: string | null;
         type: string; entries: Array<{ accountId: string; debit: number; credit: number }>;
       }>;
       monthlySummaries: Array<{
@@ -40,6 +42,7 @@ export async function POST(request: NextRequest) {
       currentBalance: number;
       mtdIncome: number;
       mtdExpense: number;
+      contacts: Array<{ id: string; name: string; company: string; phone: string }>;
       lang: string;
     };
 
@@ -136,8 +139,36 @@ export async function POST(request: NextRequest) {
         const typeLabel = tx.type === 'income' ? '+' : tx.type === 'expense' ? '-' : '~';
         const acc = accounts.find(a => a.id === txAccountId);
         const accName = acc ? getAccountName(acc, lang) : '';
-        const counterparty = tx.counterparty ? ` (${tx.counterparty})` : '';
+        const contact = tx.contactId ? contacts.find(c => c.id === tx.contactId) : null;
+        const counterparty = contact ? ` (${contact.name})` : tx.counterparty ? ` (${tx.counterparty})` : '';
         lines.push(`  [${date}] ${typeLabel}${fmt(amount)} ${tx.description}${counterparty} [${accName}] (txId: ${tx.id})`);
+      }
+      lines.push('');
+    }
+
+    // Contacts (linked counterparties)
+    if (contacts.length > 0) {
+      lines.push(`=== CONTACTS (${contacts.length}) ===`);
+      const totals = new Map<string, { ar: number; ap: number }>();
+      for (const tx of recentTransactions) {
+        if (!tx.contactId) continue;
+        let amount = 0;
+        for (const entry of tx.entries) {
+          const acc = accounts.find(a => a.id === entry.accountId);
+          if (!acc) continue;
+          if (tx.type === 'income' && acc.type === 'income') amount = Math.max(amount, entry.credit);
+          if (tx.type === 'expense' && acc.type === 'expense') amount = Math.max(amount, entry.debit);
+        }
+        const row = totals.get(tx.contactId) || { ar: 0, ap: 0 };
+        if (tx.type === 'income') row.ar += amount;
+        else if (tx.type === 'expense') row.ap += amount;
+        totals.set(tx.contactId, row);
+      }
+      for (const c of contacts.slice(0, 100)) {
+        const t = totals.get(c.id);
+        const extra = [c.company, c.phone].filter(Boolean).join(' • ');
+        const paid = t ? ` AR paid: ${fmt(t.ar)}, AP paid: ${fmt(t.ap)}` : '';
+        lines.push(`  - ${c.name}${extra ? ` (${extra})` : ''} (contactId: ${c.id})${paid}`);
       }
       lines.push('');
     }

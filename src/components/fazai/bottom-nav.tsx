@@ -4,7 +4,7 @@ import React from 'react';
 import { useAppStore } from '@/lib/app-store';
 import { useAuthStore } from '@/lib/auth-store';
 import { t } from '@/lib/i18n';
-import { Home, BarChart3, History, Shield, Settings } from 'lucide-react';
+import { Home, BarChart3, History, Shield, Settings, Users } from 'lucide-react';
 
 export function BottomNav() {
   const { currentPage, navigate } = useAppStore();
@@ -15,6 +15,7 @@ export function BottomNav() {
     { id: 'dashboard' as const, icon: Home, label: t('nav.home', lang) },
     ...(isAdmin ? [{ id: 'reports' as const, icon: BarChart3, label: t('nav.reports', lang) }] : []),
     { id: 'history' as const, icon: History, label: t('nav.history', lang) },
+    { id: 'contacts' as const, icon: Users, label: t('nav.contacts', lang) },
     ...(isAdmin ? [{ id: 'admin' as const, icon: Shield, label: t('nav.admin', lang) }] : []),
     { id: 'settings' as const, icon: Settings, label: t('nav.settings', lang) },
   ];
@@ -56,6 +57,7 @@ export function SidebarNav() {
     { id: 'dashboard' as const, icon: Home, label: t('nav.home', lang) },
     ...(isAdmin ? [{ id: 'reports' as const, icon: BarChart3, label: t('nav.reports', lang) }] : []),
     { id: 'history' as const, icon: History, label: t('nav.history', lang) },
+    { id: 'contacts' as const, icon: Users, label: t('nav.contacts', lang) },
     ...(isAdmin ? [{ id: 'admin' as const, icon: Shield, label: t('nav.admin', lang) }] : []),
     { id: 'settings' as const, icon: Settings, label: t('nav.settings', lang) },
   ];

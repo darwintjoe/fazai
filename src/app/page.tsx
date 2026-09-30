@@ -7,6 +7,7 @@ import { PinLogin } from '@/components/fazai/pin-login';
 import { Dashboard } from '@/components/fazai/dashboard';
 import { TransactionForm } from '@/components/fazai/transaction-form';
 import { History } from '@/components/fazai/history';
+import { Contacts } from '@/components/fazai/contacts';
 import { Reports } from '@/components/fazai/reports';
 import { ReportViewer } from '@/components/fazai/report-viewer';
 import { AdminPanel } from '@/components/fazai/admin-panel';
@@ -116,6 +117,8 @@ export default function Home() {
         return <TransactionForm type="expense" />;
       case 'history':
         return <History />;
+      case 'contacts':
+        return <Contacts />;
       case 'reports':
         return <Reports />;
       case 'report-viewer':
