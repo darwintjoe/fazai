@@ -7,6 +7,7 @@ import { t } from '@/lib/i18n';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { ContactStatement } from '@/components/fazai/contact-statement';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Plus, Pencil } from 'lucide-react';
 import { v4 as uuid } from 'uuid';
@@ -20,6 +21,7 @@ export function Contacts() {
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
   const [phone, setPhone] = useState('');
+  const [tab, setTab] = useState<'list' | 'statement'>('list');
 
   const loadContacts = useCallback(async () => {
     const list = await db.contacts.orderBy('name').toArray();
@@ -82,6 +84,17 @@ export function Contacts() {
           <Plus className="w-4 h-4 mr-1" /> {t('contact.add', lang)}
         </Button>
       </div>
+      <div className="flex gap-1.5">
+        {(['list', 'statement'] as const).map(v => (
+          <Button key={v} size="sm" variant={tab === v ? 'default' : 'outline'} className="h-7 text-[11px] px-3 rounded-full capitalize" onClick={() => setTab(v)}>
+            {v === 'list' ? (lang === 'id' ? 'Daftar' : lang === 'zh' ? '列表' : 'List') : (lang === 'id' ? 'Pernyataan' : lang === 'zh' ? '对账单' : 'Statement')}
+          </Button>
+        ))}
+      </div>
+      {tab === 'statement' ? (
+        <Card className="overflow-hidden"><div className="overflow-x-auto p-4"><ContactStatement /></div></Card>
+      ) : (
+      <>
       <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t('contact.search', lang)} />
       <div className="flex flex-col gap-2">
         {filtered.map((c) => (
@@ -121,6 +134,8 @@ export function Contacts() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </>
+      )}
     </div>
   );
 }
