@@ -62,7 +62,7 @@ export function SettingsPage() {
           </div>
           <div>
             <p className="font-medium text-sm">{t('guide.title', lang)}</p>
-            <p className="text-xs text-muted-foreground">{t('guide.overview', lang)}</p>
+            <p className="text-xs text-muted-foreground">{t('guide.first', lang)}</p>
           </div>
         </div>
       </Card>
