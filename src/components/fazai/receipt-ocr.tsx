@@ -64,6 +64,7 @@ export function ReceiptOcr() {
   const [accountSearchQuery, setAccountSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const blurTimeoutRef = useRef<number | null>(null);
   const [parseSource, setParseSource] = useState<'ai' | 'local' | ''>('');
 
   // Load accounts for the selected transaction type
@@ -587,7 +588,7 @@ export function ReceiptOcr() {
                 <label className="text-sm font-medium text-muted-foreground">{t('form.account', lang)}</label>
                 {selectedAccountId && (
                   <div className="mt-1 mb-1.5 flex items-center gap-2 bg-red-50 dark:bg-red-950 px-3 py-2 rounded-lg">
-                    <span className="text-sm font-medium">{getAccountName(categoryAccounts.find(a => a.id === selectedAccountId)!, lang)}</span>
+                    <span className="text-sm font-medium">{(() => { const sel = categoryAccounts.find(a => a.id === selectedAccountId); return sel ? getAccountName(sel, lang) : selectedAccountId; })()}</span>
                     <button onClick={() => { setSelectedAccountId(''); setAccountSearchQuery(''); }} className="text-xs text-muted-foreground hover:text-foreground ml-auto">✕</button>
                   </div>
                 )}
@@ -598,10 +599,14 @@ export function ReceiptOcr() {
                     value={accountSearchQuery}
                     onChange={(e) => setAccountSearchQuery(e.target.value)}
                     onFocus={() => {
+                      if (blurTimeoutRef.current) { window.clearTimeout(blurTimeoutRef.current); blurTimeoutRef.current = null; }
                       setIsSearchFocused(true);
                       searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }}
-                    onBlur={() => { setIsSearchFocused(false); setAccountSearchQuery(''); }}
+                    onBlur={() => {
+                      // Delay hiding so tap/click on a result registers before unmount (blur fires before click).
+                      blurTimeoutRef.current = window.setTimeout(() => { setIsSearchFocused(false); setAccountSearchQuery(''); }, 150);
+                    }}
                     readOnly={!accountSearchQuery}
                     onClick={() => { if (!accountSearchQuery) searchInputRef.current?.removeAttribute('readonly'); }}
                     placeholder={t('form.searchAccount', lang)}
@@ -613,7 +618,9 @@ export function ReceiptOcr() {
                     {filteredAccounts.map((acc) => (
                       <button
                         key={acc.id}
-                        onClick={() => { setSelectedAccountId(acc.id); setAccountSearchQuery(''); }}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => { setSelectedAccountId(acc.id); setAccountSearchQuery(''); setIsSearchFocused(false); searchInputRef.current?.blur(); }}
                         className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                           selectedAccountId === acc.id
                             ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
