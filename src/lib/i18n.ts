@@ -265,41 +265,20 @@ export type TranslationKeys = {
   'pl.rent': string;
   'pl.otherIncomeExpense': string;
 
-  // Guide
+  // Guide — intention flow, short user POV
   'guide.title': string;
-  'guide.gettingStarted': string;
-  'guide.defaultPin': string;
-  'guide.overview': string;
-  'guide.overview.desc': string;
-  'guide.login': string;
-  'guide.login.desc': string;
-  'guide.dashboard': string;
-  'guide.dashboard.desc': string;
-  'guide.incomeExpense': string;
-  'guide.incomeExpense.desc': string;
-  'guide.accounts': string;
-  'guide.accounts.desc': string;
-  'guide.reports': string;
-  'guide.reports.desc': string;
-  'guide.reports.bs': string;
-  'guide.reports.tb': string;
-  'guide.reports.pl': string;
-  'guide.reports.cf': string;
-  'guide.reports.ledger': string;
-  'guide.admin': string;
-  'guide.admin.desc': string;
-  'guide.backup': string;
-  'guide.backup.desc': string;
-  'guide.factoryReset': string;
-  'guide.factoryResetDesc': string;
-  'guide.ai': string;
-  'guide.ai.desc': string;
-  'guide.tips': string;
-  'guide.tips.desc': string;
-
-  // Migration guide
-  'guide.migration': string;
-  'guide.migration.desc': string;
+  'guide.first': string;
+  'guide.first.desc': string;
+  'guide.setup': string;
+  'guide.setup.desc': string;
+  'guide.daily': string;
+  'guide.daily.desc': string;
+  'guide.check': string;
+  'guide.check.desc': string;
+  'guide.safe': string;
+  'guide.safe.desc': string;
+  'guide.fix': string;
+  'guide.fix.desc': string;
 
   // Welcome Setup
   'setup.welcomeTitle': string;
@@ -578,37 +557,18 @@ const en: TranslationKeys = {
   'pl.rent': 'Rent',
   'pl.otherIncomeExpense': 'Other Income & Expense',
   'guide.title': 'User Guide',
-  'guide.gettingStarted': 'Getting Started',
-  'guide.defaultPin': 'Default PINs: Admin = 000000, User = 111111',
-  'guide.overview': 'Overview',
-  'guide.overview.desc': 'FAZAI is a simple cash-basis accounting app with a double-entry ledger engine running behind a clean Income/Expense interface. All data is stored locally on your device using IndexedDB — nothing is sent to any server. Your financial information stays completely private and secure on your device. The app works offline and can be installed as a Progressive Web App (PWA) for quick access from your home screen.',
-  'guide.login': 'Login & PIN',
-  'guide.login.desc': 'Enter your 6-digit PIN to unlock the app. Default PINs: Admin = 000000, User = 111111. Each user has a role (Admin or User) that controls access to features. Admins can access the Admin Panel for managing users, accounts, and backups. You can change your PIN anytime from Settings after logging in.',
-  'guide.dashboard': 'Dashboard',
-  'guide.dashboard.desc': 'The dashboard shows your current total balance, today\'s income and expense totals, and a list of recent transactions. Use the red Income and gray Expense buttons to quickly add new transactions. Tap any recent transaction to view its details in the History page.',
-  'guide.incomeExpense': 'Income & Expense',
-  'guide.incomeExpense.desc': 'Behind the simple form, FAZAI creates proper double-entry journal entries. For Income: the income account is credited and your Cash/Bank account is debited. For Expense: the expense account is debited and your Cash/Bank account is credited. This ensures your books always balance while keeping the interface simple and intuitive.',
-  'guide.accounts': 'Accounts',
-  'guide.accounts.desc': 'FAZAI uses 6 account types: Asset, Cash/Bank, Liability, Equity, Income, and Expense. Cash/Bank accounts are a special sub-type of Asset used for transaction entry. Opening Balance is tracked as a child of Equity. When creating a new account, you choose its type and an optional parent account for hierarchical grouping.',
-  'guide.reports': 'Reports',
-  'guide.reports.desc': 'All reports derive from account movements and entries — the source of truth is always the ledger, not the transaction type.',
-  'guide.reports.bs': 'Balance Sheet — Shows assets, liabilities, and equity as of a specific month-end date. Select the month and year to generate.',
-  'guide.reports.tb': 'Trial Balance — Lists all active accounts with their debit/credit balances as of a specific date. Income and Expense accounts show Year-to-Date (YTD) figures.',
-  'guide.reports.pl': 'Profit & Loss — Shows income and expense categories for a selected period. Defaults to Month-to-Date (MTD). Select custom start and end dates as needed.',
-  'guide.reports.cf': 'Cash Flow — Displays cash inflows and outflows from Cash/Bank accounts for a selected period. Defaults to MTD. Helps you understand where your cash is coming from and going to.',
-  'guide.reports.ledger': 'Ledger — Shows all entries for a specific account in chronological order. Select an account and date range to view its transaction history with running balances.',
-  'guide.admin': 'Admin Panel',
-  'guide.admin.desc': 'Only accessible by Admin users. Manage Users: add, edit, or delete user accounts and assign roles. Manage Accounts: create, edit, activate/deactivate accounts, organize by type. Custom Entry: create manual double-entry journal entries with specific debit and credit accounts. Settings: configure app preferences.',
-  'guide.backup': 'Backup & Restore',
-  'guide.backup.desc': 'Export all your data as a JSON file for safekeeping. Import a previously exported backup to restore your data. Factory Reset: permanently deletes ALL data. For safety, you must type a randomly generated challenge code and enter the Admin PIN to confirm. This prevents accidental resets.',
-  'guide.factoryReset': 'Factory Reset',
-  'guide.factoryResetDesc': 'Factory Reset permanently deletes ALL data. A random challenge code must be typed and Admin PIN entered to confirm, preventing accidental resets.',
-  'guide.ai': 'AI Assistant',
-  'guide.ai.desc': 'The floating AI chat button lets you record transactions and query your finances using everyday language! Type things like "lunch 25k", "terima gaji 1 juta", or "how much did I spend this month?" and the AI will respond. To use the AI, you need to configure an API key first: go to Admin Panel → AI Settings, select your provider (OpenAI, Anthropic, Google, Groq, DeepSeek, Qwen, Kimi, or Z.Ai), enter your API key, and test the connection. Your API key is stored locally on your device and never sent anywhere except your chosen provider. If the AI is unavailable, a keyword-based fallback will still work for simple transactions.',
-  'guide.tips': 'Tips & Notes',
-  'guide.tips.desc': 'All data is stored locally on your device — back up regularly using the Export function! Avoid clearing site data in browser settings, as this will erase all your accounting records. Keep your Admin PIN secure — it\'s required for factory reset protection. The app works best in portrait mode on mobile devices. Install as a PWA for the best experience with offline support.',
-  'guide.migration': 'Migrate Guide',
-  'guide.migration.desc': 'Follow these steps to set up FAZAI from your existing balance sheet:\n\n1. Prepare your latest balance sheet — gather your most recent balance sheet document as reference.\n\n2. Login as Admin — use the Admin PIN (default: 000000) to access the Admin Panel.\n\n3. Go to Accounts section — add all accounts following your latest balance sheet. For each account, select the correct account type (Asset, Cash/Bank, Liability, Equity, Income, or Expense) and enter the current balance.\n\n4. Review all accounts — double-check each account\'s type and balance. You may disable any unused pre-created accounts by toggling them off.\n\n5. Go to Reports → Balance Sheet — verify that all figures match your original balance sheet. The total assets should equal liabilities plus equity.\n\n6. That\'s all — FAZAI is ready to use! Start recording your daily income and expenses.',
+  'guide.first': '1. First Time Open',
+  'guide.first.desc': '1. Install as app for best use: tap Install on the dashboard or Settings. Works offline.\n2. Enter your name / business name — it prints on reports.\n3. Set your 6-digit PIN. You can reuse your old PIN.\n4. Log in with PIN. Change it later in Settings.',
+  'guide.setup': '2. Set Up Your Books',
+  'guide.setup.desc': 'Admin only.\n1. Accounts: add what you need, turn off what you don\'t use.\n2. Users: Admin manages everything. User only records.\n3. Have an old list? Import CSV, PDF, or photo (max 5MB). For best result: one name per row, with balance. Check the type before Save.',
+  'guide.daily': '3. Daily Record',
+  'guide.daily.desc': 'Tap red Income or gray Expense. Or tap the chat bubble in the balance card and type like "lunch 25k".\nFrom / To = who: type a name to find a saved contact, or save as new with company + phone.\nAccount = what kind. Cash/Bank = which wallet.\nAsk Admin to set the AI key once in Admin → AI Settings.',
+  'guide.check': '4. Check Your Money',
+  'guide.check.desc': 'Dashboard shows this month + last month.\nHistory: search and fix one entry.\nContacts → Statement: see who still owes.\nReports → Export PDF / XLSX to share.',
+  'guide.safe': '5. Keep Data Safe',
+  'guide.safe.desc': 'Every week: Admin → Backup → Export. Save the file to Drive, email, or chat to yourself.\nMove phone: Import that file on the new device.\nNever clear browser site data — it erases everything.',
+  'guide.fix': '6. Fix Problems',
+  'guide.fix.desc': 'Delete one: entry turns gray, excluded from totals.\nReset Transactions: deletes all records, keeps accounts + users.\nFactory Reset: erases everything. Needs code + Admin PIN.\nBack up first before any reset.',
   'setup.welcomeTitle': 'Welcome to FAZAI',
   'setup.ownerCaption': 'This Database belongs to',
   'setup.ownerDesc': 'Owner name will be used when print Report',
@@ -883,37 +843,18 @@ const id: TranslationKeys = {
   'pl.rent': 'Sewa',
   'pl.otherIncomeExpense': 'Pendapatan & Beban Lain',
   'guide.title': 'Panduan Pengguna',
-  'guide.gettingStarted': 'Memulai',
-  'guide.defaultPin': 'PIN default: Admin = 000000, Pengguna = 111111',
-  'guide.overview': 'Tentang FAZAI',
-  'guide.overview.desc': 'FAZAI adalah aplikasi akuntansi berbasis kas sederhana dengan mesin buku besar entri ganda yang berjalan di balik antarmukaan Pendapatan/Pengeluaran yang bersih. Semua data disimpan secara lokal di perangkat Anda menggunakan IndexedDB — tidak ada yang dikirim ke server mana pun. Informasi keuangan Anda tetap sepenuhnya pribadi dan aman di perangkat Anda. Aplikasi ini berfungsi offline dan dapat diinstal sebagai Progressive Web App (PWA) untuk akses cepat dari layar beranda.',
-  'guide.login': 'Login & PIN',
-  'guide.login.desc': 'Masukkan PIN 6 digit Anda untuk membuka aplikasi. PIN default: Admin = 000000, Pengguna = 111111. Setiap pengguna memiliki peran (Admin atau Pengguna) yang mengontrol akses ke fitur. Admin dapat mengakses Panel Admin untuk mengelola pengguna, akun, dan cadangan. Anda dapat mengubah PIN kapan saja dari Pengaturan setelah masuk.',
-  'guide.dashboard': 'Dasbor',
-  'guide.dashboard.desc': 'Dasbor menampilkan saldo total Anda saat ini, total pendapatan dan pengeluaran hari ini, dan daftar transaksi terbaru. Gunakan tombol Pendapatan hijau dan Pengeluaran merah untuk menambahkan transaksi baru dengan cepat. Ketuk transaksi terbaru untuk melihat detailnya di halaman Riwayat.',
-  'guide.incomeExpense': 'Pendapatan & Pengeluaran',
-  'guide.incomeExpense.desc': 'Di balik formulir sederhana, FAZAI membuat entri jurnal entri ganda yang benar. Untuk Pendapatan: akun pendapatan dikredit dan akun Kas/Bank Anda didebit. Untuk Pengeluaran: akun pengeluaran didebit dan akun Kas/Bank Anda dikredit. Ini memastikan buku Anda selalu seimbang sambil menjaga antarmuka tetap sederhana dan intuitif.',
-  'guide.accounts': 'Akun',
-  'guide.accounts.desc': 'FAZAI menggunakan 6 jenis akun: Aset, Kas/Bank, Kewajiban, Modal, Pendapatan, dan Pengeluaran. Akun Kas/Bank adalah sub-jenis khusus dari Aset yang digunakan untuk entri transaksi. Saldo Awal dilacak sebagai anak dari Modal. Saat membuat akun baru, Anda memilih jenisnya dan akun induk opsional untuk pengelompokan hierarkis.',
-  'guide.reports': 'Laporan',
-  'guide.reports.desc': 'Semua laporan berasal dari pergerakan akun dan entri — sumber kebenaran selalu buku besar, bukan jenis transaksi.',
-  'guide.reports.bs': 'Neraca — Menampilkan aset, kewajiban, dan modal pada tanggal akhir bulan tertentu. Pilih bulan dan tahun untuk menghasilkan.',
-  'guide.reports.tb': 'Neraca Saldo — Mendaftar semua akun aktif dengan saldo debit/kredit pada tanggal tertentu. Akun Pendapatan dan Pengeluaran menampilkan angka Tahun-berjalan (YTD).',
-  'guide.reports.pl': 'Laba Rugi — Menampilkan kategori pendapatan dan pengeluaran untuk periode yang dipilih. Default ke Bulan-berjalan (MTD). Pilih tanggal mulai dan akhir kustom sesuai kebutuhan.',
-  'guide.reports.cf': 'Arus Kas — Menampilkan arus kas masuk dan keluar dari akun Kas/Bank untuk periode yang dipilih. Default ke MTD. Membantu Anda memahami dari mana kas Anda berasal dan ke mana perginya.',
-  'guide.reports.ledger': 'Buku Besar — Menampilkan semua entri untuk akun tertentu secara kronologis. Pilih akun dan rentang tanggal untuk melihat riwayat transaksinya dengan saldo berjalan.',
-  'guide.admin': 'Panel Admin',
-  'guide.admin.desc': 'Hanya dapat diakses oleh pengguna Admin. Kelola Pengguna: tambah, edit, atau hapus akun pengguna dan tetapkan peran. Kelola Akun: buat, edit, aktifkan/nonaktifkan akun, atur berdasarkan jenis. Entri Kustom: buat entri jurnal entri ganda manual dengan akun debit dan kredit tertentu. Pengaturan: konfigurasi preferensi aplikasi.',
-  'guide.backup': 'Cadangan & Pemulihan',
-  'guide.backup.desc': 'Ekspor semua data Anda sebagai file JSON untuk penyimpanan aman. Impor cadangan yang diekspor sebelumnya untuk memulihkan data Anda. Reset Pabrik: menghapus semua data secara permanen. Untuk keamanan, Anda harus mengetik kode tantangan yang dihasilkan secara acak dan memasukkan PIN Admin untuk mengkonfirmasi. Ini mencegah reset yang tidak disengaja.',
-  'guide.factoryReset': 'Reset Pabrik',
-  'guide.factoryResetDesc': 'Reset Pabrik menghapus semua data secara permanen. Kode tantangan acak harus diketik dan PIN Admin dimasukkan untuk mengkonfirmasi, mencegah reset yang tidak disengaja.',
-  'guide.ai': 'Asisten AI',
-  'guide.ai.desc': 'Tombol obrolan AI mengambang memungkinkan Anda mencatat transaksi dan menanyakan keuangan menggunakan bahasa sehari-hari! Ketik seperti "beli makan 5000", "terima gaji 1 juta", atau "berapa pengeluaran bulan ini?" dan AI akan merespons. Untuk menggunakan AI, Anda perlu mengonfigurasi API key terlebih dahulu: buka Panel Admin → Pengaturan AI, pilih provider (OpenAI, Anthropic, Google, Groq, DeepSeek, Qwen, Kimi, atau Z.Ai), masukkan API key Anda, dan uji koneksi. API key Anda disimpan secara lokal di perangkat dan hanya dikirim ke provider yang Anda pilih. Jika AI tidak tersedia, fallback berbasis kata kunci tetap berfungsi untuk transaksi sederhana.',
-  'guide.tips': 'Tips & Catatan',
-  'guide.tips.desc': 'Semua data disimpan secara lokal di perangkat Anda — cadangkan secara teratur menggunakan fungsi Ekspor! Jangan hapus data situs di pengaturan browser, karena ini akan menghapus semua catatan akuntansi Anda. Jaga keamanan PIN Admin Anda — diperlukan untuk perlindungan reset pabrik. Aplikasi ini bekerja paling baik dalam mode potret di perangkat seluler. Instal sebagai PWA untuk pengalaman terbaik dengan dukungan offline.',
-  'guide.migration': 'Panduan Migrasi',
-  'guide.migration.desc': 'Ikuti langkah-langkah berikut untuk menyiapkan FAZAI dari neraca yang ada:\n\n1. Siapkan neraca terbaru Anda — kumpulkan dokumen neraca terbaru sebagai referensi.\n\n2. Login sebagai Admin — gunakan PIN Admin (default: 000000) untuk mengakses Panel Admin.\n\n3. Buka bagian Akun — tambahkan semua akun sesuai neraca terbaru Anda. Untuk setiap akun, pilih jenis akun yang benar (Aset, Kas/Bank, Kewajiban, Modal, Pendapatan, atau Pengeluaran) dan masukkan saldo saat ini.\n\n4. Periksa semua akun — periksa kembali jenis dan saldo setiap akun. Anda dapat menonaktifkan akun bawaan yang tidak digunakan.\n\n5. Buka Laporan → Neraca — verifikasi bahwa semua angka sesuai dengan neraca asli Anda. Total aset harus sama dengan kewajiban ditambah modal.\n\n6. Selesai — FAZAI siap digunakan! Mulai catat pendapatan dan pengeluaran harian Anda.',
+  'guide.first': '1. Pertama Kali Buka',
+  'guide.first.desc': '1. Instal sebagai aplikasi: ketuk Instal di dasbor atau Pengaturan. Bisa offline.\n2. Isi nama / usaha — tercetak di laporan.\n3. Atur PIN 6 digit. Boleh pakai PIN lama.\n4. Masuk dengan PIN. Ubah lagi nanti di Pengaturan.',
+  'guide.setup': '2. Siapkan Pembukuan',
+  'guide.setup.desc': 'Khusus Admin.\n1. Akun: tambah yang perlu, matikan yang tidak dipakai.\n2. Pengguna: Admin mengatur semua. Pengguna hanya mencatat.\n3. Punya daftar lama? Impor CSV, PDF, atau foto (maks 5MB). Agar berhasil: satu nama per baris + saldo. Periksa jenis sebelum Simpan.',
+  'guide.daily': '3. Catat Harian',
+  'guide.daily.desc': 'Ketuk Pendapatan merah atau Pengeluaran abu-abu. Atau ketuk gelembung chat di kartu saldo, ketik misal "makan 25rb".\nDari / Ke = siapa: ketik nama untuk cari kontak, atau simpan baru + perusahaan / telepon.\nAkun = jenis apa. Kas/Bank = dompet mana.\nMinta Admin isi kunci AI sekali di Admin → Pengaturan AI.',
+  'guide.check': '4. Cek Keuangan',
+  'guide.check.desc': 'Dasbor tampilkan total bulan ini + bulan lalu.\nRiwayat: cari dan perbaiki satu entri.\nKontak → Pernyataan: lihat siapa belum bayar.\nLaporan → Ekspor PDF / XLSX untuk bagikan.',
+  'guide.safe': '5. Jaga Data Aman',
+  'guide.safe.desc': 'Tiap minggu: Admin → Cadangan → Ekspor. Simpan ke Drive, email, atau chat sendiri.\nPindah HP: Impor file itu di perangkat baru.\nJangan hapus data situs browser — semua hilang.',
+  'guide.fix': '6. Atasi Masalah',
+  'guide.fix.desc': 'Hapus satu: entri jadi abu-abu, tidak dihitung.\nReset Transaksi: hapus semua catatan, akun + pengguna tetap.\nReset Pabrik: hapus semua. Perlu kode + PIN Admin.\nCadangkan dulu sebelum reset.',
   'setup.welcomeTitle': 'Selamat Datang di FAZAI',
   'setup.ownerCaption': 'Database ini milik',
   'setup.ownerDesc': 'Nama pemilik akan digunakan saat cetak Laporan',
@@ -1188,37 +1129,18 @@ const zh: TranslationKeys = {
   'pl.rent': '租金',
   'pl.otherIncomeExpense': '其他收入与费用',
   'guide.title': '用户指南',
-  'guide.gettingStarted': '入门指南',
-  'guide.defaultPin': '默认PIN码：管理员 = 000000，用户 = 111111',
-  'guide.overview': '概述',
-  'guide.overview.desc': 'FAZAI 是一款简单的收付实现制会计应用，在简洁的收入/支出界面背后运行着复式记账引擎。所有数据使用 IndexedDB 存储在您的设备本地——不会发送到任何服务器。您的财务信息完全保密且安全地保存在您的设备上。该应用可离线使用，并可作为渐进式网络应用（PWA）安装，方便从主屏幕快速访问。',
-  'guide.login': '登录与PIN码',
-  'guide.login.desc': '输入6位PIN码解锁应用。默认PIN码：管理员 = 000000，用户 = 111111。每个用户都有角色（管理员或用户），控制功能访问权限。管理员可以访问管理面板来管理用户、账户和备份。登录后您可以随时在设置中更改PIN码。',
-  'guide.dashboard': '仪表盘',
-  'guide.dashboard.desc': '仪表盘显示您当前的余额总计、今日收入和支出总额，以及最近的交易列表。使用绿色的收入按钮和红色的支出按钮快速添加新交易。点击最近的交易可在历史页面查看详情。',
-  'guide.incomeExpense': '收入与支出',
-  'guide.incomeExpense.desc': '在简洁的表单背后，FAZAI 创建了正确的复式记账分录。对于收入：收入账户贷记，现金/银行账户借记。对于支出：支出账户借记，现金/银行账户贷记。这确保您的账簿始终保持平衡，同时保持界面简单直观。',
-  'guide.accounts': '账户',
-  'guide.accounts.desc': 'FAZAI 使用6种账户类型：资产、现金/银行、负债、权益、收入和支出。现金/银行账户是资产的特殊子类型，用于交易录入。期初余额作为权益的子项追踪。创建新账户时，您可以选择类型和可选的父账户进行层级分组。',
-  'guide.reports': '报表',
-  'guide.reports.desc': '所有报表均源自账户变动和分录——数据来源始终是分类账，而非交易类型。',
-  'guide.reports.bs': '资产负债表——显示特定月末日期的资产、负债和权益。选择月份和年份生成。',
-  'guide.reports.tb': '试算平衡表——列出所有活动账户在特定日期的借贷余额。收入和支出账户显示年初至今（YTD）数据。',
-  'guide.reports.pl': '利润表——显示选定期间的收入和支出类别。默认为本月至今（MTD）。可根据需要选择自定义起止日期。',
-  'guide.reports.cf': '现金流量表——显示现金/银行账户在选定期间的现金流入和流出。默认为MTD。帮助您了解现金的来源和去向。',
-  'guide.reports.ledger': '分类账——按时间顺序显示特定账户的所有分录。选择账户和日期范围查看其交易历史和余额。',
-  'guide.admin': '管理面板',
-  'guide.admin.desc': '仅管理员用户可访问。管理用户：添加、编辑或删除用户账户并分配角色。管理账户：创建、编辑、启用/停用账户，按类型组织。自定义分录：创建具有特定借方和贷方账户的手动复式记账分录。设置：配置应用偏好。',
-  'guide.backup': '备份与恢复',
-  'guide.backup.desc': '将所有数据导出为JSON文件以安全保存。导入之前导出的备份以恢复数据。恢复出厂设置：永久删除所有数据。为安全起见，您必须输入随机生成的验证码和管理员PIN码才能确认。这可以防止意外重置。',
-  'guide.factoryReset': '恢复出厂设置',
-  'guide.factoryResetDesc': '恢复出厂设置将永久删除所有数据。必须输入随机验证码和管理员PIN码才能确认，防止意外重置。',
-  'guide.ai': 'AI助手',
-  'guide.ai.desc': '浮动的AI聊天按钮让您可以用日常语言记录交易和查询财务！只需输入"买饭50"、"收到工资1万"或"这个月花了多少？"AI就会回应。使用AI前，您需要先配置API密钥：前往管理面板→AI设置，选择提供商（OpenAI、Anthropic、Google、Groq、DeepSeek、Qwen、Kimi或Z.Ai），输入您的API密钥，然后测试连接。您的API密钥仅保存在设备本地，仅发送到您选择的提供商。如果AI不可用，基于关键词的备用方案仍可处理简单交易。',
-  'guide.tips': '提示与说明',
-  'guide.tips.desc': '所有数据存储在您的设备本地——请定期使用导出功能备份！请勿在浏览器设置中清除网站数据，这会删除您所有的会计记录。保管好您的管理员PIN码——这是恢复出厂设置保护的必要条件。应用在移动设备的竖屏模式下效果最佳。安装为PWA可获得最佳体验和离线支持。',
-  'guide.migration': '迁移指南',
-  'guide.migration.desc': '按照以下步骤从现有资产负债表设置 FAZAI：\n\n1. 准备最新资产负债表 — 收集最近的资产负债表文件作为参考。\n\n2. 以管理员身份登录 — 使用管理员 PIN 码（默认：000000）访问管理面板。\n\n3. 前往账户部分 — 按照最新资产负债表添加所有账户。为每个账户选择正确的账户类型（资产、现金/银行、负债、权益、收入或支出）并输入当前余额。\n\n4. 核对所有账户 — 仔细核对每个账户的类型和余额。您可以关闭任何未使用的预创建账户。\n\n5. 前往报表 → 资产负债表 — 验证所有数据是否与原始资产负债表一致。总资产应等于负债加权益。\n\n6. 完成 — FAZAI 已准备就绪！开始记录日常收入和支出。',
+  'guide.first': '1. 首次打开',
+  'guide.first.desc': '1. 安装为应用最好用：在首页或设置点安装。可离线使用。\n2. 输入名字 / 店名 — 会印在报表上。\n3. 设置6位PIN，可用旧PIN。\n4. 用PIN登录，之后可在设置更改。',
+  'guide.setup': '2. 设置账本',
+  'guide.setup.desc': '仅管理员。\n1. 科目：添加需要的，关闭不用的。\n2. 用户：管理员管理全部，普通用户只记账。\n3. 有旧清单？导入CSV、PDF或照片（最大5MB）。建议：一行一个名称+余额，保存前核对分类。',
+  'guide.daily': '3. 日常记账',
+  'guide.daily.desc': '点红色收入或灰色支出。或点余额卡片里的聊天气泡，输入如“午饭50”。\n来自 / 付给 = 谁：输入名字查找，或新建并加公司/电话。\n科目 = 哪类，现金/银行 = 哪个钱包。\n让管理员在 管理→AI设置 填一次API密钥。',
+  'guide.check': '4. 查看账目',
+  'guide.check.desc': '首页显示本月+上月合计。\n历史：搜索并修改一笔。\n联系人→对账单：看谁还没付。\n报表→导出PDF / XLSX分享。',
+  'guide.safe': '5. 保护数据',
+  'guide.safe.desc': '每周一次：管理→备份→导出。存到云盘、邮箱或发给自己。\n换手机：在新设备导入该文件。\n不要清除浏览器网站数据 — 会全部删除。',
+  'guide.fix': '6. 解决问题',
+  'guide.fix.desc': '删除一笔：变灰，不计入合计。\n重置交易：删除全部记录，保留科目+用户。\n恢复出厂：删除全部，需验证码+管理员PIN。\n重置前先备份。',
   'setup.welcomeTitle': '欢迎使用 FAZAI',
   'setup.ownerCaption': '此数据库属于',
   'setup.ownerDesc': '所有者姓名将用于打印报表时显示',

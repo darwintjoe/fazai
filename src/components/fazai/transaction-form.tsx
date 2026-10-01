@@ -45,6 +45,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const blurTimeoutRef = useRef<number | null>(null);
   const [showNewAccount, setShowNewAccount] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [showNewCashBank, setShowNewCashBank] = useState(false);
@@ -130,6 +131,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
     const name = getAccountName(a, lang).toLowerCase();
     return !searchQuery || name.includes(searchQuery.toLowerCase());
   });
+  const selectedAccount = accounts.find(a => a.id === selectedAccountId);
 
   const handleCreateAccount = async () => {
     if (!newAccountName.trim()) return;
@@ -369,7 +371,7 @@ export function TransactionForm({ type }: TransactionFormProps) {
           <label className="text-sm font-medium text-muted-foreground">{t('form.account', lang)}</label>
           {selectedAccountId && (
             <div className="mt-1 mb-2 flex items-center gap-2 bg-red-50 dark:bg-red-950 px-3 py-2 rounded-lg">
-              <span className="text-sm font-medium">{getAccountName(accounts.find(a => a.id === selectedAccountId)!, lang)}</span>
+              <span className="text-sm font-medium">{selectedAccount ? getAccountName(selectedAccount, lang) : (aiSuggestion || selectedAccountId)}</span>
               <button onClick={() => setSelectedAccountId('')} className="text-xs text-muted-foreground hover:text-foreground ml-auto">✕</button>
             </div>
           )}
@@ -380,10 +382,14 @@ export function TransactionForm({ type }: TransactionFormProps) {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => {
+                if (blurTimeoutRef.current) { window.clearTimeout(blurTimeoutRef.current); blurTimeoutRef.current = null; }
                 setIsSearchFocused(true);
                 searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
               }}
-              onBlur={() => { setIsSearchFocused(false); setSearchQuery(''); }}
+              onBlur={() => {
+                // Delay hiding so tap/click on a result registers before unmount (blur fires before click).
+                blurTimeoutRef.current = window.setTimeout(() => { setIsSearchFocused(false); setSearchQuery(''); }, 150);
+              }}
               placeholder={t('form.searchAccount', lang)}
               className="pl-9"
             />
@@ -393,7 +399,9 @@ export function TransactionForm({ type }: TransactionFormProps) {
               {filteredAccounts.map((acc) => (
                 <button
                   key={acc.id}
-                  onClick={() => { setSelectedAccountId(acc.id); setSearchQuery(''); }}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => { setSelectedAccountId(acc.id); setSearchQuery(''); setIsSearchFocused(false); searchInputRef.current?.blur(); }}
                   className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
                     selectedAccountId === acc.id
                       ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
