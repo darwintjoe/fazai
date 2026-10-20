@@ -586,54 +586,69 @@ export function ReceiptOcr() {
               {/* Account Category Dropdown */}
               <div>
                 <label className="text-sm font-medium text-muted-foreground">{t('form.account', lang)}</label>
-                {selectedAccountId && (
-                  <div className="mt-1 mb-1.5 flex items-center gap-2 bg-red-50 dark:bg-red-950 px-3 py-2 rounded-lg">
+                {selectedAccountId ? (
+                  <div className="mt-1 flex items-center gap-2 bg-red-50 dark:bg-red-950 px-3 py-2 rounded-lg">
                     <span className="text-sm font-medium">{(() => { const sel = categoryAccounts.find(a => a.id === selectedAccountId); return sel ? getAccountName(sel, lang) : selectedAccountId; })()}</span>
-                    <button onClick={() => { setSelectedAccountId(''); setAccountSearchQuery(''); }} className="text-xs text-muted-foreground hover:text-foreground ml-auto">✕</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedAccountId('');
+                        setAccountSearchQuery('');
+                        setIsSearchFocused(false);
+                        // Bring the search box back so the user can pick another account.
+                        window.setTimeout(() => searchInputRef.current?.focus(), 0);
+                      }}
+                      className="text-xs text-muted-foreground hover:text-foreground ml-auto"
+                    >
+                      ✕
+                    </button>
                   </div>
-                )}
-                <div className="relative mt-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    ref={searchInputRef}
-                    value={accountSearchQuery}
-                    onChange={(e) => setAccountSearchQuery(e.target.value)}
-                    onFocus={() => {
-                      if (blurTimeoutRef.current) { window.clearTimeout(blurTimeoutRef.current); blurTimeoutRef.current = null; }
-                      setIsSearchFocused(true);
-                      searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }}
-                    onBlur={() => {
-                      // Delay hiding so tap/click on a result registers before unmount (blur fires before click).
-                      blurTimeoutRef.current = window.setTimeout(() => { setIsSearchFocused(false); setAccountSearchQuery(''); }, 150);
-                    }}
-                    readOnly={!accountSearchQuery}
-                    onClick={() => { if (!accountSearchQuery) searchInputRef.current?.removeAttribute('readonly'); }}
-                    placeholder={t('form.searchAccount', lang)}
-                    className="pl-9"
-                  />
-                </div>
-                {isSearchFocused && (
-                  <div className="flex flex-col gap-1 mt-1.5 max-h-40 overflow-y-auto border rounded-lg">
-                    {filteredAccounts.map((acc) => (
-                      <button
-                        key={acc.id}
-                        type="button"
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => { setSelectedAccountId(acc.id); setAccountSearchQuery(''); setIsSearchFocused(false); searchInputRef.current?.blur(); }}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
-                          selectedAccountId === acc.id
-                            ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
-                            : 'hover:bg-accent'
-                        }`}
-                      >
-                        <span>{getAccountName(acc, lang)}</span>
-                      </button>
-                    ))}
-                    {filteredAccounts.length === 0 && (
-                      <p className="text-xs text-muted-foreground px-3 py-2">No accounts found</p>
+                ) : (
+                  <>
+                    <div className="relative mt-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        ref={searchInputRef}
+                        value={accountSearchQuery}
+                        onChange={(e) => setAccountSearchQuery(e.target.value)}
+                        onFocus={() => {
+                          if (blurTimeoutRef.current) { window.clearTimeout(blurTimeoutRef.current); blurTimeoutRef.current = null; }
+                          setIsSearchFocused(true);
+                          searchInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }}
+                        onBlur={() => {
+                          // Delay hiding so tap/click on a result registers before unmount (blur fires before click).
+                          blurTimeoutRef.current = window.setTimeout(() => { setIsSearchFocused(false); setAccountSearchQuery(''); }, 150);
+                        }}
+                        readOnly={!accountSearchQuery}
+                        onClick={() => { if (!accountSearchQuery) searchInputRef.current?.removeAttribute('readonly'); }}
+                        placeholder={t('form.searchAccount', lang)}
+                        className="pl-9"
+                      />
+                    </div>
+                    {isSearchFocused && (
+                      <div className="flex flex-col gap-1 mt-1.5 max-h-40 overflow-y-auto border rounded-lg">
+                        {filteredAccounts.map((acc) => (
+                          <button
+                            key={acc.id}
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => { setSelectedAccountId(acc.id); setAccountSearchQuery(''); setIsSearchFocused(false); }}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${
+                              selectedAccountId === acc.id
+                                ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300'
+                                : 'hover:bg-accent'
+                            }`}
+                          >
+                            <span>{getAccountName(acc, lang)}</span>
+                          </button>
+                        ))}
+                        {filteredAccounts.length === 0 && (
+                          <p className="text-xs text-muted-foreground px-3 py-2">No accounts found</p>
+                        )}
+                      </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
 
